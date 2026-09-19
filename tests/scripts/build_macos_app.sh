@@ -4,10 +4,15 @@ set -eu
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 cd "$ROOT_DIR"
 
-if [ "$(uname -m)" != "arm64" ]; then
-    printf '%s\n' "This packaging script currently targets Apple Silicon (arm64)." >&2
-    exit 2
-fi
+HOST_ARCH=$(uname -m)
+case "$HOST_ARCH" in
+    arm64|x86_64)
+        ;;
+    *)
+        printf '%s\n' "Unsupported macOS host architecture: $HOST_ARCH" >&2
+        exit 2
+        ;;
+esac
 
 MARKETING_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' packaging/FolioForge-Info.plist)
 BUNDLE_BUILD_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' packaging/FolioForge-Info.plist)
@@ -47,16 +52,25 @@ cargo fmt --all -- --check
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 
+# The release artifact is always Apple Silicon. On an Intel runner, install
+# the cross target explicitly; on Apple Silicon this is the native target.
+if [ "$HOST_ARCH" != "arm64" ]; then
+    rustup target add aarch64-apple-darwin
+fi
+
 # Keep host proc-macros on the host's default target while applying the app's
 # macOS 13 deployment floor only to explicit Apple Silicon target units.
 CFLAGS_aarch64_apple_darwin='-mmacosx-version-min=13.0' \
 RUSTC_WRAPPER="$ROOT_DIR/tests/scripts/rustc_macos_target_wrapper.sh" \
     cargo build --locked --target aarch64-apple-darwin --release --workspace
+SWIFT_TARGET_TRIPLE=arm64-apple-macosx13.0
 FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/aarch64-apple-darwin/release/libfolio_ffi.a" \
-    swift build --package-path macos/FolioForge --scratch-path "$SWIFT_BUILD_ROOT" -c release
+    swift build --package-path macos/FolioForge --scratch-path "$SWIFT_BUILD_ROOT" \
+        --triple "$SWIFT_TARGET_TRIPLE" -c release
 
 PRODUCT_DIR=$(FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/aarch64-apple-darwin/release/libfolio_ffi.a" \
-    swift build --package-path macos/FolioForge --scratch-path "$SWIFT_BUILD_ROOT" -c release --show-bin-path)
+    swift build --package-path macos/FolioForge --scratch-path "$SWIFT_BUILD_ROOT" \
+        --triple "$SWIFT_TARGET_TRIPLE" -c release --show-bin-path)
 DIST_DIR="$ROOT_DIR/dist"
 BUILD_BASENAME="FolioForge-macOS-arm64-0.1.0-$BUILD_STAMP"
 FINAL_DIR="$DIST_DIR/$BUILD_BASENAME"

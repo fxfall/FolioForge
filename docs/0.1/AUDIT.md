@@ -199,6 +199,12 @@ release tag points to the audited commit.
   files. It now points to the actual frozen 0.1 contracts under `docs/0.1/`,
   `docs/formats/` and `docs/library/`; no historical documents were added to
   the public tree.
+- RC packaging correction: the first `v0.1.0-rc.1` release run
+  (`35430364917`) reached the macOS packaging step but stopped during its
+  host preflight. The packaging script now accepts either supported macOS host
+  architecture, installs the explicit Rust arm64 target when cross-building,
+  and passes an arm64 macOS 13 triple to SwiftPM. The distributable remains
+  arm64 and the change is release plumbing only.
 
 ## 20. Provenance
 
