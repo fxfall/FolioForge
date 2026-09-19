@@ -1,10 +1,9 @@
 # FolioForge 0.1 Final Audit
 
-Status: local F0–F5 validation passed on 2026-09-19. F6 repository sync,
-hosted F7 CI and F8 tag/RC validation remain external gates until the remote
-state and hosted results are confirmed. This file is the only final audit for
-the public 0.1 working tree; historical investigation reports are not
-authoritative.
+Status: local F0–F5 validation and hosted F7 CI passed on 2026-09-19. F6
+repository sync is complete; F8 tag/RC validation remains pending. This file
+is the only final audit for the public 0.1 working tree; historical
+investigation reports are not authoritative.
 
 ## 1. Commit, version and date
 
@@ -157,22 +156,25 @@ runner and production signing/notarization are outside 0.1.
 
 Local consolidation result: F0 code freeze, F1 documentation merge, F2 audit
 convergence, F3 documentation cleanup, F4 artifact/private-data cleanup and
-F5 local validation are complete. This audit may be marked release-ready only
-when every command in `BUILD_RELEASE.md` and the RC fresh-clone checklist has
-a recorded PASS, the working tree is clean, no private corpus or local path is
-tracked, F7 hosted CI is green, and the release tag points to the audited
-commit.
+F5 local validation are complete. F7 hosted CI is green on the corrected
+public commit. This audit may be marked release-ready only when every command
+in `BUILD_RELEASE.md` and the RC fresh-clone checklist has a recorded PASS,
+the working tree is clean, no private corpus or local path is tracked, and the
+release tag points to the audited commit.
 
 ## 18. External release gates
 
 - F6 is complete: `origin` is configured as
   `git@github.com:fxfall/FolioForge.git`, and the remote `main` was verified at
-  the current public audit commit.
+  the current public audit commit `ecc4173ea2317f4209ae45ef2071da37d879578`.
 - F7 first hosted run `35428340869` reached both jobs but failed on maintenance
   gates: Linux Clippy reported four `chunks_exact_to_as_chunks` diagnostics;
   macOS SwiftUI Debug reported one strict-concurrency capture diagnostic.
-- F8 RC and final tags remain intentionally pending until the corrected commit
-  has a green hosted CI run and passes the fresh-clone checklist.
+- F7 corrected hosted run `35429930923` completed successfully on both Linux
+  and macOS (3m35s) after the maintenance fixes below.
+- F8 RC and final tags remain intentionally pending until the audited commit
+  has passed the fresh-clone checklist and the RC release workflow has
+  published validated artifacts.
 
 ## 19. Release correction log
 
@@ -185,6 +187,14 @@ commit.
   immutable local before the `@MainActor` task consumes it, removing the
   Swift strict-concurrency error without changing queue behavior. Local
   SwiftUI Debug and Release builds pass.
+- Hosted Linux correction: the remaining fixed-width KFX resource hex decoder
+  now uses `as_chunks::<2>()`, preserving the even-length guard and decoder
+  behavior while satisfying the hosted Clippy baseline.
+- Hosted macOS correction: SwiftPM now repeats the `bz2` and `lzma` native
+  link libraries at the Swift executable boundary. Cargo records those flags
+  for Rust binaries, but the Swift executable consumes a static FFI archive
+  and must provide them at its final link. The hosted arm64 Debug and Release
+  builds passed in run `35429930923`.
 - Contract drift correction: `AGENTS.md` referenced absent `docs/core/*`
   files. It now points to the actual frozen 0.1 contracts under `docs/0.1/`,
   `docs/formats/` and `docs/library/`; no historical documents were added to
