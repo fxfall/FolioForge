@@ -29,6 +29,12 @@ let package = Package(
                 // independent of the host's dynamic linker layout. A signed
                 // app may embed the matching dylib instead.
                 .unsafeFlags([folioFFIArchive]),
+                // `zip`'s bzip2 and xz backends are native dependencies. Cargo
+                // records those link flags for Rust binaries, but a Swift
+                // executable that consumes the generated static archive must
+                // repeat them at its final link boundary.
+                .linkedLibrary("bz2"),
+                .linkedLibrary("lzma"),
             ]
         ),
     ]
