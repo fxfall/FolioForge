@@ -162,3 +162,17 @@ when every command in `BUILD_RELEASE.md` and the RC fresh-clone checklist has
 a recorded PASS, the working tree is clean, no private corpus or local path is
 tracked, F7 hosted CI is green, and the release tag points to the audited
 commit.
+
+## 18. External release gates
+
+- F6 is prepared but not completed: the empty remote
+  `https://github.com/fxfall/FolioForge.git` was inspected and configured as
+  `origin`, but the first non-forced HTTPS push was rejected because this host
+  has no GitHub credentials and no `gh` client is installed.
+- F7 hosted CI has not run because F6 cannot start without authentication.
+- F8 RC and final tags were intentionally not created before hosted CI; no
+  unvalidated release artifact is claimed.
+
+The next safe action is to authenticate GitHub on the host, rerun
+`git push -u origin main`, wait for both CI jobs to pass, then follow the RC
+fresh-clone and tag sequence in [BUILD_RELEASE.md](BUILD_RELEASE.md).
