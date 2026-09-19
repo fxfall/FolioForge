@@ -44,10 +44,6 @@ SWIFT_BUILD_ROOT="$BUILD_ROOT/swift-build"
 export CARGO_TARGET_DIR TMPDIR FOLIOFORGE_TEMP_ROOT
 mkdir -p "$CARGO_TARGET_DIR" "$TMPDIR" "$FOLIOFORGE_TEMP_ROOT"
 
-# Drop only regenerable caches in the external root. Existing distributable
-# apps remain untouched until the new app and archive have passed validation.
-cargo clean --target-dir "$CARGO_TARGET_DIR"
-
 cargo fmt --all -- --check
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings

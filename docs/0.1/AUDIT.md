@@ -204,7 +204,11 @@ release tag points to the audited commit.
   host preflight. The packaging script now accepts either supported macOS host
   architecture, installs the explicit Rust arm64 target when cross-building,
   and passes an arm64 macOS 13 triple to SwiftPM. The distributable remains
-  arm64 and the change is release plumbing only.
+  arm64 and the change is release plumbing only. The second RC attempt
+  (`35431109508`) exposed one more preflight issue: Cargo rejects `clean` on a
+  newly created target directory without its cache marker. Because every run
+  already uses a unique external build root, the redundant clean call is now
+  removed.
 
 ## 20. Provenance
 
