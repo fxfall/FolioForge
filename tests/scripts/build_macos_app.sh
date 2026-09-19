@@ -114,14 +114,31 @@ cp "$PRODUCT_DIR/FolioForge" "$CONTENTS/MacOS/FolioForge"
 PHASE=app-resource-staging
 RESOURCE_BUNDLE_SOURCE="$PRODUCT_DIR/FolioForge_FolioForge.bundle"
 RESOURCE_BUNDLE="$CONTENTS/Resources/FolioForge_FolioForge.bundle"
-if [ ! -d "$RESOURCE_BUNDLE_SOURCE" ]; then
+if [ -d "$RESOURCE_BUNDLE_SOURCE" ]; then
+    mkdir -p "$RESOURCE_BUNDLE"
+    cp -R "$RESOURCE_BUNDLE_SOURCE/Contents" "$RESOURCE_BUNDLE/"
+else
     RESOURCE_BUNDLE_SOURCE=$(find "$SWIFT_BUILD_ROOT" -type d \
         -name 'FolioForge_FolioForge.bundle' -print -quit)
+    if [ -n "$RESOURCE_BUNDLE_SOURCE" ]; then
+        mkdir -p "$RESOURCE_BUNDLE"
+        cp -R "$RESOURCE_BUNDLE_SOURCE/Contents" "$RESOURCE_BUNDLE/"
+    else
+        # Some SwiftPM/Xcode combinations keep Bundle.module resources
+        # inside the build intermediates instead of the product directory.
+        # Recreate the standard resource bundle in external staging so the
+        # unsigned app has the same runtime resource path on every runner.
+        printf '%s\n' "SwiftPM resource bundle not emitted; staging checked-in resources" >&2
+        mkdir -p "$RESOURCE_BUNDLE/Contents/Resources"
+        plutil -create xml1 "$RESOURCE_BUNDLE/Contents/Info.plist"
+        /usr/libexec/PlistBuddy -c 'Add :CFBundlePackageType string BNDL' \
+            "$RESOURCE_BUNDLE/Contents/Info.plist"
+        /usr/libexec/PlistBuddy -c 'Add :CFBundleIdentifier string org.folioforge.FolioForge.resources' \
+            "$RESOURCE_BUNDLE/Contents/Info.plist"
+        cp -R "$ROOT_DIR/macos/FolioForge/Resources/." \
+            "$RESOURCE_BUNDLE/Contents/Resources/"
+    fi
 fi
-test -n "$RESOURCE_BUNDLE_SOURCE"
-test -d "$RESOURCE_BUNDLE_SOURCE"
-mkdir -p "$RESOURCE_BUNDLE"
-cp -R "$RESOURCE_BUNDLE_SOURCE/Contents" "$RESOURCE_BUNDLE/"
 cp packaging/FolioForge-Info.plist "$CONTENTS/Info.plist"
 
 ICONSET="$STAGING/FolioForge.iconset"
