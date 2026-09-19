@@ -165,19 +165,32 @@ commit.
 
 ## 18. External release gates
 
-- F6 is prepared but not completed: the empty remote
-  `https://github.com/fxfall/FolioForge.git` was inspected, and `origin` is now
-  configured as `git@github.com:fxfall/FolioForge.git`. The first non-forced
-  SSH push was rejected because this host has no authorized SSH identity.
-- F7 hosted CI has not run because F6 cannot start without authentication.
-- F8 RC and final tags were intentionally not created before hosted CI; no
-  unvalidated release artifact is claimed.
+- F6 is complete: `origin` is configured as
+  `git@github.com:fxfall/FolioForge.git`, and the remote `main` was verified at
+  the current public audit commit.
+- F7 first hosted run `35428340869` reached both jobs but failed on maintenance
+  gates: Linux Clippy reported four `chunks_exact_to_as_chunks` diagnostics;
+  macOS SwiftUI Debug reported one strict-concurrency capture diagnostic.
+- F8 RC and final tags remain intentionally pending until the corrected commit
+  has a green hosted CI run and passes the fresh-clone checklist.
 
-The next safe action is to authenticate GitHub on the host, rerun
-`git push -u origin main`, wait for both CI jobs to pass, then follow the RC
-fresh-clone and tag sequence in [BUILD_RELEASE.md](BUILD_RELEASE.md).
+## 19. Release correction log
 
-## 19. Provenance
+- Change classification: minor maintenance; no public API, Semantic IR,
+  format capability or conversion behavior was changed.
+- Linux correction: fixed-length UTF-16 byte-pair handling in `folio-text` now
+  uses `as_chunks::<2>()`, preserving the even-length guard and all detection
+  thresholds. Local workspace Clippy and the text importer tests pass.
+- macOS correction: the preflight result collection is frozen into an
+  immutable local before the `@MainActor` task consumes it, removing the
+  Swift strict-concurrency error without changing queue behavior. Local
+  SwiftUI Debug and Release builds pass.
+- Contract drift correction: `AGENTS.md` referenced absent `docs/core/*`
+  files. It now points to the actual frozen 0.1 contracts under `docs/0.1/`,
+  `docs/formats/` and `docs/library/`; no historical documents were added to
+  the public tree.
+
+## 20. Provenance
 
 The repository-content and dependency provenance review is recorded in
 [PROVENANCE_AUDIT.md](PROVENANCE_AUDIT.md). It found no bundled Calibre,

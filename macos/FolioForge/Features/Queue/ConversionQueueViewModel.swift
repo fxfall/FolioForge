@@ -610,9 +610,10 @@ final class ConversionQueueViewModel: ObservableObject {
                 }
                 if accessed { url.stopAccessingSecurityScopedResource() }
             }
+            let completedResults = results
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                for (id, url, result) in results {
+                for (id, url, result) in completedResults {
                     self.update(id) { item in
                         switch result {
                         case .success(let report):

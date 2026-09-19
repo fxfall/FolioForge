@@ -7,14 +7,18 @@ authoritative.
 For any change that touches conversion, the Semantic IR, an importer, a
 compatibility rule, an exporter, FFI, batch execution, or the service boundary:
 
-1. Read `docs/core/CODEX_ENTRY.md`.
-2. Read the contract linked from it for the affected layer.
-3. Read `docs/core/CORE_BEHAVIOR_BASELINE.md` and
-   `docs/core/CORE_API_CHANGELOG.md`.
+1. Read the affected contract in `docs/0.1/DEVELOPMENT.md` and
+   `docs/0.1/API.md`.
+2. Read the format contract under `docs/formats/` or the Library contract under
+   `docs/library/` for the affected layer.
+3. Read `docs/0.1/AUDIT.md`, `docs/0.1/KNOWN_LIMITS.md` and
+   `CHANGELOG.md` before accepting a release-bound change.
 4. Inspect only the source files required for the change. Do not start with an
    unbounded repository-wide refactor.
 5. State the intended boundary in the change notes or pull request.
-6. Classify the change as major or minor under `docs/core/CORE_AB_PROTOCOL.md`.
+6. Classify the change as major or minor under the frozen-scope rules in
+   `docs/0.1/DEVELOPMENT.md`; record the classification in the audit/change
+   notes.
 7. Run the targeted tests, the canonical matrix, and the architecture check.
 8. Run the required A/B comparison before accepting a behavior-changing
    change, then update the behavior/performance baseline and API changelog.

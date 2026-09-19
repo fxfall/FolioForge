@@ -152,16 +152,16 @@ fn infer_utf16_without_bom(bytes: &[u8]) -> Option<TextEncoding> {
     if bytes.len() < 4 || !bytes.len().is_multiple_of(2) {
         return None;
     }
-    let pairs = bytes.chunks_exact(2).count();
-    if pairs < 4 {
+    let pairs = bytes.as_chunks::<2>().0;
+    if pairs.len() < 4 {
         return None;
     }
-    let even_zeroes = bytes.chunks_exact(2).filter(|pair| pair[0] == 0).count();
-    let odd_zeroes = bytes.chunks_exact(2).filter(|pair| pair[1] == 0).count();
-    let threshold = pairs.saturating_mul(3).saturating_add(3) / 4;
-    if odd_zeroes >= threshold && even_zeroes <= pairs / 10 {
+    let even_zeroes = pairs.iter().filter(|pair| pair[0] == 0).count();
+    let odd_zeroes = pairs.iter().filter(|pair| pair[1] == 0).count();
+    let threshold = pairs.len().saturating_mul(3).saturating_add(3) / 4;
+    if odd_zeroes >= threshold && even_zeroes <= pairs.len() / 10 {
         Some(TextEncoding::Utf16Le)
-    } else if even_zeroes >= threshold && odd_zeroes <= pairs / 10 {
+    } else if even_zeroes >= threshold && odd_zeroes <= pairs.len() / 10 {
         Some(TextEncoding::Utf16Be)
     } else {
         None
