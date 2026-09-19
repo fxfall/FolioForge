@@ -125,6 +125,15 @@ jobs:
           case "$RELEASE_TAG" in
             *-rc.*) prerelease_flag=--prerelease ;;
           esac
-          gh release create "$RELEASE_TAG" release-assets/* \
-            --title "FolioForge $RELEASE_TAG" \
-            --generate-notes $prerelease_flag
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            # A tag may already have a source-only release entry. Preserve it
+            # and attach only artifacts produced by this verified run.
+            gh release upload "$RELEASE_TAG" release-assets/* --clobber
+            if [ -n "$prerelease_flag" ]; then
+              gh release edit "$RELEASE_TAG" --prerelease
+            fi
+          else
+            gh release create "$RELEASE_TAG" release-assets/* \
+              --title "FolioForge $RELEASE_TAG" \
+              --generate-notes $prerelease_flag
+          fi
