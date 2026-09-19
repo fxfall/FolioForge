@@ -111,7 +111,12 @@ APP="$STAGING/FolioForge.app"
 CONTENTS="$APP/Contents"
 mkdir -p "$CONTENTS/MacOS" "$CONTENTS/Resources"
 cp "$PRODUCT_DIR/FolioForge" "$CONTENTS/MacOS/FolioForge"
-cp -R "$PRODUCT_DIR/FolioForge_FolioForge.bundle" "$CONTENTS/Resources/"
+PHASE=app-resource-staging
+RESOURCE_BUNDLE_SOURCE="$PRODUCT_DIR/FolioForge_FolioForge.bundle"
+RESOURCE_BUNDLE="$CONTENTS/Resources/FolioForge_FolioForge.bundle"
+test -d "$RESOURCE_BUNDLE_SOURCE"
+mkdir -p "$RESOURCE_BUNDLE"
+cp -R "$RESOURCE_BUNDLE_SOURCE/Contents" "$RESOURCE_BUNDLE/"
 cp packaging/FolioForge-Info.plist "$CONTENTS/Info.plist"
 
 ICONSET="$STAGING/FolioForge.iconset"
@@ -138,7 +143,7 @@ test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$CONTENTS/Info.plis
 PHASE=app-content-executable
 test -x "$CONTENTS/MacOS/FolioForge"
 PHASE=app-content-bundle-logo
-test -f "$CONTENTS/Resources/FolioForge_FolioForge.bundle/Contents/Resources/folioforge-logo.png"
+test -f "$RESOURCE_BUNDLE/Contents/Resources/folioforge-logo.png"
 PHASE=app-content-icon
 test -f "$CONTENTS/Resources/FolioForge.icns"
 PHASE=app-content-architecture
