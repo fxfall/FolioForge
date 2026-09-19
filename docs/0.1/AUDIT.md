@@ -208,7 +208,12 @@ release tag points to the audited commit.
   (`35431109508`) exposed one more preflight issue: Cargo rejects `clean` on a
   newly created target directory without its cache marker. Because every run
   already uses a unique external build root, the redundant clean call is now
-  removed.
+  removed. The third attempt (`35431473939`) showed that the explicit Rust
+  target path was the remaining hosted macOS failure. Local reproduction
+  identified the broad workspace release build as the trigger; the macOS job
+  now builds only the `folio-ffi` release archive required by SwiftUI, matching
+  the proven F7 macOS gate, while Linux retains the full workspace release
+  build.
 
 ## 20. Provenance
 

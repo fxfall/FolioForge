@@ -48,23 +48,27 @@ cargo fmt --all -- --check
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 
-# The release artifact is always Apple Silicon. On an Intel runner, install
-# the cross target explicitly; on Apple Silicon this is the native target.
-if [ "$HOST_ARCH" != "arm64" ]; then
+# The release artifact is always Apple Silicon. Use the native arm64 build
+# path on Apple Silicon runners (the same path exercised by the macOS CI job).
+# Keep an explicit cross target only for an Intel fallback runner.
+if [ "$HOST_ARCH" = "arm64" ]; then
+    MACOSX_DEPLOYMENT_TARGET=13.0 \
+        cargo build --locked --release -p folio-ffi
+    FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/release/libfolio_ffi.a"
+else
     rustup target add aarch64-apple-darwin
+    CFLAGS_aarch64_apple_darwin='-mmacosx-version-min=13.0' \
+    RUSTC_WRAPPER="$ROOT_DIR/tests/scripts/rustc_macos_target_wrapper.sh" \
+        cargo build --locked --target aarch64-apple-darwin --release -p folio-ffi
+    FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/aarch64-apple-darwin/release/libfolio_ffi.a"
 fi
 
-# Keep host proc-macros on the host's default target while applying the app's
-# macOS 13 deployment floor only to explicit Apple Silicon target units.
-CFLAGS_aarch64_apple_darwin='-mmacosx-version-min=13.0' \
-RUSTC_WRAPPER="$ROOT_DIR/tests/scripts/rustc_macos_target_wrapper.sh" \
-    cargo build --locked --target aarch64-apple-darwin --release --workspace
 SWIFT_TARGET_TRIPLE=arm64-apple-macosx13.0
-FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/aarch64-apple-darwin/release/libfolio_ffi.a" \
+FOLIOFORGE_FFI_ARCHIVE="$FOLIOFORGE_FFI_ARCHIVE" \
     swift build --package-path macos/FolioForge --scratch-path "$SWIFT_BUILD_ROOT" \
         --triple "$SWIFT_TARGET_TRIPLE" -c release
 
-PRODUCT_DIR=$(FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/aarch64-apple-darwin/release/libfolio_ffi.a" \
+PRODUCT_DIR=$(FOLIOFORGE_FFI_ARCHIVE="$FOLIOFORGE_FFI_ARCHIVE" \
     swift build --package-path macos/FolioForge --scratch-path "$SWIFT_BUILD_ROOT" \
         --triple "$SWIFT_TARGET_TRIPLE" -c release --show-bin-path)
 DIST_DIR="$ROOT_DIR/dist"
