@@ -130,21 +130,11 @@ sips -z 512 512 "$LOGO" --out "$ICONSET/icon_512x512.png" >/dev/null
 sips -z 1024 1024 "$LOGO" --out "$ICONSET/icon_512x512@2x.png" >/dev/null
 iconutil -c icns "$ICONSET" -o "$CONTENTS/Resources/FolioForge.icns"
 
-PHASE=app-signing
-PHASE=app-plist-lint
+PHASE=app-validation
 plutil -lint "$CONTENTS/Info.plist"
 PHASE=app-version-check
 test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$CONTENTS/Info.plist")" = "$MARKETING_VERSION"
 test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$CONTENTS/Info.plist")" = "$BUNDLE_BUILD_VERSION"
-PHASE=app-codesign
-codesign --force --deep --sign - --entitlements "$ROOT_DIR/macos/FolioForge/FolioForge.entitlements" "$APP"
-PHASE=app-codesign-verify
-codesign --verify --deep --strict "$APP"
-PHASE=app-entitlements
-SIGNED_ENTITLEMENTS=$(codesign -d --entitlements :- "$APP" 2>/dev/null)
-printf '%s\n' "$SIGNED_ENTITLEMENTS" | grep -q '<key>com.apple.security.app-sandbox</key>'
-printf '%s\n' "$SIGNED_ENTITLEMENTS" | grep -q '<key>com.apple.security.files.user-selected.read-write</key>'
-printf '%s\n' "$SIGNED_ENTITLEMENTS" | grep -q '<key>com.apple.security.network.client</key>'
 PHASE=app-content-check
 test -x "$CONTENTS/MacOS/FolioForge"
 test -f "$CONTENTS/Resources/FolioForge_FolioForge.bundle/Contents/Resources/folioforge-logo.png"

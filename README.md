@@ -55,9 +55,9 @@ Use the prerequisites and release commands in
 scratch data must be placed in a directory selected by
 `FOLIOFORGE_VALIDATION_ROOT`, not in the repository.
 
-The checked-in macOS packaging script creates an ad-hoc signed development
-app. It does not claim Developer ID signing, notarization or Kindle device
-equivalence.
+The checked-in macOS packaging script creates an intentionally unsigned
+development app. It does not invoke `codesign`, use certificates, claim
+Developer ID signing or notarization, or claim Kindle device equivalence.
 
 ## Support boundaries
 

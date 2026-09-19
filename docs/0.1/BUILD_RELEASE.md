@@ -68,9 +68,9 @@ FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/release/libfolio_ffi.a" \
 
 The arm64 packaging entry point is `tests/scripts/build_macos_app.sh`. It
 checks Rust format/tests/clippy, builds the macOS 13 arm64 FFI and SwiftUI
-release, creates the checked-in logo icon, ad-hoc signs the sandbox app,
-validates the app/ZIP and writes the timestamped product under ignored
-`dist/`. It does not perform Developer ID signing or notarization.
+release, creates the checked-in logo icon, validates the intentionally unsigned
+app/ZIP and writes the timestamped product under ignored `dist/`. It does not
+invoke `codesign`, use certificates or perform notarization.
 
 ## Docker Service
 

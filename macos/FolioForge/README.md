@@ -41,12 +41,13 @@ FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/release/libfolio_ffi.a" \
 `tests/scripts/build_macos_app.sh` is the complete arm64 package validation
 entry point. It requires `FOLIOFORGE_VALIDATION_ROOT`, keeps compiler/runtime
 scratch data there, builds against the macOS 13 floor, embeds the project logo,
-creates an ad-hoc sandbox signature and produces a timestamped `0.1.0` app/ZIP
-under ignored `dist/` only after validation succeeds.
+leaves the app unsigned and produces a timestamped `0.1.0` app/ZIP under
+ignored `dist/` only after validation succeeds.
 
 The package is a SwiftPM executable rather than an Xcode project, so it has no
 separate `MARKETING_VERSION` setting; the checked-in bundle plist and Rust/FFI
 package version are both `0.1.0`.
 
-The result is an unsigned-for-distribution development build: no Developer ID,
-notarization or Gatekeeper acceptance is claimed.
+The result is deliberately unsigned: the build does not invoke `codesign`, use
+certificates or embed entitlements. No Developer ID, notarization or Gatekeeper
+acceptance is claimed.
