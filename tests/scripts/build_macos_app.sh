@@ -114,6 +114,11 @@ cp "$PRODUCT_DIR/FolioForge" "$CONTENTS/MacOS/FolioForge"
 PHASE=app-resource-staging
 RESOURCE_BUNDLE_SOURCE="$PRODUCT_DIR/FolioForge_FolioForge.bundle"
 RESOURCE_BUNDLE="$CONTENTS/Resources/FolioForge_FolioForge.bundle"
+if [ ! -d "$RESOURCE_BUNDLE_SOURCE" ]; then
+    RESOURCE_BUNDLE_SOURCE=$(find "$SWIFT_BUILD_ROOT" -type d \
+        -name 'FolioForge_FolioForge.bundle' -print -quit)
+fi
+test -n "$RESOURCE_BUNDLE_SOURCE"
 test -d "$RESOURCE_BUNDLE_SOURCE"
 mkdir -p "$RESOURCE_BUNDLE"
 cp -R "$RESOURCE_BUNDLE_SOURCE/Contents" "$RESOURCE_BUNDLE/"
