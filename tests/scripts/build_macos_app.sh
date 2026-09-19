@@ -135,10 +135,13 @@ plutil -lint "$CONTENTS/Info.plist"
 PHASE=app-version-check
 test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$CONTENTS/Info.plist")" = "$MARKETING_VERSION"
 test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$CONTENTS/Info.plist")" = "$BUNDLE_BUILD_VERSION"
-PHASE=app-content-check
+PHASE=app-content-executable
 test -x "$CONTENTS/MacOS/FolioForge"
+PHASE=app-content-bundle-logo
 test -f "$CONTENTS/Resources/FolioForge_FolioForge.bundle/Contents/Resources/folioforge-logo.png"
+PHASE=app-content-icon
 test -f "$CONTENTS/Resources/FolioForge.icns"
+PHASE=app-content-architecture
 file "$CONTENTS/MacOS/FolioForge" | grep -q 'arm64'
 
 cp macos/FolioForge/README.md "$STAGING/README.md"
