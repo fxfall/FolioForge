@@ -1,0 +1,15 @@
+[package]
+name = "folio-epub"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+folio-format = { path = "../folio-format" }
+folio-input = { path = "../folio-input" }
+folio-normalize = { path = "../folio-normalize" }
+folio-model = { path = "../folio-model" }
+folio-style = { path = "../folio-style" }
+roxmltree.workspace = true
+thiserror.workspace = true
+zip.workspace = true

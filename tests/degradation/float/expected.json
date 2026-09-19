@@ -1,0 +1,7 @@
+{
+  "target": "Kf7",
+  "mode": "Compatible",
+  "feature": "Float",
+  "quality": "StructuralFallback",
+  "fallback_contains": "inline flow order"
+}

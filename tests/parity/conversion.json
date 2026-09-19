@@ -1,0 +1,11 @@
+{
+  "target": "KF8",
+  "mode": "Compatible",
+  "deterministic": true,
+  "compression": "None",
+  "degradation": {
+    "linearize_complex_tables": false,
+    "prefer_rasterization": false,
+    "strip_embedded_fonts": false
+  }
+}

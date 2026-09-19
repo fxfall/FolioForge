@@ -1,0 +1,233 @@
+{
+  "schema_version": 1,
+  "oracle": "calibre-kfx-input-json-content",
+  "calibre_version": "9.14)",
+  "kfx_input_version": "2.34.2",
+  "input_id": "KFX-PL-010",
+  "input_sha256": "f596fb4722bc39fd843b2020b0ec5e8799189358d396cb4dd41ea521b0c649c3",
+  "image_occurrences": [
+    {
+      "position": 1,
+      "resource": "img_0023"
+    },
+    {
+      "position": 134,
+      "resource": "img_0003"
+    },
+    {
+      "position": 679197,
+      "resource": "img_0027"
+    },
+    {
+      "position": 1447114,
+      "resource": "img_0001"
+    },
+    {
+      "position": 1715870,
+      "resource": "img_0002"
+    },
+    {
+      "position": 2028970,
+      "resource": "img_0004"
+    },
+    {
+      "position": 2356979,
+      "resource": "img_0005"
+    },
+    {
+      "position": 2538468,
+      "resource": "img_0006"
+    },
+    {
+      "position": 2763260,
+      "resource": "img_0007"
+    },
+    {
+      "position": 3128088,
+      "resource": "img_0008"
+    },
+    {
+      "position": 3283438,
+      "resource": "img_0009"
+    },
+    {
+      "position": 3899723,
+      "resource": "img_0010"
+    },
+    {
+      "position": 4044117,
+      "resource": "img_0011"
+    },
+    {
+      "position": 4171751,
+      "resource": "img_0012"
+    },
+    {
+      "position": 4287167,
+      "resource": "img_0013"
+    },
+    {
+      "position": 4474816,
+      "resource": "img_0014"
+    },
+    {
+      "position": 4713790,
+      "resource": "img_0015"
+    },
+    {
+      "position": 4870267,
+      "resource": "img_0016"
+    },
+    {
+      "position": 5156440,
+      "resource": "img_0017"
+    },
+    {
+      "position": 5395165,
+      "resource": "img_0018"
+    },
+    {
+      "position": 5868124,
+      "resource": "img_0019"
+    },
+    {
+      "position": 6065379,
+      "resource": "img_0020"
+    },
+    {
+      "position": 6272056,
+      "resource": "img_0021"
+    },
+    {
+      "position": 6499759,
+      "resource": "img_0022"
+    },
+    {
+      "position": 7032563,
+      "resource": "img_0024"
+    },
+    {
+      "position": 7514697,
+      "resource": "img_0025"
+    },
+    {
+      "position": 7946442,
+      "resource": "img_0026"
+    }
+  ],
+  "resource_frequencies": [
+    {
+      "resource": "img_0001",
+      "count": 1
+    },
+    {
+      "resource": "img_0002",
+      "count": 1
+    },
+    {
+      "resource": "img_0003",
+      "count": 1
+    },
+    {
+      "resource": "img_0004",
+      "count": 1
+    },
+    {
+      "resource": "img_0005",
+      "count": 1
+    },
+    {
+      "resource": "img_0006",
+      "count": 1
+    },
+    {
+      "resource": "img_0007",
+      "count": 1
+    },
+    {
+      "resource": "img_0008",
+      "count": 1
+    },
+    {
+      "resource": "img_0009",
+      "count": 1
+    },
+    {
+      "resource": "img_0010",
+      "count": 1
+    },
+    {
+      "resource": "img_0011",
+      "count": 1
+    },
+    {
+      "resource": "img_0012",
+      "count": 1
+    },
+    {
+      "resource": "img_0013",
+      "count": 1
+    },
+    {
+      "resource": "img_0014",
+      "count": 1
+    },
+    {
+      "resource": "img_0015",
+      "count": 1
+    },
+    {
+      "resource": "img_0016",
+      "count": 1
+    },
+    {
+      "resource": "img_0017",
+      "count": 1
+    },
+    {
+      "resource": "img_0018",
+      "count": 1
+    },
+    {
+      "resource": "img_0019",
+      "count": 1
+    },
+    {
+      "resource": "img_0020",
+      "count": 1
+    },
+    {
+      "resource": "img_0021",
+      "count": 1
+    },
+    {
+      "resource": "img_0022",
+      "count": 1
+    },
+    {
+      "resource": "img_0023",
+      "count": 1
+    },
+    {
+      "resource": "img_0024",
+      "count": 1
+    },
+    {
+      "resource": "img_0025",
+      "count": 1
+    },
+    {
+      "resource": "img_0026",
+      "count": 1
+    },
+    {
+      "resource": "img_0027",
+      "count": 1
+    }
+  ],
+  "summary": {
+    "image_occurrences": 27,
+    "distinct_resources": 27,
+    "reused_resources": 0
+  }
+}

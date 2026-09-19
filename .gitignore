@@ -1,0 +1,33 @@
+# Rust, SwiftPM and macOS build products.
+/target/
+/dist/
+/.build/
+**/.build/
+DerivedData/
+.swiftpm/
+/macos/FolioForge/.build/
+
+# Local/private corpora and generated fixture material.
+/tests-private/
+/private-corpus/
+/tests/corpus/generated/
+/tests/kfx-resource-identity/fixtures-private/
+/tests/semantic-probes/kfx/generated/
+/bench/output/
+/local-audit/
+/tmp/
+/cache/
+
+# Local reports, caches and databases.
+*.tmp
+*.log
+*.profraw
+*.profdata
+*.sqlite
+*.sqlite3
+*.db
+*.generated.epub
+*.generated.kfx
+*.generated.azw3
+*.generated.mobi
+.DS_Store

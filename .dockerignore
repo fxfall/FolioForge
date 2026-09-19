@@ -1,0 +1,15 @@
+target
+.git
+.github
+macos/FolioForge/.build
+tests/corpus
+dist
+tests-private
+private-corpus
+local-audit
+bench/output
+tests/semantic-probes/kfx/generated
+*.epub
+*.mobi
+*.azw3
+*.kfx

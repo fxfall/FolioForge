@@ -1,0 +1,13 @@
+[package]
+name = "folio-online"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+folio-edit = { path = "../folio-edit" }
+folio-model = { path = "../folio-model" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+ureq.workspace = true

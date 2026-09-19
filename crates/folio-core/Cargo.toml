@@ -1,0 +1,34 @@
+[package]
+name = "folio-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+folio-capabilities = { path = "../folio-capabilities" }
+folio-compat = { path = "../folio-compat" }
+folio-edit = { path = "../folio-edit" }
+folio-input = { path = "../folio-input" }
+folio-preview = { path = "../folio-preview" }
+folio-kindle-common = { path = "../folio-kindle-common" }
+folio-epub = { path = "../folio-epub" }
+folio-format = { path = "../folio-format" }
+folio-fb2 = { path = "../folio-fb2" }
+folio-docx = { path = "../folio-docx" }
+folio-html = { path = "../folio-html" }
+folio-kf7 = { path = "../folio-kf7" }
+folio-kf8 = { path = "../folio-kf8" }
+folio-kfx = { path = "../folio-kfx" }
+folio-markdown = { path = "../folio-markdown" }
+folio-text = { path = "../folio-text" }
+folio-model = { path = "../folio-model" }
+folio-mobi = { path = "../folio-mobi" }
+folio-normalize = { path = "../folio-normalize" }
+folio-validator = { path = "../folio-validator" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+zip.workspace = true

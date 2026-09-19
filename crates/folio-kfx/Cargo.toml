@@ -1,0 +1,18 @@
+[package]
+name = "folio-kfx"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+folio-format = { path = "../folio-format" }
+folio-input = { path = "../folio-input" }
+folio-normalize = { path = "../folio-normalize" }
+folio-model = { path = "../folio-model" }
+folio-style = { path = "../folio-style" }
+serde.workspace = true
+serde_json.workspace = true
+sha2 = "0.10.9"
+thiserror.workspace = true
+unicode-normalization = "0.1"
+roxmltree.workspace = true

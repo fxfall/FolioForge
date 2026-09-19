@@ -1,0 +1,130 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+    steps:
+      # actions/checkout v4.2.2; immutable commit verified for the 0.1 baseline.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      # dtolnay/rust-toolchain master; immutable commit verified for the 0.1 baseline.
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
+        with:
+          toolchain: stable
+      - name: Validate release tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          test "$RELEASE_TAG" = v0.1.0 || test "$RELEASE_TAG" = v0.1.0-rc.1
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+
+          metadata = json.loads(subprocess.check_output([
+              "cargo", "metadata", "--no-deps", "--format-version", "1"
+          ], text=True))
+          versions = {package["version"] for package in metadata["packages"]}
+          assert versions == {"0.1.0"}, versions
+          PY
+      - name: Repository clean gate
+        run: python3 tools/release/repository-audit.py
+      - name: Rust release build
+        run: cargo build --workspace --locked --release
+      - name: Public validation
+        env:
+          FOLIO_BIN: ${{ github.workspace }}/target/release/folio
+          FOLIO_SERVICE_BIN: ${{ github.workspace }}/target/release/folio-service
+        run: |
+          python3 tests/architecture/check_boundaries.py
+          tests/scripts/run_degradation_golden.sh
+          tests/scripts/run_conversion_matrix.sh
+          tests/scripts/run_service_smoke.sh
+      - name: Package Linux artifacts
+        run: |
+          mkdir -p "$RUNNER_TEMP/folioforge-release"
+          cp target/release/folio "$RUNNER_TEMP/folioforge-release/folio-linux-x86_64"
+          cp target/release/folio-service "$RUNNER_TEMP/folioforge-release/folio-service-linux-x86_64"
+          chmod +x "$RUNNER_TEMP/folioforge-release"/*
+          tar -C "$RUNNER_TEMP/folioforge-release" -czf "$RUNNER_TEMP/FolioForge-0.1.0-linux-x86_64.tar.gz" .
+          shasum -a 256 "$RUNNER_TEMP/FolioForge-0.1.0-linux-x86_64.tar.gz" > "$RUNNER_TEMP/FolioForge-0.1.0-linux-x86_64.tar.gz.sha256"
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: folioforge-linux
+          path: |
+            ${{ runner.temp }}/FolioForge-0.1.0-linux-x86_64.tar.gz
+            ${{ runner.temp }}/FolioForge-0.1.0-linux-x86_64.tar.gz.sha256
+
+  build-macos:
+    runs-on: macos-14
+    steps:
+      # actions/checkout v4.2.2; immutable commit verified for the 0.1 baseline.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      # dtolnay/rust-toolchain master; immutable commit verified for the 0.1 baseline.
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
+        with:
+          toolchain: stable
+      - name: Validate release tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: test "$RELEASE_TAG" = v0.1.0 || test "$RELEASE_TAG" = v0.1.0-rc.1
+      - name: Repository clean gate
+        run: python3 tools/release/repository-audit.py
+      - name: Build and package macOS arm64 app
+        env:
+          FOLIOFORGE_VALIDATION_ROOT: ${{ runner.temp }}/folioforge-validation
+        run: tests/scripts/build_macos_app.sh
+      - name: Package macOS artifacts
+        run: |
+          mkdir -p "$RUNNER_TEMP/folioforge-macos"
+          app_dir=$(find dist -maxdepth 2 -type d -name 'FolioForge.app' -print -quit)
+          zip_file=$(find dist -maxdepth 1 -type f -name 'FolioForge-macOS-arm64-0.1.0-*.zip' -print -quit)
+          test -n "$app_dir" -a -n "$zip_file"
+          cp "$zip_file" "$RUNNER_TEMP/folioforge-macos/"
+          shasum -a 256 "$RUNNER_TEMP/folioforge-macos"/*.zip > "$RUNNER_TEMP/folioforge-macos/FolioForge-macOS-arm64.sha256"
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: folioforge-macos
+          path: ${{ runner.temp }}/folioforge-macos
+
+  publish:
+    needs: [build-linux, build-macos]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      # actions/checkout v4.2.2; immutable commit verified for the 0.1 baseline.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Download Linux artifacts
+        # actions/download-artifact v4.3.0; immutable commit verified for the 0.1 baseline.
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: folioforge-linux
+          path: release-assets
+      - name: Download macOS artifacts
+        # actions/download-artifact v4.3.0; immutable commit verified for the 0.1 baseline.
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: folioforge-macos
+          path: release-assets
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          prerelease_flag=
+          case "$RELEASE_TAG" in
+            *-rc.*) prerelease_flag=--prerelease ;;
+          esac
+          gh release create "$RELEASE_TAG" release-assets/* \
+            --title "FolioForge $RELEASE_TAG" \
+            --generate-notes $prerelease_flag

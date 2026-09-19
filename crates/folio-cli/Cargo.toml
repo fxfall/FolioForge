@@ -1,0 +1,18 @@
+[package]
+name = "folio-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "folio"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+folio-core = { path = "../folio-core" }
+folio-kfx = { path = "../folio-kfx" }
+folio-model = { path = "../folio-model" }
+folio-text = { path = "../folio-text" }
+serde_json.workspace = true
+tracing-subscriber.workspace = true

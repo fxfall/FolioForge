@@ -1,0 +1,7 @@
+{
+  "target": "Kf7",
+  "mode": "Compatible",
+  "feature": "Svg",
+  "quality": "CompatibleApproximation",
+  "fallback_contains": "accessible alt text fallback"
+}

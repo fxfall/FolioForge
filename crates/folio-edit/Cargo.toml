@@ -1,0 +1,10 @@
+[package]
+name = "folio-edit"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+folio-model = { path = "../folio-model" }
+serde.workspace = true
+thiserror.workspace = true

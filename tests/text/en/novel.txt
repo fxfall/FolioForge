@@ -1,0 +1,13 @@
+Prologue
+
+Synthetic opening text for the parser regression corpus.
+
+Chapter One: A Beginning
+
+This is a non-copyrighted test paragraph.
+
+Chapter 2: A Continuation
+
+The second synthetic chapter follows.
+
+Epilogue

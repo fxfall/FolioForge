@@ -1,0 +1,15 @@
+[package]
+name = "folio-library"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+blake3.workspace = true
+folio-core = { path = "../folio-core" }
+folio-model = { path = "../folio-model" }
+rusqlite.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+uuid.workspace = true

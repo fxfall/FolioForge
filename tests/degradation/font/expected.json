@@ -1,0 +1,7 @@
+{
+  "target": "Kf7",
+  "mode": "Compatible",
+  "feature": "EmbeddedFont",
+  "quality": "CompatibleApproximation",
+  "fallback_contains": "generic family with retained weight/style"
+}

@@ -1,0 +1,24 @@
+{
+  "name": "canonical-basic",
+  "metadata": {
+    "title": "Canonical Book",
+    "creator": "FolioForge Test",
+    "language": "en"
+  },
+  "features": {
+    "heading": "Native",
+    "paragraph": "Native",
+    "list": "Native",
+    "image": "Native",
+    "internal_link": "Native",
+    "external_link": "Native"
+  },
+  "sources": {
+    "txt": "public-subset-only",
+    "markdown": "Native",
+    "html": "Native",
+    "fb2": "Native",
+    "docx": "Native",
+    "epub": "Native"
+  }
+}

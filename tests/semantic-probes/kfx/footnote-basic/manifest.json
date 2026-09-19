@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "id": "FN-01",
+  "feature": "footnote",
+  "title": "Footnote basic semantic probe",
+  "language": "en",
+  "source_file": "source.xhtml",
+  "required_epub_types": ["noteref", "footnote", "backlink"],
+  "source_semantics": {
+    "references": [{"id": "ref-1", "target": "note-1", "kind": "noteref"}],
+    "notes": [{"id": "note-1", "kind": "footnote", "body": "one source note"}],
+    "backlinks": [{"from": "note-1", "to": "ref-1", "kind": "backlink"}]
+  },
+  "acceptance": {
+    "note_relationship": "must_be_proven_from_source_and_raw_kfx",
+    "ordinary_links": "must_remain_ordinary_links",
+    "backlinks": "recover_only_explicit_source_relationships"
+  },
+  "forbidden_inference": ["numbering_alone", "visible_text_alone", "generated_backlink"]
+}

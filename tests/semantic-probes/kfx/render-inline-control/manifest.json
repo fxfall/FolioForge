@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "id": "INLINE-01",
+  "feature": "render-inline",
+  "title": "Non-image render-inline control",
+  "language": "en",
+  "source_file": "source.xhtml",
+  "source_semantics": {
+    "occurrences": [{"id": "inline-1", "kind": "ordinary_inline_svg", "accessible_text": "inline marker"}]
+  },
+  "acceptance": {
+    "classification": "distinguish_non_image_render_inline_from_math_and_image"
+  },
+  "forbidden_inference": ["ordinary_svg_as_math", "unclassified_inline_loss"]
+}

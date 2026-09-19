@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "FN-04",
+  "feature": "footnote",
+  "title": "Endnote semantic probe",
+  "language": "en",
+  "source_file": "source.xhtml",
+  "required_epub_types": ["noteref", "endnote"],
+  "source_semantics": {
+    "references": [{"id": "ref-1", "target": "end-1", "kind": "noteref"}],
+    "notes": [{"id": "end-1", "kind": "endnote", "body": "one source endnote"}],
+    "backlinks": []
+  },
+  "acceptance": {
+    "note_kind": "endnote_must_not_be_silently_relabelled_footnote"
+  },
+  "forbidden_inference": ["all_notes_are_footnotes"]
+}

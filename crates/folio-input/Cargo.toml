@@ -1,0 +1,11 @@
+[package]
+name = "folio-input"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+folio-mobi = { path = "../folio-mobi" }
+folio-text = { path = "../folio-text" }
+thiserror.workspace = true
+zip.workspace = true

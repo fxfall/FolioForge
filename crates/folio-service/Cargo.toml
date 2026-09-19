@@ -1,0 +1,24 @@
+[package]
+name = "folio-service"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+name = "folio_service"
+path = "src/lib.rs"
+
+[[bin]]
+name = "folio-service"
+path = "src/main.rs"
+
+[dependencies]
+folio-batch = { path = "../folio-batch" }
+folio-core = { path = "../folio-core" }
+folio-edit = { path = "../folio-edit" }
+folio-input = { path = "../folio-input" }
+folio-model = { path = "../folio-model" }
+folio-online = { path = "../folio-online" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

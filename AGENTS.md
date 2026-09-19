@@ -1,0 +1,32 @@
+# FolioForge 0.1 development contract
+
+Read `docs/0.1/DEVELOPMENT.md` first. It is the current 0.1 source of truth;
+historical stage notes are kept outside the public working tree and are not
+authoritative.
+
+For any change that touches conversion, the Semantic IR, an importer, a
+compatibility rule, an exporter, FFI, batch execution, or the service boundary:
+
+1. Read `docs/core/CODEX_ENTRY.md`.
+2. Read the contract linked from it for the affected layer.
+3. Read `docs/core/CORE_BEHAVIOR_BASELINE.md` and
+   `docs/core/CORE_API_CHANGELOG.md`.
+4. Inspect only the source files required for the change. Do not start with an
+   unbounded repository-wide refactor.
+5. State the intended boundary in the change notes or pull request.
+6. Classify the change as major or minor under `docs/core/CORE_AB_PROTOCOL.md`.
+7. Run the targeted tests, the canonical matrix, and the architecture check.
+8. Run the required A/B comparison before accepting a behavior-changing
+   change, then update the behavior/performance baseline and API changelog.
+9. Remove temporary code and keep build/scratch data under the path selected by
+   `FOLIOFORGE_VALIDATION_ROOT`, outside the repository.
+
+If the implementation and a contract disagree, stop and record the mismatch as
+Architecture Drift before deciding whether the code or the document is wrong.
+The document is a design/behavior contract; it is not a reason to hide a
+regression.
+
+The 0.1 release is frozen: do not add formats, Library features, Reader
+features, pagination, annotations, cloud sync, or a second conversion pipeline.
+Client layers consume Core contracts; they do not become capability or
+compatibility authorities.

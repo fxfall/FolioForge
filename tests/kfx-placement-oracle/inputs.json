@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "description": "Anonymous DRM-free KFX test inputs pinned by SHA-256; no paths or book metadata.",
+  "inputs": [
+    {"id": "KFX-PL-001", "sha256": "0c90a3e319ff1c1b8c724d984a875de2a83b7a2a90156da12b0e5bbc7202af98"},
+    {"id": "KFX-PL-002", "sha256": "5b417d098a1c9c2652cb05d504079167aa026e8ffdb65c491660c08dac0eea97"},
+    {"id": "KFX-PL-003", "sha256": "85c2035e5dc04cc5146dd7117556bed0e43946726f46d12c18177d8fd743f7ed"},
+    {"id": "KFX-PL-004", "sha256": "9d05db90a9297fbbc1241cf4c9615cb31d5e32d84a40273020a5d407ec6cfed2"},
+    {"id": "KFX-PL-005", "sha256": "a68c173e459bfb4206809ed184281acb1ef162f8c4398d60c8ff2b3fa8bbc57c"},
+    {"id": "KFX-PL-006", "sha256": "afd06a6d7f1f2925bd46484fde070b9c0f458f40a3b96f18efbed083ac688aa4"},
+    {"id": "KFX-PL-007", "sha256": "c3538179115efcdd6e77d712ed9931ecd1dcd995f7abdfcb8233fcd85f974c8b"},
+    {"id": "KFX-PL-008", "sha256": "db4ce90b68ec96dcce4523bd7b4be53cce2bbbe01138303a21794c31f9a6b005"},
+    {"id": "KFX-PL-009", "sha256": "ebc6e1b69c65dad9aea633a2908d510c5b2edf353edfeb61edaf95089538b559"},
+    {"id": "KFX-PL-010", "sha256": "f596fb4722bc39fd843b2020b0ec5e8799189358d396cb4dd41ea521b0c649c3"}
+  ]
+}

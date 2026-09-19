@@ -1,0 +1,11 @@
+[package]
+name = "folio-normalize"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+folio-model = { path = "../folio-model" }
+folio-style = { path = "../folio-style" }
+roxmltree.workspace = true
+thiserror.workspace = true

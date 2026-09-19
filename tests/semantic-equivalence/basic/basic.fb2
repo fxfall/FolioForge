@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description><title-info><book-title>Canonical Book</book-title><author><nickname>FolioForge Test</nickname></author><lang>en</lang></title-info></description>
+  <body><section id="chapter-one"><title><p>Chapter One</p></title><p>Shared paragraph.</p><list><p>Item one</p><p>Item two</p></list><p><a l:href="#target">Internal target</a>.</p><p><image l:href="#cover" alt="Shared image"/></p></section><section id="target"><title><p>Target</p></title><p>Target paragraph.</p></section></body>
+  <binary id="cover" content-type="image/png">aGVsbG8=</binary>
+</FictionBook>

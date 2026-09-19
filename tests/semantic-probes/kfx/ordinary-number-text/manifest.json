@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "FN-06",
+  "feature": "footnote",
+  "title": "Ordinary number text control",
+  "language": "en",
+  "source_file": "source.xhtml",
+  "source_semantics": {
+    "references": [],
+    "notes": [],
+    "backlinks": [],
+    "literal_text": "[1]"
+  },
+  "acceptance": {
+    "literal_text": "must_not_create_note_or_link"
+  },
+  "forbidden_inference": ["visible_text_alone", "numbering_alone"]
+}

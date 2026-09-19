@@ -1,0 +1,77 @@
+name: KFX resource issue
+description: Report a KFX resource identity or visible-placement problem without sharing a book.
+title: "[KFX resource] "
+labels:
+  - bug
+  - KFX
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Please do not attach a complete copyrighted book, extracted text, or raw
+        resource bytes. Share only the privacy-safe diagnostic summary. A screenshot
+        is optional; redact personal information and book text where possible.
+  - type: input
+    id: version
+    attributes:
+      label: FolioForge version
+      description: Include the app/build version shown by FolioForge.
+      placeholder: 0.1.x
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostic_codes
+    attributes:
+      label: KFX-R diagnostic codes
+      description: Paste codes and their short messages, for example KFX-R002.
+      placeholder: "KFX-R002 — exact raw media not found; visible placements: 2"
+    validations:
+      required: true
+  - type: textarea
+    id: audit_summary
+    attributes:
+      label: Privacy-safe resource audit summary
+      description: Counts and anonymized IDs only; omit source paths, titles, text, and media bytes.
+      placeholder: KFX-RI-003; external resources 12; unresolved visible 1; placements 2
+    validations:
+      required: true
+  - type: dropdown
+    id: target
+    attributes:
+      label: Target format
+      options:
+        - EPUB
+        - KF7
+        - KF8
+        - KFX compatibility container
+    validations:
+      required: true
+  - type: input
+    id: location
+    attributes:
+      label: Affected location (optional)
+      description: Use a chapter/section number or an anonymized location; do not include book text.
+      placeholder: Chapter 4, near image 2
+    validations:
+      required: false
+  - type: textarea
+    id: expected_actual
+    attributes:
+      label: Expected and observed result
+      description: Describe whether an image is missing, misplaced, or incorrectly reported. Never suggest a guessed replacement.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Include the conversion mode and settings, but not the source book.
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Optional screenshot
+      description: Attach only a cropped/redacted screenshot that contains no book text you cannot share.
+    validations:
+      required: false

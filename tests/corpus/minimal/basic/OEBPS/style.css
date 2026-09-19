@@ -1,0 +1,5 @@
+body { font-family: serif; color: #222; }
+h1 { text-align: center; }
+.accent { color: #0b5394; font-weight: bold; }
+@media amzn-mobi { .accent { text-decoration: underline; } }
+@media amzn-kf8 { .accent { letter-spacing: 0.02em; } }

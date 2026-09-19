@@ -1,0 +1,13 @@
+[package]
+name = "folio-validator"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+folio-kindle-common = { path = "../folio-kindle-common" }
+folio-kfx = { path = "../folio-kfx" }
+folio-kf8 = { path = "../folio-kf8" }
+folio-model = { path = "../folio-model" }
+folio-mobi = { path = "../folio-mobi" }
+serde.workspace = true

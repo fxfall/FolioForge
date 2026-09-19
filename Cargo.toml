@@ -1,0 +1,56 @@
+[workspace]
+members = [
+    "crates/folio-model",
+    "crates/folio-format",
+    "crates/folio-text",
+    "crates/folio-markdown",
+    "crates/folio-html",
+    "crates/folio-fb2",
+    "crates/folio-docx",
+    "crates/folio-input",
+    "crates/folio-capabilities",
+    "crates/folio-compat",
+    "crates/folio-archive",
+    "crates/folio-batch",
+    "crates/folio-service",
+    "crates/folio-style",
+    "crates/folio-normalize",
+    "crates/folio-epub",
+    "crates/folio-kindle-common",
+    "crates/folio-mobi",
+    "crates/folio-kf7",
+    "crates/folio-kf8",
+    "crates/folio-kfx",
+    "crates/folio-validator",
+    "crates/folio-core",
+    "crates/folio-cli",
+    "crates/folio-ffi",
+    "crates/folio-edit",
+    "crates/folio-preview",
+    "crates/folio-online",
+    "crates/folio-library",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["FolioForge Contributors"]
+repository = "https://github.com/fxfall/FolioForge"
+
+[workspace.dependencies]
+clap = { version = "4.5", features = ["derive"] }
+encoding_rs = "0.8.35"
+roxmltree = "0.20"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+ureq = { version = "3.4.0", default-features = false, features = ["rustls"] }
+zip = "2.2"
+base64 = "0.23.1"
+blake3 = "1.8.7"
+rusqlite = { version = "0.40.2", features = ["bundled"] }
+uuid = { version = "1.26.1", features = ["v4", "serde"] }

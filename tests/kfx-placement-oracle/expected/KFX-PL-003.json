@@ -1,0 +1,977 @@
+{
+  "schema_version": 1,
+  "oracle": "calibre-kfx-input-json-content",
+  "calibre_version": "9.14)",
+  "kfx_input_version": "2.34.2",
+  "input_id": "KFX-PL-003",
+  "input_sha256": "85c2035e5dc04cc5146dd7117556bed0e43946726f46d12c18177d8fd743f7ed",
+  "image_occurrences": [
+    {
+      "position": 1,
+      "resource": "img_0099"
+    },
+    {
+      "position": 72,
+      "resource": "img_0117"
+    },
+    {
+      "position": 932,
+      "resource": "img_0072"
+    },
+    {
+      "position": 2217,
+      "resource": "img_0083"
+    },
+    {
+      "position": 2219,
+      "resource": "img_0084"
+    },
+    {
+      "position": 2221,
+      "resource": "img_0085"
+    },
+    {
+      "position": 2223,
+      "resource": "img_0086"
+    },
+    {
+      "position": 2246,
+      "resource": "img_0087"
+    },
+    {
+      "position": 2248,
+      "resource": "img_0088"
+    },
+    {
+      "position": 2250,
+      "resource": "img_0089"
+    },
+    {
+      "position": 2252,
+      "resource": "img_0090"
+    },
+    {
+      "position": 2254,
+      "resource": "img_0091"
+    },
+    {
+      "position": 2256,
+      "resource": "img_0092"
+    },
+    {
+      "position": 2258,
+      "resource": "img_0093"
+    },
+    {
+      "position": 2260,
+      "resource": "img_0094"
+    },
+    {
+      "position": 2262,
+      "resource": "img_0095"
+    },
+    {
+      "position": 2264,
+      "resource": "img_0096"
+    },
+    {
+      "position": 2266,
+      "resource": "img_0097"
+    },
+    {
+      "position": 2268,
+      "resource": "img_0098"
+    },
+    {
+      "position": 2270,
+      "resource": "img_0100"
+    },
+    {
+      "position": 2646,
+      "resource": "img_0101"
+    },
+    {
+      "position": 3827,
+      "resource": "img_0102"
+    },
+    {
+      "position": 4855,
+      "resource": "img_0103"
+    },
+    {
+      "position": 5131,
+      "resource": "img_0104"
+    },
+    {
+      "position": 7005,
+      "resource": "img_0105"
+    },
+    {
+      "position": 11048,
+      "resource": "img_0106"
+    },
+    {
+      "position": 11450,
+      "resource": "img_0107"
+    },
+    {
+      "position": 14231,
+      "resource": "img_0108"
+    },
+    {
+      "position": 14645,
+      "resource": "img_0109"
+    },
+    {
+      "position": 16666,
+      "resource": "img_0110"
+    },
+    {
+      "position": 17854,
+      "resource": "img_0111"
+    },
+    {
+      "position": 18268,
+      "resource": "img_0112"
+    },
+    {
+      "position": 20034,
+      "resource": "img_0113"
+    },
+    {
+      "position": 21830,
+      "resource": "img_0114"
+    },
+    {
+      "position": 23748,
+      "resource": "img_0115"
+    },
+    {
+      "position": 24083,
+      "resource": "img_0116"
+    },
+    {
+      "position": 25970,
+      "resource": "img_0118"
+    },
+    {
+      "position": 27759,
+      "resource": "img_0119"
+    },
+    {
+      "position": 30302,
+      "resource": "img_0120"
+    },
+    {
+      "position": 32665,
+      "resource": "img_0001"
+    },
+    {
+      "position": 36674,
+      "resource": "img_0002"
+    },
+    {
+      "position": 37212,
+      "resource": "img_0003"
+    },
+    {
+      "position": 39645,
+      "resource": "img_0004"
+    },
+    {
+      "position": 42217,
+      "resource": "img_0005"
+    },
+    {
+      "position": 44920,
+      "resource": "img_0006"
+    },
+    {
+      "position": 45294,
+      "resource": "img_0007"
+    },
+    {
+      "position": 49931,
+      "resource": "img_0008"
+    },
+    {
+      "position": 51130,
+      "resource": "img_0009"
+    },
+    {
+      "position": 51132,
+      "resource": "img_0010"
+    },
+    {
+      "position": 51134,
+      "resource": "img_0011"
+    },
+    {
+      "position": 51136,
+      "resource": "img_0012"
+    },
+    {
+      "position": 51155,
+      "resource": "img_0013"
+    },
+    {
+      "position": 51157,
+      "resource": "img_0014"
+    },
+    {
+      "position": 51176,
+      "resource": "img_0015"
+    },
+    {
+      "position": 51178,
+      "resource": "img_0016"
+    },
+    {
+      "position": 51180,
+      "resource": "img_0017"
+    },
+    {
+      "position": 51182,
+      "resource": "img_0018"
+    },
+    {
+      "position": 51184,
+      "resource": "img_0019"
+    },
+    {
+      "position": 51186,
+      "resource": "img_0020"
+    },
+    {
+      "position": 51188,
+      "resource": "img_0021"
+    },
+    {
+      "position": 51190,
+      "resource": "img_0022"
+    },
+    {
+      "position": 51201,
+      "resource": "img_0023"
+    },
+    {
+      "position": 51203,
+      "resource": "img_0024"
+    },
+    {
+      "position": 51205,
+      "resource": "img_0025"
+    },
+    {
+      "position": 51207,
+      "resource": "img_0026"
+    },
+    {
+      "position": 51209,
+      "resource": "img_0027"
+    },
+    {
+      "position": 51211,
+      "resource": "img_0028"
+    },
+    {
+      "position": 51221,
+      "resource": "img_0029"
+    },
+    {
+      "position": 51223,
+      "resource": "img_0030"
+    },
+    {
+      "position": 51225,
+      "resource": "img_0031"
+    },
+    {
+      "position": 51227,
+      "resource": "img_0032"
+    },
+    {
+      "position": 51229,
+      "resource": "img_0033"
+    },
+    {
+      "position": 51240,
+      "resource": "img_0034"
+    },
+    {
+      "position": 51242,
+      "resource": "img_0035"
+    },
+    {
+      "position": 51244,
+      "resource": "img_0036"
+    },
+    {
+      "position": 51246,
+      "resource": "img_0037"
+    },
+    {
+      "position": 51248,
+      "resource": "img_0038"
+    },
+    {
+      "position": 51250,
+      "resource": "img_0039"
+    },
+    {
+      "position": 51252,
+      "resource": "img_0040"
+    },
+    {
+      "position": 51262,
+      "resource": "img_0041"
+    },
+    {
+      "position": 51264,
+      "resource": "img_0042"
+    },
+    {
+      "position": 51266,
+      "resource": "img_0043"
+    },
+    {
+      "position": 51268,
+      "resource": "img_0044"
+    },
+    {
+      "position": 51270,
+      "resource": "img_0045"
+    },
+    {
+      "position": 51272,
+      "resource": "img_0046"
+    },
+    {
+      "position": 51274,
+      "resource": "img_0047"
+    },
+    {
+      "position": 51276,
+      "resource": "img_0048"
+    },
+    {
+      "position": 51278,
+      "resource": "img_0049"
+    },
+    {
+      "position": 51280,
+      "resource": "img_0050"
+    },
+    {
+      "position": 51995,
+      "resource": "img_0051"
+    },
+    {
+      "position": 52326,
+      "resource": "img_0052"
+    },
+    {
+      "position": 56379,
+      "resource": "img_0053"
+    },
+    {
+      "position": 58515,
+      "resource": "img_0054"
+    },
+    {
+      "position": 58974,
+      "resource": "img_0055"
+    },
+    {
+      "position": 60071,
+      "resource": "img_0056"
+    },
+    {
+      "position": 60464,
+      "resource": "img_0057"
+    },
+    {
+      "position": 63877,
+      "resource": "img_0058"
+    },
+    {
+      "position": 67002,
+      "resource": "img_0059"
+    },
+    {
+      "position": 67347,
+      "resource": "img_0060"
+    },
+    {
+      "position": 69927,
+      "resource": "img_0061"
+    },
+    {
+      "position": 70291,
+      "resource": "img_0062"
+    },
+    {
+      "position": 73637,
+      "resource": "img_0063"
+    },
+    {
+      "position": 73991,
+      "resource": "img_0064"
+    },
+    {
+      "position": 76031,
+      "resource": "img_0065"
+    },
+    {
+      "position": 78551,
+      "resource": "img_0066"
+    },
+    {
+      "position": 78887,
+      "resource": "img_0067"
+    },
+    {
+      "position": 81684,
+      "resource": "img_0068"
+    },
+    {
+      "position": 83619,
+      "resource": "img_0069"
+    },
+    {
+      "position": 83991,
+      "resource": "img_0070"
+    },
+    {
+      "position": 87260,
+      "resource": "img_0071"
+    },
+    {
+      "position": 91232,
+      "resource": "img_0073"
+    },
+    {
+      "position": 92354,
+      "resource": "img_0074"
+    },
+    {
+      "position": 92715,
+      "resource": "img_0075"
+    },
+    {
+      "position": 94428,
+      "resource": "img_0076"
+    },
+    {
+      "position": 94809,
+      "resource": "img_0077"
+    },
+    {
+      "position": 97289,
+      "resource": "img_0078"
+    },
+    {
+      "position": 97697,
+      "resource": "img_0079"
+    },
+    {
+      "position": 98738,
+      "resource": "img_0080"
+    },
+    {
+      "position": 99135,
+      "resource": "img_0081"
+    },
+    {
+      "position": 100707,
+      "resource": "img_0082"
+    }
+  ],
+  "resource_frequencies": [
+    {
+      "resource": "img_0001",
+      "count": 1
+    },
+    {
+      "resource": "img_0002",
+      "count": 1
+    },
+    {
+      "resource": "img_0003",
+      "count": 1
+    },
+    {
+      "resource": "img_0004",
+      "count": 1
+    },
+    {
+      "resource": "img_0005",
+      "count": 1
+    },
+    {
+      "resource": "img_0006",
+      "count": 1
+    },
+    {
+      "resource": "img_0007",
+      "count": 1
+    },
+    {
+      "resource": "img_0008",
+      "count": 1
+    },
+    {
+      "resource": "img_0009",
+      "count": 1
+    },
+    {
+      "resource": "img_0010",
+      "count": 1
+    },
+    {
+      "resource": "img_0011",
+      "count": 1
+    },
+    {
+      "resource": "img_0012",
+      "count": 1
+    },
+    {
+      "resource": "img_0013",
+      "count": 1
+    },
+    {
+      "resource": "img_0014",
+      "count": 1
+    },
+    {
+      "resource": "img_0015",
+      "count": 1
+    },
+    {
+      "resource": "img_0016",
+      "count": 1
+    },
+    {
+      "resource": "img_0017",
+      "count": 1
+    },
+    {
+      "resource": "img_0018",
+      "count": 1
+    },
+    {
+      "resource": "img_0019",
+      "count": 1
+    },
+    {
+      "resource": "img_0020",
+      "count": 1
+    },
+    {
+      "resource": "img_0021",
+      "count": 1
+    },
+    {
+      "resource": "img_0022",
+      "count": 1
+    },
+    {
+      "resource": "img_0023",
+      "count": 1
+    },
+    {
+      "resource": "img_0024",
+      "count": 1
+    },
+    {
+      "resource": "img_0025",
+      "count": 1
+    },
+    {
+      "resource": "img_0026",
+      "count": 1
+    },
+    {
+      "resource": "img_0027",
+      "count": 1
+    },
+    {
+      "resource": "img_0028",
+      "count": 1
+    },
+    {
+      "resource": "img_0029",
+      "count": 1
+    },
+    {
+      "resource": "img_0030",
+      "count": 1
+    },
+    {
+      "resource": "img_0031",
+      "count": 1
+    },
+    {
+      "resource": "img_0032",
+      "count": 1
+    },
+    {
+      "resource": "img_0033",
+      "count": 1
+    },
+    {
+      "resource": "img_0034",
+      "count": 1
+    },
+    {
+      "resource": "img_0035",
+      "count": 1
+    },
+    {
+      "resource": "img_0036",
+      "count": 1
+    },
+    {
+      "resource": "img_0037",
+      "count": 1
+    },
+    {
+      "resource": "img_0038",
+      "count": 1
+    },
+    {
+      "resource": "img_0039",
+      "count": 1
+    },
+    {
+      "resource": "img_0040",
+      "count": 1
+    },
+    {
+      "resource": "img_0041",
+      "count": 1
+    },
+    {
+      "resource": "img_0042",
+      "count": 1
+    },
+    {
+      "resource": "img_0043",
+      "count": 1
+    },
+    {
+      "resource": "img_0044",
+      "count": 1
+    },
+    {
+      "resource": "img_0045",
+      "count": 1
+    },
+    {
+      "resource": "img_0046",
+      "count": 1
+    },
+    {
+      "resource": "img_0047",
+      "count": 1
+    },
+    {
+      "resource": "img_0048",
+      "count": 1
+    },
+    {
+      "resource": "img_0049",
+      "count": 1
+    },
+    {
+      "resource": "img_0050",
+      "count": 1
+    },
+    {
+      "resource": "img_0051",
+      "count": 1
+    },
+    {
+      "resource": "img_0052",
+      "count": 1
+    },
+    {
+      "resource": "img_0053",
+      "count": 1
+    },
+    {
+      "resource": "img_0054",
+      "count": 1
+    },
+    {
+      "resource": "img_0055",
+      "count": 1
+    },
+    {
+      "resource": "img_0056",
+      "count": 1
+    },
+    {
+      "resource": "img_0057",
+      "count": 1
+    },
+    {
+      "resource": "img_0058",
+      "count": 1
+    },
+    {
+      "resource": "img_0059",
+      "count": 1
+    },
+    {
+      "resource": "img_0060",
+      "count": 1
+    },
+    {
+      "resource": "img_0061",
+      "count": 1
+    },
+    {
+      "resource": "img_0062",
+      "count": 1
+    },
+    {
+      "resource": "img_0063",
+      "count": 1
+    },
+    {
+      "resource": "img_0064",
+      "count": 1
+    },
+    {
+      "resource": "img_0065",
+      "count": 1
+    },
+    {
+      "resource": "img_0066",
+      "count": 1
+    },
+    {
+      "resource": "img_0067",
+      "count": 1
+    },
+    {
+      "resource": "img_0068",
+      "count": 1
+    },
+    {
+      "resource": "img_0069",
+      "count": 1
+    },
+    {
+      "resource": "img_0070",
+      "count": 1
+    },
+    {
+      "resource": "img_0071",
+      "count": 1
+    },
+    {
+      "resource": "img_0072",
+      "count": 1
+    },
+    {
+      "resource": "img_0073",
+      "count": 1
+    },
+    {
+      "resource": "img_0074",
+      "count": 1
+    },
+    {
+      "resource": "img_0075",
+      "count": 1
+    },
+    {
+      "resource": "img_0076",
+      "count": 1
+    },
+    {
+      "resource": "img_0077",
+      "count": 1
+    },
+    {
+      "resource": "img_0078",
+      "count": 1
+    },
+    {
+      "resource": "img_0079",
+      "count": 1
+    },
+    {
+      "resource": "img_0080",
+      "count": 1
+    },
+    {
+      "resource": "img_0081",
+      "count": 1
+    },
+    {
+      "resource": "img_0082",
+      "count": 1
+    },
+    {
+      "resource": "img_0083",
+      "count": 1
+    },
+    {
+      "resource": "img_0084",
+      "count": 1
+    },
+    {
+      "resource": "img_0085",
+      "count": 1
+    },
+    {
+      "resource": "img_0086",
+      "count": 1
+    },
+    {
+      "resource": "img_0087",
+      "count": 1
+    },
+    {
+      "resource": "img_0088",
+      "count": 1
+    },
+    {
+      "resource": "img_0089",
+      "count": 1
+    },
+    {
+      "resource": "img_0090",
+      "count": 1
+    },
+    {
+      "resource": "img_0091",
+      "count": 1
+    },
+    {
+      "resource": "img_0092",
+      "count": 1
+    },
+    {
+      "resource": "img_0093",
+      "count": 1
+    },
+    {
+      "resource": "img_0094",
+      "count": 1
+    },
+    {
+      "resource": "img_0095",
+      "count": 1
+    },
+    {
+      "resource": "img_0096",
+      "count": 1
+    },
+    {
+      "resource": "img_0097",
+      "count": 1
+    },
+    {
+      "resource": "img_0098",
+      "count": 1
+    },
+    {
+      "resource": "img_0099",
+      "count": 1
+    },
+    {
+      "resource": "img_0100",
+      "count": 1
+    },
+    {
+      "resource": "img_0101",
+      "count": 1
+    },
+    {
+      "resource": "img_0102",
+      "count": 1
+    },
+    {
+      "resource": "img_0103",
+      "count": 1
+    },
+    {
+      "resource": "img_0104",
+      "count": 1
+    },
+    {
+      "resource": "img_0105",
+      "count": 1
+    },
+    {
+      "resource": "img_0106",
+      "count": 1
+    },
+    {
+      "resource": "img_0107",
+      "count": 1
+    },
+    {
+      "resource": "img_0108",
+      "count": 1
+    },
+    {
+      "resource": "img_0109",
+      "count": 1
+    },
+    {
+      "resource": "img_0110",
+      "count": 1
+    },
+    {
+      "resource": "img_0111",
+      "count": 1
+    },
+    {
+      "resource": "img_0112",
+      "count": 1
+    },
+    {
+      "resource": "img_0113",
+      "count": 1
+    },
+    {
+      "resource": "img_0114",
+      "count": 1
+    },
+    {
+      "resource": "img_0115",
+      "count": 1
+    },
+    {
+      "resource": "img_0116",
+      "count": 1
+    },
+    {
+      "resource": "img_0117",
+      "count": 1
+    },
+    {
+      "resource": "img_0118",
+      "count": 1
+    },
+    {
+      "resource": "img_0119",
+      "count": 1
+    },
+    {
+      "resource": "img_0120",
+      "count": 1
+    }
+  ],
+  "summary": {
+    "image_occurrences": 120,
+    "distinct_resources": 120,
+    "reused_resources": 0
+  }
+}

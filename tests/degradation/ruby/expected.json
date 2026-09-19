@@ -1,0 +1,7 @@
+{
+  "target": "Kf7",
+  "mode": "Compatible",
+  "feature": "Ruby",
+  "quality": "CompatibleApproximation",
+  "fallback_contains": "inline annotation approximation"
+}

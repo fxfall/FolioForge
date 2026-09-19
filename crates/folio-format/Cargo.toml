@@ -1,0 +1,12 @@
+[package]
+name = "folio-format"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+folio-input = { path = "../folio-input" }
+folio-model = { path = "../folio-model" }
+folio-text = { path = "../folio-text" }
+serde.workspace = true
+thiserror.workspace = true

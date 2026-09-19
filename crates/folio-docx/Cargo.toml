@@ -1,0 +1,16 @@
+[package]
+name = "folio-docx"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+folio-format = { path = "../folio-format" }
+folio-input = { path = "../folio-input" }
+folio-model = { path = "../folio-model" }
+roxmltree.workspace = true
+thiserror.workspace = true
+zip.workspace = true
+
+[dev-dependencies]
+zip.workspace = true

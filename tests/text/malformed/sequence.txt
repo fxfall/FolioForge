@@ -1,0 +1,11 @@
+第1章
+
+Synthetic first section.
+
+第92章
+
+This unlikely number should be demoted by sequence evidence.
+
+第3章
+
+The non-monotonic sequence should remain visible as rejected candidates.

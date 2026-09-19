@@ -1,0 +1,14 @@
+[package]
+name = "folio-preview"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+folio-capabilities = { path = "../folio-capabilities" }
+folio-compat = { path = "../folio-compat" }
+folio-edit = { path = "../folio-edit" }
+folio-model = { path = "../folio-model" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

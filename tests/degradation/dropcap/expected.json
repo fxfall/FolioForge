@@ -1,0 +1,7 @@
+{
+  "target": "Kf7",
+  "mode": "Compatible",
+  "feature": "DropCap",
+  "quality": "CompatibleApproximation",
+  "fallback_contains": "first-letter compatible styling"
+}

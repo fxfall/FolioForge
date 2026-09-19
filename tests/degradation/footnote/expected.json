@@ -1,0 +1,7 @@
+{
+  "target": "Kf7",
+  "mode": "Compatible",
+  "feature": "Footnote",
+  "quality": "CompatibleApproximation",
+  "fallback_contains": "legacy linked note marker"
+}

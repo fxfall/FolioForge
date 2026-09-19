@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FolioForge · Book Prep</title>
+  <style>
+    :root { font: 15px system-ui, sans-serif; color: #292521; background: #f5f0e8; }
+    * { box-sizing: border-box; }
+    body { max-width: 1500px; margin: 1rem auto; padding: 0 1rem; }
+    header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+    header img { width: 56px; height: 56px; border-radius: 14px; }
+    header h1, header p { margin: .1rem 0; }
+    header p, .muted { color: #6f675f; }
+    main { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 1rem; }
+    .panel { min-width: 0; padding: 1rem; border: 1px solid #ddd; border-radius: 14px; background: #fff; }
+    label { display: block; margin: .65rem 0; }
+    input, select, textarea { width: 100%; padding: .55rem; border: 1px solid #bbb; border-radius: 8px; background: white; }
+    input[type=checkbox] { width: auto; }
+    textarea { min-height: 65px; }
+    button { margin: .2rem; padding: .5rem .7rem; border: 1px solid #bbb; border-radius: 8px; background: #fff; cursor: pointer; }
+    .primary { color: #fff; background: #ad6d23; border-color: #ad6d23; }
+    .box { overflow: auto; padding: .8rem; border-radius: 9px; background: #f5f5f5; white-space: pre-wrap; }
+    .queue { height: 260px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+    .tabs { display: flex; border-bottom: 1px solid #ddd; }
+    .view { display: none; padding-top: .5rem; }
+    .view.active { display: block; }
+    .tab.active { background: #ead9c1; }
+    .preview { width: 100%; height: 580px; border: 1px solid #ddd; border-radius: 8px; }
+    .section { padding: .6rem 0; border-top: 1px solid #eee; }
+    .online-card { margin: .55rem 0; padding: .7rem; border: 1px solid #e1d4c3; border-radius: 9px; background: #fffdf9; }
+    .online-card h3 { margin: .1rem 0 .35rem; }
+    .online-fields { display: grid; grid-template-columns: minmax(0,1fr) 125px; gap: .35rem .6rem; align-items: center; }
+    .online-fields label { margin: .2rem 0; }
+    .online-fields select { padding: .35rem; }
+    .online-note { padding: .65rem; border-left: 3px solid #ad6d23; background: #f8f3ec; }
+    .asset-preview { max-width: 130px; max-height: 180px; object-fit: contain; border: 1px solid #ddd; border-radius: 6px; }
+    @media (max-width: 850px) { main, .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="/logo.png" alt="FolioForge logo">
+    <div><h1>FolioForge 0.1</h1><p>Semantic IR · Book Edit Plan · Compatibility Preview · Local conversion</p></div>
+  </header>
+  <main>
+    <aside class="panel">
+      <h2>Batch queue</h2>
+      <label>Add books<input id="files" type="file" multiple></label>
+      <label>Add folder<input id="folder" type="file" multiple webkitdirectory></label>
+      <select id="queue" class="queue" size="14" aria-label="Queued books"></select>
+      <p id="queueCount" class="muted">No books queued.</p>
+      <p id="capabilityStatus" class="muted">Loading registered input formats…</p>
+      <button id="remove">Remove selected</button><button id="clear">Clear queue</button>
+      <div class="section">
+        <label>Target<select id="target" disabled><option>Loading targets…</option></select></label>
+        <label>Compatibility mode<select id="mode"><option value="compatible">Compatible</option><option value="strict">Strict</option><option value="readable">Readable</option></select></label>
+        <button id="check" class="primary">Check all</button><button id="convert" class="primary">Convert all / ZIP</button>
+      </div>
+    </aside>
+    <section class="panel">
+      <nav class="tabs"><button class="tab active" data-view="edit">Book Edit</button><button class="tab" data-view="preview">Compatibility Preview</button><button class="tab" data-view="report">Reports</button></nav>
+      <section id="edit" class="view active">
+        <div class="grid">
+          <div>
+            <h2>Metadata</h2>
+            <label>Title<input id="title"></label><label>Subtitle<input id="subtitle"></label>
+            <label>Authors (comma-separated)<input id="authors"></label>
+            <div class="grid"><label>Language<input id="language"></label><label>Publisher<input id="publisher"></label></div>
+            <div class="grid"><label>Date<input id="date"></label><label>Series<input id="series"></label></div>
+            <div class="grid"><label>Series index<input id="seriesIndex" type="number" step="any"></label><label>Rights<input id="rights"></label></div>
+            <label>Contributors<input id="contributors"></label><label>Subjects<input id="subjects"></label><label>Identifiers<input id="identifiers"></label>
+            <label>Description<textarea id="description"></textarea></label>
+            <label>Clear source fields<input id="clearFields" placeholder="title, authors, rights"></label>
+          </div>
+          <div>
+            <h2>Cover, typography & style</h2>
+            <label>Replacement cover<input id="cover" type="file" accept="image/png,image/jpeg,image/gif,image/svg+xml"></label>
+            <label>Cover fitting<select id="coverFit"><option>Fit</option><option>Fill</option></select></label>
+            <div class="grid"><label>Font family<input id="fontFamily"></label><label>Body font size<input id="bodyFontSize" placeholder="1rem"></label><label>Line height<input id="lineHeight" placeholder="1.6"></label><label>Letter spacing<input id="letterSpacing"></label></div>
+            <label>Preferred font family<input id="preferredFamily"></label>
+            <label>Replacement font<input id="font" type="file" accept=".ttf,.otf,.woff,.woff2,.ttc"></label>
+            <label><input id="stripFonts" type="checkbox"> Strip embedded fonts</label>
+            <label>Computed style CSS<textarea id="css" placeholder="color: #333; line-height: 1.6"></textarea></label>
+            <h2>Structure</h2>
+            <label>Document order IDs<input id="documentOrder" placeholder="0, 1, 2"></label>
+            <label>Document titles (id=title per line)<textarea id="documentTitles"></textarea></label>
+            <label>TOC labels (href=label per line)<textarea id="tocLabels"></textarea></label>
+            <label><input id="removeNavigation" type="checkbox"> Remove navigation</label>
+          </div>
+        </div>
+        <details class="section" id="onlinePanel">
+          <summary><strong>Optional online resources</strong></summary>
+          <p id="onlineStatus" class="online-note">Checking provider configuration…</p>
+          <p class="muted">Online lookup is off by default. When enabled, only search terms you submit are sent to the selected provider; lookup never forwards book files. Loading source metadata separately sends the selected file to this FolioForge service for local inspection. Metadata is never applied until you choose fields and confirm.</p>
+          <div class="grid">
+            <label>Metadata query<input id="onlineQuery" placeholder="Title, ISBN, or identifier"></label>
+            <label>Author<input id="onlineAuthor"></label>
+            <label>ISBN<input id="onlineIsbn"></label>
+            <label>Font family<input id="onlineFontQuery" placeholder="e.g. Noto Sans"></label>
+          </div>
+          <div>
+            <button id="loadSourceMetadata">Load selected book metadata</button>
+            <button id="searchMetadata" class="primary">Search metadata</button>
+            <button id="searchCovers">Search covers</button>
+            <button id="searchFonts">Search fonts</button>
+          </div>
+          <div id="onlineMessage" class="muted" role="status"></div>
+          <div id="metadataCandidates"></div>
+          <div id="coverCandidates"></div>
+          <div id="fontCandidates"></div>
+          <img id="onlineCoverPreview" class="asset-preview" alt="Selected online cover" hidden>
+          <p id="onlineAssetStatus" class="muted"></p>
+        </details>
+        <p class="muted">Edits apply non-destructively to a cloned Folio Semantic IR. Blank fields preserve source metadata. DRM-protected KFX is never decrypted.</p>
+        <button id="makePreview" class="primary">Apply edits and preview selected</button>
+      </section>
+      <section id="preview" class="view"><h2>Compatibility Preview</h2><p class="muted">FolioForge preview only — not Kindle Exact Preview or a device renderer.</p>
+        <div class="grid">
+          <label>Device profile<select id="previewDevice"><option value="e_reader">E-reader</option><option value="phone">Phone</option><option value="tablet">Tablet</option></select></label>
+          <label>Orientation<select id="previewOrientation"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></label>
+          <label>Font size (%)<input id="previewFontSize" type="number" min="60" max="200" step="5" value="100"></label>
+        </div>
+        <iframe id="frame" class="preview" title="Compatibility preview"></iframe></section>
+      <section id="report" class="view"><h2>Reports</h2><div id="status" class="box">Add books and run Check, Preview, or Convert.</div><h3>Input / Semantic / Compatibility</h3><div id="parser" class="box">Parser and semantic reports appear here.</div></section>
+    </section>
+  </main>
+  <script>
+    const $ = selector => document.querySelector(selector);
+    let books = [], selected = 0;
+    let onlineEnabled = false, onlineConsent = false, sourceMetadata = null, onlineEditPlan = null;
+    let onlineCoverAssetId = null, onlineFontAssetId = null, onlineCoverObjectURL = null;
+    let registeredCapabilities = null;
+    function resetOnlineSelection() {
+      sourceMetadata = null; onlineEditPlan = null; onlineCoverAssetId = null; onlineFontAssetId = null;
+      $('#metadataCandidates').replaceChildren(); $('#coverCandidates').replaceChildren(); $('#fontCandidates').replaceChildren();
+      $('#onlineAssetStatus').textContent = ''; $('#onlineMessage').textContent = '';
+      $('#onlineCoverPreview').hidden = true;
+      if (onlineCoverObjectURL) URL.revokeObjectURL(onlineCoverObjectURL);
+      onlineCoverObjectURL = null;
+    }
+    function add(input) {
+      for (const file of input.files) {
+        if (!books.some(item => item.name === file.name && item.size === file.size && item.lastModified === file.lastModified)) books.push(file);
+      }
+      render();
+    }
+    function targetId(descriptor) {
+      return typeof descriptor === 'string' ? descriptor : String(descriptor?.id || '');
+    }
+    function targetValue(descriptor) {
+      const value = targetId(descriptor).toLowerCase();
+      return value === 'kf7kf8combo' ? 'kf7kf8combo' : value;
+    }
+    function targetLabel(descriptor) {
+      const value = typeof descriptor === 'string' ? descriptor : String(descriptor?.canonical_name || descriptor?.id || '');
+      return value === 'KFX' ? 'KFX compatibility output' : value.replace(/kf7kf8combo/i, 'KF7+KF8 combo');
+    }
+    function applyCapabilities(value) {
+      registeredCapabilities = value;
+      const extensions = [...new Set((value.input_formats || []).flatMap(item => item.extensions || []).map(extension => String(extension).toLowerCase()))].sort();
+      const accept = extensions.map(extension => `.${extension}`).join(',');
+      $('#files').accept = accept;
+      $('#folder').accept = accept;
+      $('#capabilityStatus').textContent = extensions.length ? `Registered inputs: ${extensions.map(extension => `.${extension}`).join(', ')}` : 'No registered input formats.';
+      const target = $('#target');
+      const previous = target.value;
+      target.replaceChildren();
+      for (const descriptor of value.targets || []) {
+        const option = document.createElement('option');
+        option.value = targetValue(descriptor);
+        option.textContent = targetLabel(descriptor);
+        target.append(option);
+      }
+      if ([...target.options].some(option => option.value === previous)) target.value = previous;
+      target.disabled = target.options.length === 0;
+    }
+    async function loadCapabilities() {
+      try {
+        const response = await fetch('/capabilities');
+        const value = await response.json();
+        if (!response.ok) throw new Error(value.error || `Capabilities request failed (${response.status})`);
+        applyCapabilities(value);
+      } catch (error) {
+        $('#capabilityStatus').textContent = `Could not load registered input formats: ${error.message}`;
+      }
+    }
+    loadCapabilities();
+    function render() {
+      const queue = $('#queue'); queue.replaceChildren();
+      books.forEach((file, index) => { const option = document.createElement('option'); option.value = String(index); option.textContent = file.webkitRelativePath || file.name; queue.append(option); });
+      if (books.length) { selected = Math.min(selected, books.length - 1); queue.selectedIndex = selected; $('#queueCount').textContent = `${books.length} book(s) queued · ${selected + 1} selected`; }
+      else { selected = 0; $('#queueCount').textContent = 'No books queued.'; }
+    }
+    $('#files').onchange = event => add(event.target); $('#folder').onchange = event => add(event.target);
+    $('#queue').onchange = event => { selected = Number(event.target.value) || 0; resetOnlineSelection(); render(); };
+    $('#remove').onclick = () => { if (books.length) books.splice(selected, 1); selected = Math.min(selected, Math.max(books.length - 1, 0)); resetOnlineSelection(); render(); };
+    $('#clear').onclick = () => { books = []; selected = 0; resetOnlineSelection(); render(); };
+    $('#cover').onchange = () => { if ($('#cover').files[0]) onlineCoverAssetId = null; };
+    $('#font').onchange = () => { if ($('#font').files[0]) onlineFontAssetId = null; };
+    document.querySelectorAll('.tab').forEach(button => button.onclick = () => {
+      document.querySelectorAll('.tab,.view').forEach(item => item.classList.remove('active'));
+      button.classList.add('active'); $('#' + button.dataset.view).classList.add('active');
+    });
+    function csv(id) { return $('#' + id).value.split(',').map(value => value.trim()).filter(Boolean); }
+    function maybe(id) { const value = $('#' + id).value.trim(); return value || null; }
+    function assignments(id) {
+      const result = {};
+      for (const line of $('#' + id).value.split(/\r?\n/)) { const at = line.indexOf('='); if (at < 0) continue; const key = line.slice(0, at).trim(), value = line.slice(at + 1).trim(); if (key && value) result[key] = value; }
+      return result;
+    }
+    function buildEdit() {
+      const metadata = { clear_fields: csv('clearFields') };
+      for (const [key, id] of [['title','title'],['subtitle','subtitle'],['language','language'],['publisher','publisher'],['date','date'],['series','series'],['description','description'],['rights','rights']]) { const value = maybe(id); if (value !== null) metadata[key] = value; }
+      for (const [key, id] of [['authors','authors'],['contributors','contributors'],['subjects','subjects'],['identifiers','identifiers']]) { const values = csv(id); if (values.length) metadata[key] = values; }
+      const seriesIndex = Number($('#seriesIndex').value); if ($('#seriesIndex').value.trim() && Number.isFinite(seriesIndex)) metadata.series_index = seriesIndex;
+      const typography = {};
+      for (const [key, id] of [['font_family','fontFamily'],['body_font_size','bodyFontSize'],['line_height','lineHeight'],['letter_spacing','letterSpacing']]) { const value = maybe(id); if (value !== null) typography[key] = value; }
+      const fonts = { strip_embedded_fonts: $('#stripFonts').checked, preferred_family: maybe('preferredFamily') };
+      const documentOrder = $('#documentOrder').value.split(',').map(value => Number(value.trim())).filter(Number.isInteger);
+      const manualPlan = { metadata, cover: 'Keep', typography, fonts, styles: $('#css').value.trim() ? [{ css: $('#css').value.trim() }] : [], structure: { document_order: documentOrder.length ? documentOrder : null, document_titles: assignments('documentTitles'), toc_labels: assignments('tocLabels'), remove_navigation: $('#removeNavigation').checked } };
+      if (!onlineEditPlan) return manualPlan;
+      const onlineMetadata = onlineEditPlan.metadata || {};
+      const clearFields = new Set([...(onlineMetadata.clear_fields || []), ...metadata.clear_fields]);
+      for (const key of Object.keys(metadata)) if (key !== 'clear_fields') clearFields.delete(key);
+      return { ...onlineEditPlan, ...manualPlan, metadata: { ...onlineMetadata, ...metadata, clear_fields: [...clearFields] } };
+    }
+    function data(all = false) {
+      const form = new FormData();
+      for (const file of (all ? books : books.slice(selected, selected + 1))) form.append('files[]', file, file.webkitRelativePath || file.name);
+      form.append('target', $('#target').value); form.append('mode', $('#mode').value); form.append('edit', JSON.stringify(buildEdit())); form.append('cover_fit', $('#coverFit').value);
+      form.append('preview_device', $('#previewDevice').value); form.append('preview_orientation', $('#previewOrientation').value); form.append('preview_font_size_percent', $('#previewFontSize').value || '100');
+      const cover = $('#cover').files[0];
+      if (cover) form.append('cover', cover, cover.name);
+      else if (onlineCoverAssetId) form.append('cover_asset_id', onlineCoverAssetId);
+      const font = $('#font').files[0];
+      if (font) form.append('font', font, font.name);
+      else if (onlineFontAssetId) form.append('font_asset_id', onlineFontAssetId);
+      return form;
+    }
+    const onlineMetadataFields = [
+      ['title','Title'],['subtitle','Subtitle'],['authors','Authors'],['contributors','Contributors'],
+      ['language','Language'],['publisher','Publisher'],['date','Date'],['series','Series'],
+      ['series_index','Series index'],['description','Description'],['subjects','Subjects'],
+      ['identifiers','Identifiers'],['rights','Rights']
+    ];
+    async function postJson(path, value) {
+      const response = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(value) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || `Request failed (${response.status})`);
+      return result;
+    }
+    async function ensureOnlineConsent() {
+      if (!onlineEnabled) { $('#onlineMessage').textContent = 'Online resources are disabled by the service configuration.'; return false; }
+      if (!onlineConsent) {
+        onlineConsent = window.confirm('This lookup sends only the search terms you provide to an online catalog. Book files are not uploaded for lookup. Continue?');
+        if (!onlineConsent) return false;
+      }
+      return true;
+    }
+    async function loadSourceMetadata() {
+      if (!books.length) throw new Error('Add and select a book first.');
+      const response = await fetch('/preflight', { method: 'POST', body: data(false) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not inspect the selected book.');
+      const item = result.files?.[0];
+      if (!item?.source_metadata) throw new Error(item?.error || 'The selected source could not be imported.');
+      sourceMetadata = item.source_metadata;
+      if (!maybe('onlineQuery')) $('#onlineQuery').value = sourceMetadata.title || '';
+      const authors = sourceMetadata.authors?.length ? sourceMetadata.authors : (sourceMetadata.creators || []);
+      if (!maybe('onlineAuthor')) $('#onlineAuthor').value = authors.join(', ');
+      const identifiers = sourceMetadata.identifiers?.length ? sourceMetadata.identifiers : [sourceMetadata.identifier].filter(Boolean);
+      if (!maybe('onlineIsbn')) $('#onlineIsbn').value = identifiers.find(value => /^\d[\dXx -]{8,}$/.test(value)) || '';
+      return sourceMetadata;
+    }
+    async function lookupRequest() {
+      const title = maybe('onlineQuery') || maybe('title') || sourceMetadata?.title || '';
+      const sourceAuthors = sourceMetadata?.authors?.length ? sourceMetadata.authors : (sourceMetadata?.creators || []);
+      const author = maybe('onlineAuthor') || csv('authors').join(', ') || sourceAuthors.join(', ');
+      const identifiers = sourceMetadata?.identifiers?.length ? sourceMetadata.identifiers : [sourceMetadata?.identifier].filter(Boolean);
+      const isbn = maybe('onlineIsbn') || identifiers.find(value => /^\d[\dXx -]{8,}$/.test(value)) || null;
+      return { query: title || isbn || '', title: title || null, author: author || null, isbn, identifier: null, max_results: 8 };
+    }
+    function displayValue(value) {
+      if (Array.isArray(value)) return value.join(', ');
+      if (value === null || value === undefined || value === '') return '(empty)';
+      return String(value);
+    }
+    function renderMetadataCandidates(candidates) {
+      const root = $('#metadataCandidates'); root.replaceChildren();
+      if (!candidates.length) { root.textContent = 'No metadata candidates found.'; return; }
+      for (const candidate of candidates) {
+        const card = document.createElement('article'); card.className = 'online-card';
+        const heading = document.createElement('h3'); heading.textContent = candidate.metadata?.title || 'Untitled candidate'; card.append(heading);
+        const details = document.createElement('p'); details.className = 'muted';
+        details.textContent = `${(candidate.metadata?.authors || candidate.metadata?.creators || []).join(', ') || 'Author unknown'} · match estimate ${Math.round((candidate.confidence || 0) * 100)}%`;
+        card.append(details);
+        if (candidate.source_url) { const source = document.createElement('a'); source.href = candidate.source_url; source.target = '_blank'; source.rel = 'noopener noreferrer'; source.textContent = 'Catalog source'; card.append(source); }
+        const fields = document.createElement('div'); fields.className = 'online-fields';
+        for (const [key, label] of onlineMetadataFields) {
+          const row = document.createElement('label'); row.textContent = `${label}: ${displayValue(candidate.metadata?.[key])}`;
+          const select = document.createElement('select'); select.dataset.field = key; select.setAttribute('aria-label', `${label} merge action`);
+          for (const [value, title] of [['keep','Keep'],['replace','Replace'],['append','Append'],['ignore','Ignore']]) {
+            const option = document.createElement('option'); option.value = value; option.textContent = title; select.append(option);
+          }
+          fields.append(row, select);
+        }
+        card.append(fields);
+        const apply = document.createElement('button'); apply.className = 'primary'; apply.textContent = 'Apply selected fields to Edit Plan';
+        apply.onclick = async () => {
+          const actions = Object.fromEntries([...fields.querySelectorAll('select')].map(select => [select.dataset.field, select.value]).filter(([, action]) => action !== 'keep'));
+          if (!Object.keys(actions).length) { $('#onlineMessage').textContent = 'Choose Replace, Append, or Ignore for at least one field.'; return; }
+          if (!window.confirm('Stage these field choices as a BookEditPlan? The source file is unchanged; the plan is used only for preview/conversion.')) return;
+          try {
+            const current = sourceMetadata || await loadSourceMetadata();
+            const plan = await postJson('/online/metadata/merge-plan', { current, candidate, fields: actions, confirmed: true });
+            onlineEditPlan = plan;
+            $('#onlineMessage').textContent = `Metadata merge staged for ${candidate.candidate_id}. Run preview or convert to use it.`;
+          } catch (error) { $('#onlineMessage').textContent = error.message; }
+        };
+        card.append(apply); root.append(card);
+      }
+    }
+    async function downloadOnlineAsset(candidate, kind) {
+      if (!await ensureOnlineConsent()) return;
+      const isFont = kind === 'font';
+      const rightsText = isFont
+        ? 'Review this family’s exact license at its source before use. Download and stage this font?'
+        : 'Open Library does not supply a per-image license here. Confirm you have the right to use this cover before downloading.';
+      if (!window.confirm(rightsText)) return;
+      $('#onlineAssetStatus').textContent = 'Downloading and validating asset…';
+      try {
+        const response = await fetch('/online/download', {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ provider: candidate.provider, url: candidate.download_url, cache_key: candidate.cache_key, license_acknowledged: true })
+        });
+        if (!response.ok) { const error = await response.json().catch(() => ({})); throw new Error(error.error || `Download failed (${response.status})`); }
+        const encodedAssetId = response.headers.get('x-folioforge-asset-id');
+        if (!encodedAssetId) throw new Error('Service did not return a validated workspace AssetId.');
+        const assetId = decodeURIComponent(encodedAssetId);
+        const blob = await response.blob();
+        if (isFont) {
+          const pathname = new URL(candidate.download_url).pathname;
+          const extension = pathname.split('.').pop().toLowerCase();
+          if (!['ttf','otf','woff','woff2','ttc'].includes(extension)) throw new Error('Provider returned an unsupported font extension.');
+          onlineFontAssetId = assetId;
+          $('#preferredFamily').value = candidate.family;
+          $('#fontFamily').value = candidate.family;
+          $('#onlineAssetStatus').textContent = `Validated ${candidate.family} ${candidate.variant} as a service-workspace AssetId; it will be attached to the next preview/conversion without re-uploading the bytes. Exact license review remains your responsibility.`;
+        } else {
+          const extension = blob.type === 'image/png' ? 'png' : blob.type === 'image/gif' ? 'gif' : 'jpg';
+          onlineCoverAssetId = assetId;
+          if (onlineCoverObjectURL) URL.revokeObjectURL(onlineCoverObjectURL);
+          onlineCoverObjectURL = URL.createObjectURL(blob);
+          $('#onlineCoverPreview').src = onlineCoverObjectURL; $('#onlineCoverPreview').hidden = false;
+          $('#onlineAssetStatus').textContent = `Validated cover staged as a service-workspace AssetId (.${extension}); preview/conversion reuses the cached asset. Verify its usage rights.`;
+        }
+      } catch (error) { $('#onlineAssetStatus').textContent = error.message; }
+    }
+    function renderCoverCandidates(candidates) {
+      const root = $('#coverCandidates'); root.replaceChildren();
+      for (const candidate of candidates) {
+        const card = document.createElement('article'); card.className = 'online-card';
+        const heading = document.createElement('h3'); heading.textContent = candidate.title || 'Cover candidate'; card.append(heading);
+        const detail = document.createElement('p'); detail.className = 'muted'; detail.textContent = `${candidate.authors.join(', ') || 'Author unknown'} · per-image license unavailable; review rights`;
+        card.append(detail);
+        const button = document.createElement('button'); button.textContent = 'Download & stage cover'; button.onclick = () => downloadOnlineAsset(candidate, 'cover');
+        card.append(button); root.append(card);
+      }
+      if (!candidates.length) root.textContent = 'No cover candidates found.';
+    }
+    function renderFontCandidates(candidates) {
+      const root = $('#fontCandidates'); root.replaceChildren();
+      for (const candidate of candidates) {
+        const card = document.createElement('article'); card.className = 'online-card';
+        const heading = document.createElement('h3'); heading.textContent = `${candidate.family} · ${candidate.variant}`; card.append(heading);
+        const detail = document.createElement('p'); detail.className = 'muted'; detail.textContent = `${candidate.category || 'Font'} · ${candidate.subsets.join(', ')} · exact family license must be reviewed`;
+        card.append(detail);
+        if (candidate.source_url) { const source = document.createElement('a'); source.href = candidate.source_url; source.target = '_blank'; source.rel = 'noopener noreferrer'; source.textContent = 'Review family source/license'; card.append(source); }
+        const button = document.createElement('button'); button.textContent = 'Download & stage font'; button.onclick = () => downloadOnlineAsset(candidate, 'font');
+        card.append(button); root.append(card);
+      }
+      if (!candidates.length) root.textContent = 'No font candidates found.';
+    }
+    async function searchOnline(kind) {
+      if (!await ensureOnlineConsent()) return;
+      $('#onlineMessage').textContent = 'Searching provider…';
+      try {
+        if (kind === 'fonts') {
+          const family = maybe('onlineFontQuery');
+          if (!family) throw new Error('Enter a font family first.');
+          renderFontCandidates(await postJson('/online/fonts/search', { query: family, title: family, max_results: 8 }));
+        } else {
+          const request = await lookupRequest();
+          if (!request.query && !request.author) throw new Error('Enter a title, author, ISBN, or identifier.');
+          if (kind === 'covers') renderCoverCandidates(await postJson('/online/covers/search', request));
+          else renderMetadataCandidates(await postJson('/online/metadata/search', request));
+        }
+        $('#onlineMessage').textContent = 'Search complete. Results are candidates; nothing has been applied automatically.';
+      } catch (error) { $('#onlineMessage').textContent = error.message; }
+    }
+    async function refreshOnlineStatus() {
+      try {
+        const response = await fetch('/online/status'); const status = await response.json();
+        onlineEnabled = Boolean(status.enabled);
+        $('#onlineStatus').textContent = onlineEnabled
+          ? `Online lookups enabled. Metadata/cover search: ${status.providers.openlibrary_metadata ? 'ready' : 'unavailable'}; Google Fonts: ${status.providers.google_fonts ? 'ready' : 'API key not configured'}. Each search is an explicit user action.`
+          : 'Online lookups are disabled. Set FOLIOFORGE_ONLINE_ENABLED=1 when starting the service to opt in; conversion stays offline.';
+        $('#searchMetadata').disabled = !onlineEnabled;
+        $('#searchCovers').disabled = !onlineEnabled;
+        $('#searchFonts').disabled = !onlineEnabled || !status.providers.google_fonts;
+      } catch (_) { $('#onlineStatus').textContent = 'Could not read online provider status; conversion remains available.'; }
+    }
+    $('#loadSourceMetadata').onclick = async () => {
+      $('#onlineMessage').textContent = 'Inspecting selected source locally…';
+      try { await loadSourceMetadata(); $('#onlineMessage').textContent = 'Source metadata loaded locally; no network request was made.'; }
+      catch (error) { $('#onlineMessage').textContent = error.message; }
+    };
+    $('#searchMetadata').onclick = () => searchOnline('metadata');
+    $('#searchCovers').onclick = () => searchOnline('covers');
+    $('#searchFonts').onclick = () => searchOnline('fonts');
+    function showReport() { document.querySelector('[data-view=report]').click(); }
+    async function check() {
+      if (!books.length) return; showReport(); $('#status').textContent = 'Checking…';
+      const result = await (await fetch('/preflight', { method: 'POST', body: data(true) })).json();
+      $('#status').textContent = JSON.stringify(result, null, 2);
+      const item = result.files?.[0]; $('#parser').textContent = JSON.stringify({ input: item?.input_report, semantic: item?.semantic_report, compatibility: item?.degradation }, null, 2);
+    }
+    async function preview() {
+      if (!books.length) return; document.querySelector('[data-view=preview]').click();
+      $('#frame').srcdoc = '<p style="font:16px system-ui;padding:2rem">Generating preview…</p>';
+      const result = await (await fetch('/preview', { method: 'POST', body: data(false) })).json();
+      if (result.error) { showReport(); $('#status').textContent = result.error; return; }
+      $('#frame').srcdoc = result.html;
+      $('#parser').textContent = JSON.stringify({ target: result.target, input_loss: result.input_loss, target_loss: result.target_loss, blocked: result.blocked }, null, 2);
+    }
+    async function convert() {
+      if (!books.length) return; showReport(); $('#status').textContent = 'Starting…';
+      const result = await (await fetch('/convert', { method: 'POST', body: data(true) })).json();
+      if (result.error) { $('#status').textContent = result.error; return; }
+      const id = result.job_id; let cancelShown = false; const timer = setInterval(async () => {
+        const state = await (await fetch('/jobs/' + id)).json(); $('#status').textContent = JSON.stringify(state, null, 2);
+        if (state.status.startsWith('completed') || ['failed', 'timed_out'].includes(state.status)) {
+          clearInterval(timer); if (state.download) { const link = document.createElement('a'); link.href = state.download; link.textContent = 'Download result / ZIP'; $('#status').append('\n'); $('#status').append(link); }
+        } else if (state.status === 'running' && !cancelShown) {
+          cancelShown = true;
+          const cancel = document.createElement('button'); cancel.id = 'cancelJob'; cancel.textContent = 'Cancel job';
+          cancel.onclick = async () => { cancel.disabled = true; cancel.textContent = 'Cancelling…'; await fetch('/jobs/' + id + '/cancel', { method: 'POST' }); };
+          $('#status').append('\n'); $('#status').append(cancel);
+        }
+      }, 500);
+    }
+    $('#check').onclick = check; $('#makePreview').onclick = preview; $('#convert').onclick = convert; render();
+  </script>
+</body>
+</html>

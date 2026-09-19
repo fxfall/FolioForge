@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "MATH-05",
+  "feature": "math",
+  "title": "Unsupported MathML shape probe",
+  "language": "en",
+  "source_file": "source.xhtml",
+  "source_semantics": {
+    "expressions": [{"id": "formula-1", "placement": "inline", "mathml": "vendor extension", "accessible_text": "unsupported formula"}],
+    "fallback": "accessible_text"
+  },
+  "acceptance": {
+    "unknown": "must_be_reported_as_unknown_or_unsupported_not_silently_dropped",
+    "accessible_text": "must_remain_available"
+  },
+  "forbidden_inference": ["unknown_math_as_plain_ordinary_text_without_diagnostic"]
+}

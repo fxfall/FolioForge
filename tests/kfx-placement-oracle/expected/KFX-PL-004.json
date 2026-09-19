@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "oracle": "calibre-kfx-input-json-content",
+  "calibre_version": "9.14)",
+  "kfx_input_version": "2.34.2",
+  "input_id": "KFX-PL-004",
+  "input_sha256": "9d05db90a9297fbbc1241cf4c9615cb31d5e32d84a40273020a5d407ec6cfed2",
+  "image_occurrences": [
+    {
+      "position": 1,
+      "resource": "img_0003"
+    },
+    {
+      "position": 138,
+      "resource": "img_0001"
+    },
+    {
+      "position": 264268,
+      "resource": "img_0002"
+    },
+    {
+      "position": 679212,
+      "resource": "img_0004"
+    },
+    {
+      "position": 691716,
+      "resource": "img_0005"
+    },
+    {
+      "position": 997772,
+      "resource": "img_0006"
+    },
+    {
+      "position": 1321136,
+      "resource": "img_0007"
+    },
+    {
+      "position": 1814352,
+      "resource": "img_0008"
+    },
+    {
+      "position": 1814360,
+      "resource": "img_0009"
+    },
+    {
+      "position": 1814434,
+      "resource": "img_0010"
+    },
+    {
+      "position": 1814472,
+      "resource": "img_0008"
+    }
+  ],
+  "resource_frequencies": [
+    {
+      "resource": "img_0001",
+      "count": 1
+    },
+    {
+      "resource": "img_0002",
+      "count": 1
+    },
+    {
+      "resource": "img_0003",
+      "count": 1
+    },
+    {
+      "resource": "img_0004",
+      "count": 1
+    },
+    {
+      "resource": "img_0005",
+      "count": 1
+    },
+    {
+      "resource": "img_0006",
+      "count": 1
+    },
+    {
+      "resource": "img_0007",
+      "count": 1
+    },
+    {
+      "resource": "img_0008",
+      "count": 2
+    },
+    {
+      "resource": "img_0009",
+      "count": 1
+    },
+    {
+      "resource": "img_0010",
+      "count": 1
+    }
+  ],
+  "summary": {
+    "image_occurrences": 11,
+    "distinct_resources": 10,
+    "reused_resources": 1
+  }
+}

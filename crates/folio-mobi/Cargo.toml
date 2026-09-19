@@ -1,0 +1,11 @@
+[package]
+name = "folio-mobi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+folio-kindle-common = { path = "../folio-kindle-common" }
+folio-model = { path = "../folio-model" }
+serde_json.workspace = true
+thiserror.workspace = true

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "id": "FN-02",
+  "feature": "footnote",
+  "title": "Footnote two references semantic probe",
+  "language": "en",
+  "source_file": "source.xhtml",
+  "required_epub_types": ["noteref", "footnote", "backlink"],
+  "source_semantics": {
+    "references": [
+      {"id": "ref-1", "target": "note-1", "kind": "noteref"},
+      {"id": "ref-2", "target": "note-1", "kind": "noteref"}
+    ],
+    "notes": [{"id": "note-1", "kind": "footnote", "body": "shared source note"}],
+    "backlinks": [
+      {"from": "note-1", "to": "ref-1", "kind": "backlink"},
+      {"from": "note-1", "to": "ref-2", "kind": "backlink"}
+    ]
+  },
+  "acceptance": {
+    "note_relationship": "one_note_with_two_source_references",
+    "backlinks": "preserve_two_explicit_targets"
+  },
+  "forbidden_inference": ["first_reference_wins", "numbering_alone"]
+}

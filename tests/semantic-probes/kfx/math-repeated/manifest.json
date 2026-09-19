@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "id": "MATH-04",
+  "feature": "math",
+  "title": "Repeated MathML semantic probe",
+  "language": "en",
+  "source_file": "source.xhtml",
+  "source_semantics": {
+    "expressions": [
+      {"id": "formula-1", "placement": "inline", "mathml": "x", "accessible_text": "x"},
+      {"id": "formula-2", "placement": "inline", "mathml": "x", "accessible_text": "x"}
+    ],
+    "fallback": "none"
+  },
+  "acceptance": {
+    "occurrences": "two_source_occurrences_must_not_be_text_deduplicated"
+  },
+  "forbidden_inference": ["text_summary_deduplication"]
+}

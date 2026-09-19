@@ -1,0 +1,13 @@
+[package]
+name = "folio-fb2"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+base64.workspace = true
+folio-format = { path = "../folio-format" }
+folio-input = { path = "../folio-input" }
+folio-model = { path = "../folio-model" }
+roxmltree.workspace = true
+thiserror.workspace = true

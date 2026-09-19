@@ -1,0 +1,4 @@
+This synthetic paragraph is deliberately wrapped at a fairly regular width.
+The following source line continues the same sentence without a blank line.
+Another regular line helps the analyzer recognize old fixed-width wrapping.
+The final source line closes this non-copyrighted regression paragraph.

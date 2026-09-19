@@ -1,0 +1,7 @@
+{
+  "target": "Kf7",
+  "mode": "Compatible",
+  "feature": "ComplexTable",
+  "quality": "StructuralFallback",
+  "fallback_contains": "linearized rows and cells"
+}

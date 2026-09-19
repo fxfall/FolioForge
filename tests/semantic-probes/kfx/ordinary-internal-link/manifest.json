@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "FN-05",
+  "feature": "footnote",
+  "title": "Ordinary internal link control",
+  "language": "en",
+  "source_file": "source.xhtml",
+  "source_semantics": {
+    "references": [{"id": "ordinary-link", "target": "target", "kind": "ordinary_internal_link"}],
+    "notes": [],
+    "backlinks": []
+  },
+  "acceptance": {
+    "ordinary_link": "must_remain_link_and_must_not_become_note"
+  },
+  "forbidden_inference": ["ordinary_internal_link_as_footnote", "numbering_alone"]
+}

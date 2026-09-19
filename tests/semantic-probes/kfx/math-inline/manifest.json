@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "MATH-01",
+  "feature": "math",
+  "title": "Inline MathML semantic probe",
+  "language": "en",
+  "source_file": "source.xhtml",
+  "source_semantics": {
+    "expressions": [{"id": "formula-1", "placement": "inline", "mathml": "x = 1", "accessible_text": "x equals one"}],
+    "fallback": "none"
+  },
+  "acceptance": {
+    "semantic_math": "preserve_or_equivalent_mathml",
+    "accessible_text": "must_remain_available_when_mathml_is_not_supported"
+  },
+  "forbidden_inference": ["ordinary_svg_as_math", "plain_text_as_mathml"]
+}

@@ -1,0 +1,11 @@
+序章
+
+This synthetic mixed-language book begins here.
+
+第一章 约定
+
+中文段落 follows the opening.
+
+Chapter 2: Return
+
+The final synthetic section.

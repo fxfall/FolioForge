@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "id": "FIG-01",
+  "feature": "figure",
+  "title": "Reflowable figure and caption probe",
+  "language": "en",
+  "source_file": "source.xhtml",
+  "source_semantics": {
+    "figures": [{"id": "figure-1", "image": "illustration.svg", "caption": "A reflowable illustration", "placement": "reflowable"}]
+  },
+  "acceptance": {
+    "figure": "preserve_image_caption_relationship",
+    "layout": "keep_together_is_intent_not_fixed_canvas"
+  },
+  "forbidden_inference": ["fixed_layout_from_figure_alone", "caption_as_unrelated_paragraph"]
+}

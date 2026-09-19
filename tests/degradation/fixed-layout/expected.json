@@ -1,0 +1,7 @@
+{
+  "target": "Kf7",
+  "mode": "Compatible",
+  "feature": "FixedLayout",
+  "quality": "StructuralFallback",
+  "fallback_contains": "reflowable document order"
+}
