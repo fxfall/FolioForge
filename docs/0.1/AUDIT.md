@@ -10,8 +10,8 @@ authoritative.
 
 - Product version: `0.1.0`.
 - Candidate tag: `v0.1.0-rc.1`, followed by `v0.1.0` only after the RC gates.
-- Finalization base commit: the clean public baseline commit is recorded in
-  the follow-up audit commit after this document is finalized.
+- Finalization base commit: `7dd277803383b2829785cfe54ec73565d39047b5`
+  (clean public baseline before this audit record commit).
 - Audit date: 2026-09-19.
 - Repository: `fxfall/FolioForge`.
 
@@ -90,10 +90,10 @@ The final run must include:
   archive: PASS.
 - FFI ownership, cancellation and progress callback tests: PASS.
 
-The local Swift linker emitted two missing-Command-Line-Tools search-path
-warnings in both configurations, but both builds completed successfully. The
-hosted macOS runner remains the clean-clone confirmation for this environment
-warning.
+The local Swift linker emitted the same two missing-Command-Line-Tools
+search-path warnings in each configuration, but both builds completed
+successfully. The hosted macOS runner remains the clean-clone confirmation for
+this environment warning.
 
 ## 9. Security and fuzz boundary
 
