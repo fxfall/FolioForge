@@ -83,6 +83,18 @@ private let folioBatchProgressCallback: FolioProgressCallback = { event, userDat
     box.receive(event)
 }
 
+private final class BatchCompletionBox: @unchecked Sendable {
+    let handler: (Result<FolioBatchReport, FolioError>) -> Void
+
+    init(handler: @escaping (Result<FolioBatchReport, FolioError>) -> Void) {
+        self.handler = handler
+    }
+
+    func complete(_ result: Result<FolioBatchReport, FolioError>) {
+        handler(result)
+    }
+}
+
 final class FolioCancellationHandle: @unchecked Sendable {
     private let lock = NSLock()
     private var pointer: UnsafeMutableRawPointer?
@@ -116,17 +128,17 @@ final class FolioCancellationHandle: @unchecked Sendable {
     }
 }
 
-private final class BatchConversionWork {
+private final class BatchConversionWork: @unchecked Sendable {
     let requestJSON: String
     let cancellation: FolioCancellationHandle
     let retainedProgress: Unmanaged<BatchProgressBox>
-    let completion: (Result<FolioBatchReport, FolioError>) -> Void
+    let completion: BatchCompletionBox
 
     init(
         requestJSON: String,
         cancellation: FolioCancellationHandle,
         retainedProgress: Unmanaged<BatchProgressBox>,
-        completion: @escaping (Result<FolioBatchReport, FolioError>) -> Void
+        completion: BatchCompletionBox
     ) {
         self.requestJSON = requestJSON
         self.cancellation = cancellation
@@ -147,7 +159,7 @@ private final class BatchConversionWork {
         cancellation.finish()
         retainedProgress.release()
         DispatchQueue.main.async {
-            self.completion(response)
+            self.completion.complete(response)
         }
     }
 }
@@ -256,6 +268,7 @@ final class FolioCoreBridge: @unchecked Sendable {
     ) -> FolioCancellationHandle {
         let cancellation = FolioCancellationHandle(pointer: ffCancellationNew())
         let progressBox = BatchProgressBox(handler: progress)
+        let completionBox = BatchCompletionBox(handler: completion)
         let retainedProgress = Unmanaged.passRetained(progressBox)
 
         let requestJSON: String
@@ -268,12 +281,12 @@ final class FolioCoreBridge: @unchecked Sendable {
         } catch let error as FolioError {
             retainedProgress.release()
             cancellation.finish()
-            DispatchQueue.main.async { completion(.failure(error)) }
+            DispatchQueue.main.async { completionBox.complete(.failure(error)) }
             return cancellation
         } catch {
             retainedProgress.release()
             cancellation.finish()
-            DispatchQueue.main.async { completion(.failure(.encoding(error))) }
+            DispatchQueue.main.async { completionBox.complete(.failure(.encoding(error))) }
             return cancellation
         }
 
@@ -281,7 +294,7 @@ final class FolioCoreBridge: @unchecked Sendable {
             requestJSON: requestJSON,
             cancellation: cancellation,
             retainedProgress: retainedProgress,
-            completion: completion
+            completion: completionBox
         )
         DispatchQueue.global(qos: .userInitiated).async {
             work.run()

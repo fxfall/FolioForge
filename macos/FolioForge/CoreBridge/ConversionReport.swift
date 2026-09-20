@@ -1,6 +1,6 @@
 import Foundation
 
-enum FolioProgressStage: String, Codable {
+enum FolioProgressStage: String, Codable, Sendable {
     case opening = "Opening"
     case parsing = "Parsing"
     case normalizing = "Normalizing"
@@ -30,7 +30,7 @@ enum FolioProgressStage: String, Codable {
     }
 }
 
-struct FolioProgressEvent: Codable {
+struct FolioProgressEvent: Codable, Sendable {
     let stage: FolioProgressStage
     let current: UInt64
     let total: UInt64?
@@ -38,7 +38,7 @@ struct FolioProgressEvent: Codable {
     let message: String
 }
 
-struct FolioBatchProgressEvent: Decodable {
+struct FolioBatchProgressEvent: Decodable, Sendable {
     let currentItem: Int
     let totalItems: Int
     let event: FolioProgressEvent
@@ -50,7 +50,7 @@ struct FolioBatchProgressEvent: Decodable {
     }
 }
 
-struct FolioMetadata: Codable {
+struct FolioMetadata: Codable, Sendable {
     let title: String?
     let subtitle: String?
     let language: String?
@@ -64,7 +64,7 @@ struct FolioMetadata: Codable {
     let rights: String?
 }
 
-struct FolioInputReport: Codable {
+struct FolioInputReport: Codable, Sendable {
     let detectedFormat: String
     let parser: String
     let containerCount: Int
@@ -103,7 +103,7 @@ struct FolioInputReport: Codable {
 /// A read-only coverage snapshot for real Amazon KFX after it reaches the
 /// shared Semantic IR. It is intentionally not a KFX-native model and does
 /// not imply that unresolved source semantics were recovered.
-struct FolioKFXInputSummary: Codable {
+struct FolioKFXInputSummary: Codable, Sendable {
     let tocEntryCount: Int
     let landmarkEntryCount: Int
     let pageListEntryCount: Int
@@ -137,7 +137,7 @@ struct FolioKFXInputSummary: Codable {
     }
 }
 
-struct FolioTextImportReport: Codable {
+struct FolioTextImportReport: Codable, Sendable {
     let encoding: FolioEncodingDetection
     let normalization: FolioTextNormalization
     let mode: String
@@ -157,21 +157,21 @@ struct FolioTextImportReport: Codable {
     }
 }
 
-struct FolioEncodingDetection: Codable {
+struct FolioEncodingDetection: Codable, Sendable {
     let selected: String?
     let confidence: String
     let candidates: [FolioEncodingCandidate]
     let evidence: [String]
 }
 
-struct FolioEncodingCandidate: Codable, Identifiable {
+struct FolioEncodingCandidate: Codable, Identifiable, Sendable {
     let encoding: String
     let score: Int
     let evidence: [String]
     var id: String { encoding }
 }
 
-struct FolioTextNormalization: Codable {
+struct FolioTextNormalization: Codable, Sendable {
     let removedLeadingBom: Bool
     let newlineSequencesNormalized: Int
 
@@ -181,7 +181,7 @@ struct FolioTextNormalization: Codable {
     }
 }
 
-struct FolioParagraphAnalysis: Codable {
+struct FolioParagraphAnalysis: Codable, Sendable {
     let selected: String
     let confidencePercent: Int
     let protectedPreformatted: Bool
@@ -194,18 +194,18 @@ struct FolioParagraphAnalysis: Codable {
     }
 }
 
-struct FolioBookStructure: Codable {
+struct FolioBookStructure: Codable, Sendable {
     let roots: [FolioStructureNode]
     let rejected: [FolioStructureCandidate]
 }
 
-struct FolioStructureNode: Codable, Identifiable {
+struct FolioStructureNode: Codable, Identifiable, Sendable {
     let candidate: FolioStructureCandidate
     let children: [FolioStructureNode]
     var id: Int { candidate.lineIndex }
 }
 
-struct FolioStructureCandidate: Codable, Identifiable {
+struct FolioStructureCandidate: Codable, Identifiable, Sendable {
     let lineIndex: Int
     let text: String
     let kind: String
@@ -223,7 +223,7 @@ struct FolioStructureCandidate: Codable, Identifiable {
     }
 }
 
-struct FolioTextMetadataGuess: Codable {
+struct FolioTextMetadataGuess: Codable, Sendable {
     let title: String?
     let author: String?
     let source: String?
@@ -231,7 +231,7 @@ struct FolioTextMetadataGuess: Codable {
     let evidence: [String]
 }
 
-struct FolioSemanticReport: Codable {
+struct FolioSemanticReport: Codable, Sendable {
     let valid: Bool
     let documentCount: Int
     let resourceCount: Int
@@ -249,7 +249,7 @@ struct FolioSemanticReport: Codable {
     }
 }
 
-struct FolioCompatibilityReport: Codable {
+struct FolioCompatibilityReport: Codable, Sendable {
     let target: String
     let quality: FolioCompatibilityQuality
     let exact: Int
@@ -273,7 +273,7 @@ struct FolioCompatibilityReport: Codable {
     }
 }
 
-struct FolioOutputReport: Codable {
+struct FolioOutputReport: Codable, Sendable {
     let format: String
     let path: String
     let size: UInt64
@@ -281,7 +281,7 @@ struct FolioOutputReport: Codable {
     let validated: Bool
 }
 
-enum FolioCompatibilityQuality: String, Codable, Equatable {
+enum FolioCompatibilityQuality: String, Codable, Equatable, Sendable {
     case exact = "Exact"
     case high = "High"
     case compatible = "Compatible"
@@ -309,7 +309,7 @@ enum FolioCompatibilityQuality: String, Codable, Equatable {
     }
 }
 
-struct FolioDegradationItem: Codable, Identifiable {
+struct FolioDegradationItem: Codable, Identifiable, Sendable {
     let feature: String
     let sourceRepresentation: String
     let targetCapability: String
@@ -337,7 +337,7 @@ struct FolioDegradationItem: Codable, Identifiable {
     }
 }
 
-struct FolioDegradationReport: Codable {
+struct FolioDegradationReport: Codable, Sendable {
     let exact: Int
     let equivalent: Int
     let approximation: Int
@@ -359,7 +359,7 @@ struct FolioDegradationReport: Codable {
     }
 }
 
-struct FolioRoundTripReport: Codable {
+struct FolioRoundTripReport: Codable, Sendable {
     let checked: Bool
     let passed: Bool
     let unexpectedLosses: [String]
@@ -371,14 +371,14 @@ struct FolioRoundTripReport: Codable {
     }
 }
 
-struct FolioCapabilityProfile: Codable, Identifiable {
+struct FolioCapabilityProfile: Codable, Identifiable, Sendable {
     let format: String
     let levels: [String: String]
 
     var id: String { format }
 }
 
-struct FolioFormatSupport: Codable {
+struct FolioFormatSupport: Codable, Sendable {
     let detect: Bool
     let inspect: Bool
     let `import`: Bool
@@ -400,7 +400,7 @@ struct FolioFormatSupport: Codable {
     }
 }
 
-struct FolioInputFormatCapability: Codable, Identifiable {
+struct FolioInputFormatCapability: Codable, Identifiable, Sendable {
     let format: String
     let extensions: [String]
     let support: FolioFormatSupport
@@ -408,7 +408,7 @@ struct FolioInputFormatCapability: Codable, Identifiable {
     var id: String { format }
 }
 
-struct FolioCapabilitiesResponse: Codable {
+struct FolioCapabilitiesResponse: Codable, Sendable {
     let capabilityProfiles: [FolioCapabilityProfile]
     let inputFormats: [FolioInputFormatCapability]
     let targets: [FolioTarget]
@@ -427,7 +427,7 @@ struct FolioCapabilitiesResponse: Codable {
     }
 }
 
-struct FolioDegradationPlan: Codable {
+struct FolioDegradationPlan: Codable, Sendable {
     let target: String
     let mode: FolioDegradationMode
     let options: FolioDegradationOptions
@@ -438,7 +438,7 @@ struct FolioDegradationPlan: Codable {
     let blocked: Bool
 }
 
-struct FolioAnalysisReport: Codable {
+struct FolioAnalysisReport: Codable, Sendable {
     let sourceFormat: String
     let targetFormat: String
     let plan: FolioDegradationPlan
@@ -454,7 +454,7 @@ struct FolioAnalysisReport: Codable {
     }
 }
 
-struct FolioConversionReport: Codable {
+struct FolioConversionReport: Codable, Sendable {
     let outputPath: String
     let outputSize: UInt64
     let warnings: [FolioDiagnostic]
@@ -494,7 +494,7 @@ struct FolioConversionReport: Codable {
     }
 }
 
-struct FolioBatchItemReport: Decodable {
+struct FolioBatchItemReport: Decodable, Sendable {
     let source: String
     let output: String?
     let relativeOutput: String?
@@ -512,14 +512,14 @@ struct FolioBatchItemReport: Decodable {
     }
 }
 
-struct FolioBatchReport: Decodable {
+struct FolioBatchReport: Decodable, Sendable {
     let items: [FolioBatchItemReport]
     let succeeded: Int
     let failed: Int
     let aborted: Bool
 }
 
-struct FolioResourceSummary: Codable {
+struct FolioResourceSummary: Codable, Sendable {
     let total: Int
     let images: Int
     let fonts: Int
@@ -537,7 +537,7 @@ struct FolioResourceSummary: Codable {
     }
 }
 
-struct FolioInspectReport: Codable {
+struct FolioInspectReport: Codable, Sendable {
     let format: String
     let semantic: AnyCodableJSON
     let diagnostics: [FolioDiagnostic]
@@ -553,7 +553,7 @@ struct FolioInspectReport: Codable {
     }
 }
 
-struct FolioPreviewDocument: Codable, Identifiable {
+struct FolioPreviewDocument: Codable, Identifiable, Sendable {
     let href: String
     let title: String?
     let html: String
@@ -561,7 +561,7 @@ struct FolioPreviewDocument: Codable, Identifiable {
     var id: String { href }
 }
 
-struct FolioPreviewTargetProfile: Codable {
+struct FolioPreviewTargetProfile: Codable, Sendable {
     let format: String
     let label: String
     let disclaimer: String
@@ -579,7 +579,7 @@ struct FolioPreviewTargetProfile: Codable {
     }
 }
 
-struct FolioPreviewBundle: Codable {
+struct FolioPreviewBundle: Codable, Sendable {
     let target: FolioPreviewTargetProfile
     let sourceTitle: String
     let documents: [FolioPreviewDocument]
@@ -602,7 +602,7 @@ struct FolioPreviewBundle: Codable {
 }
 
 /// A small type-erased JSON value used only for displaying inspect results.
-enum AnyCodableJSON: Codable {
+enum AnyCodableJSON: Codable, Sendable {
     case object([String: AnyCodableJSON])
     case array([AnyCodableJSON])
     case string(String)

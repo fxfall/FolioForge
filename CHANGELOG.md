@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0 release infrastructure
+
+- Added Phase 7.7 GitHub Actions definitions for native Linux, Windows and
+  macOS 27 Core builds plus the separate SwiftUI GUI artifact.
+- Added platform smoke packaging, Unicode-path conversion checks, semantic
+  parity checks, Library-database exclusion checks and tagged SHA256 release
+  assembly. No conversion behavior or public API changed.
+
 ## 0.1.0
 
 - Rust Semantic IR conversion core with EPUB, Kindle-family, text, Markdown,

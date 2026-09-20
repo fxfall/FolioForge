@@ -40,7 +40,7 @@ FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/release/libfolio_ffi.a" \
 
 `tests/scripts/build_macos_app.sh` is the complete arm64 package validation
 entry point. It requires `FOLIOFORGE_VALIDATION_ROOT`, keeps compiler/runtime
-scratch data there, builds against the macOS 13 floor, embeds the project logo,
+scratch data there, builds against the macOS 27 floor, embeds the project logo,
 leaves the app unsigned and produces a timestamped `0.1.0` app/ZIP under
 ignored `dist/` only after validation succeeds.
 

@@ -1,43 +1,17 @@
-name: Release
+name: Build
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  release-policy:
-    name: Release policy
-    runs-on: ubuntu-26.04
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: Validate 0.1 release tag and workspace version
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          case "$RELEASE_TAG" in
-            v0.1.0|v0.1.0-rc.*) ;;
-            *) echo "unsupported 0.1 release tag: $RELEASE_TAG" >&2; exit 1 ;;
-          esac
-          python3 - <<'PY'
-          import json
-          import subprocess
-
-          metadata = json.loads(subprocess.check_output([
-              "cargo", "metadata", "--no-deps", "--format-version", "1"
-          ], text=True))
-          versions = {package["version"] for package in metadata["packages"]}
-          assert versions == {"0.1.0"}, versions
-          PY
-      - name: Repository clean gate
-        run: python3 tools/release/repository-audit.py
-
   linux-core:
-    name: Release Linux Core (${{ matrix.arch }})
-    needs: release-policy
+    name: Linux Core (${{ matrix.arch }})
     strategy:
       fail-fast: false
       matrix:
@@ -70,16 +44,15 @@ jobs:
             "${{ matrix.target }}" \
             "${{ matrix.label }}" \
             "$FOLIOFORGE_ARTIFACT_ROOT"
-      - name: Upload release Linux Core artifact
+      - name: Upload Linux Core artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: release-core-linux-${{ matrix.arch }}
+          name: core-linux-${{ matrix.arch }}
           path: ${{ runner.temp }}/folioforge-artifacts/*
           if-no-files-found: error
 
   windows-core:
-    name: Release Windows Core (${{ matrix.arch }})
-    needs: release-policy
+    name: Windows Core (${{ matrix.arch }})
     strategy:
       fail-fast: false
       matrix:
@@ -112,16 +85,15 @@ jobs:
             -Target "${{ matrix.target }}" `
             -Label "${{ matrix.label }}" `
             -OutputRoot "$env:RUNNER_TEMP\folioforge-artifacts"
-      - name: Upload release Windows Core artifact
+      - name: Upload Windows Core artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: release-core-windows-${{ matrix.arch }}
+          name: core-windows-${{ matrix.arch }}
           path: ${{ runner.temp }}\folioforge-artifacts\*
           if-no-files-found: error
 
   macos-core:
-    name: Release macOS 27 Core (arm64)
-    needs: release-policy
+    name: macOS 27 Core (arm64)
     runs-on: xcode-27
     env:
       FOLIOFORGE_VALIDATION_ROOT: ${{ runner.temp }}/folioforge-validation
@@ -145,16 +117,15 @@ jobs:
             aarch64-apple-darwin \
             macos27-aarch64 \
             "$FOLIOFORGE_ARTIFACT_ROOT"
-      - name: Upload release macOS Core artifact
+      - name: Upload macOS Core artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: release-core-macos-aarch64
+          name: core-macos-aarch64
           path: ${{ runner.temp }}/folioforge-artifacts/*
           if-no-files-found: error
 
   macos-gui:
-    name: Release macOS 27 GUI (arm64)
-    needs: release-policy
+    name: macOS 27 GUI (arm64)
     runs-on: xcode-27
     env:
       FOLIOFORGE_VALIDATION_ROOT: ${{ runner.temp }}/folioforge-validation
@@ -197,22 +168,22 @@ jobs:
         run: |
           zip=$(find "$FOLIOFORGE_OUTPUT_ROOT" -maxdepth 1 -type f -name '*.zip' -print -quit)
           cp "$zip" "$RUNNER_TEMP/FolioForge-GUI-0.1.0-macos27-aarch64.zip"
-      - name: Upload release macOS GUI artifact
+      - name: Upload macOS GUI artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: release-gui-macos-aarch64
+          name: gui-macos-aarch64
           path: ${{ runner.temp }}/FolioForge-GUI-0.1.0-macos27-aarch64.zip
           if-no-files-found: error
 
   linux-semantic-parity:
-    name: Release Linux Core semantic parity
-    needs: [release-policy, linux-core]
+    name: Linux Core semantic parity
+    needs: linux-core
     runs-on: ubuntu-26.04
     steps:
       - name: Download Linux Core smoke hashes
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          pattern: release-core-linux-*
+          pattern: core-linux-*
           path: ${{ runner.temp }}/folioforge-linux-artifacts
           merge-multiple: true
       - name: Compare x86_64 and ARM64 semantic smoke output
@@ -221,63 +192,3 @@ jobs:
           arm=$(find "$RUNNER_TEMP/folioforge-linux-artifacts" -name '*linux-aarch64.tar.gz.smoke.semantic.sha256' -print -quit)
           test -n "$x86" -a -n "$arm"
           test "$(awk '{print $1}' "$x86")" = "$(awk '{print $1}' "$arm")"
-
-  publish:
-    name: Publish GitHub Release
-    needs: [release-policy, linux-core, windows-core, macos-core, macos-gui, linux-semantic-parity]
-    runs-on: ubuntu-26.04
-    permissions:
-      contents: write
-    steps:
-      - name: Download artifacts built by this tagged run
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          pattern: release-*
-          path: ${{ runner.temp }}/folioforge-release-assets
-          merge-multiple: true
-      - name: Assemble exactly six release artifacts and checksums
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          set -eu
-          source_dir="$RUNNER_TEMP/folioforge-release-assets"
-          publish_dir="$RUNNER_TEMP/folioforge-release"
-          mkdir -p "$publish_dir"
-          find "$source_dir" -type f \( -name 'FolioForge-Core-*.tar.gz' -o -name 'FolioForge-Core-*.zip' -o -name 'FolioForge-GUI-*.zip' \) -exec cp {} "$publish_dir/" \;
-          expected='FolioForge-Core-0.1.0-linux-x86_64.tar.gz
-          FolioForge-Core-0.1.0-linux-aarch64.tar.gz
-          FolioForge-Core-0.1.0-windows-x86_64.zip
-          FolioForge-Core-0.1.0-windows-aarch64.zip
-          FolioForge-Core-0.1.0-macos27-aarch64.tar.gz
-          FolioForge-GUI-0.1.0-macos27-aarch64.zip'
-          while IFS= read -r name; do
-            [ -n "$name" ] || continue
-            test -f "$publish_dir/$name"
-          done <<EOF
-          $expected
-          EOF
-          [ "$(find "$publish_dir" -maxdepth 1 -type f | wc -l | tr -d ' ')" = 6 ]
-          (cd "$publish_dir" && sha256sum $(printf '%s\n' "$expected") | sort -k2 > SHA256SUMS)
-          test "$(wc -l < "$publish_dir/SHA256SUMS" | tr -d ' ')" = 6
-          printf '%s\n' "prepared release $RELEASE_TAG"
-      - name: Create or update GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          set -eu
-          publish_dir="$RUNNER_TEMP/folioforge-release"
-          prerelease_flag=
-          case "$RELEASE_TAG" in
-            *-rc.*) prerelease_flag=--prerelease ;;
-          esac
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" "$publish_dir"/* --clobber
-            if [ -n "$prerelease_flag" ]; then
-              gh release edit "$RELEASE_TAG" --prerelease
-            fi
-          else
-            gh release create "$RELEASE_TAG" "$publish_dir"/* \
-              --title "FolioForge $RELEASE_TAG" \
-              --generate-notes $prerelease_flag
-          fi

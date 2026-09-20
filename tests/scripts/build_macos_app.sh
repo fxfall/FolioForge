@@ -47,6 +47,16 @@ if [ "$BUNDLE_BUILD_VERSION" -lt 1 ]; then
     exit 2
 fi
 
+MACOS_TARGET_VERSION=${FOLIOFORGE_MACOS_TARGET_VERSION:-27.0}
+case "$MACOS_TARGET_VERSION" in
+    [0-9]*.[0-9]*)
+        ;;
+    *)
+        printf '%s\n' "FOLIOFORGE_MACOS_TARGET_VERSION must be a dotted macOS 27 target, found $MACOS_TARGET_VERSION" >&2
+        exit 2
+        ;;
+esac
+
 # Keep all compiler caches, Swift scratch data, runtime scratch data and app
 # staging outside the repository. A unique default root also prevents an old
 # build from being mistaken for the current validation result.
@@ -63,29 +73,32 @@ mkdir -p "$CARGO_TARGET_DIR" "$TMPDIR" "$FOLIOFORGE_TEMP_ROOT"
 PHASE=rust-format
 cargo fmt --all -- --check
 PHASE=rust-tests
-cargo test --workspace
+cargo test --workspace --locked
 PHASE=rust-clippy
-cargo clippy --workspace --all-targets -- -D warnings
+cargo clippy --workspace --all-targets --locked -- -D warnings
 
 # The release artifact is always Apple Silicon. Use the native arm64 build
 # path on Apple Silicon runners (the same path exercised by the macOS CI job).
 # Keep an explicit cross target only for an Intel fallback runner.
 if [ "$HOST_ARCH" = "arm64" ]; then
     PHASE=rust-ffi-release
-    MACOSX_DEPLOYMENT_TARGET=13.0 \
-        cargo build --locked --release -p folio-ffi
+    # SwiftPM owns the final arm64-apple-macosx deployment floor below.
+    # Keep the native Rust host build free of MACOSX_DEPLOYMENT_TARGET: with
+    # current macOS/Rust toolchains that setting can produce a proc-macro
+    # dylib which rustc then rejects as an unavailable thiserror_impl crate.
+    cargo build --locked --release -p folio-ffi
     FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/release/libfolio_ffi.a"
 else
     PHASE=rust-ffi-cross-release
     rustup target add aarch64-apple-darwin
-    CFLAGS_aarch64_apple_darwin='-mmacosx-version-min=13.0' \
+    CFLAGS_aarch64_apple_darwin="-mmacosx-version-min=$MACOS_TARGET_VERSION" \
     RUSTC_WRAPPER="$ROOT_DIR/tests/scripts/rustc_macos_target_wrapper.sh" \
         cargo build --locked --target aarch64-apple-darwin --release -p folio-ffi
     FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/aarch64-apple-darwin/release/libfolio_ffi.a"
 fi
 
 PHASE=swift-release
-SWIFT_TARGET_TRIPLE=arm64-apple-macosx13.0
+SWIFT_TARGET_TRIPLE="arm64-apple-macosx$MACOS_TARGET_VERSION"
 FOLIOFORGE_FFI_ARCHIVE="$FOLIOFORGE_FFI_ARCHIVE" \
     swift build --package-path macos/FolioForge --scratch-path "$SWIFT_BUILD_ROOT" \
         --triple "$SWIFT_TARGET_TRIPLE" -c release
@@ -94,7 +107,7 @@ PHASE=swift-product-path
 PRODUCT_DIR=$(FOLIOFORGE_FFI_ARCHIVE="$FOLIOFORGE_FFI_ARCHIVE" \
     swift build --package-path macos/FolioForge --scratch-path "$SWIFT_BUILD_ROOT" \
         --triple "$SWIFT_TARGET_TRIPLE" -c release --show-bin-path)
-DIST_DIR="$ROOT_DIR/dist"
+DIST_DIR=${FOLIOFORGE_OUTPUT_ROOT:-"$ROOT_DIR/dist"}
 PHASE=app-staging
 BUILD_BASENAME="FolioForge-macOS-arm64-0.1.0-$BUILD_STAMP"
 FINAL_DIR="$DIST_DIR/$BUILD_BASENAME"
@@ -145,6 +158,14 @@ else
     fi
 fi
 cp packaging/FolioForge-Info.plist "$CONTENTS/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :LSMinimumSystemVersion $MACOS_TARGET_VERSION" \
+    "$CONTENTS/Info.plist"
+
+# The Apple linker may add an ad-hoc signature to a freshly linked executable.
+# This project ships source/unsigned development artifacts only, so remove
+# that linker metadata without ever invoking certificate-based signing.
+PHASE=app-signature-removal
+codesign --remove-signature "$CONTENTS/MacOS/FolioForge" 2>/dev/null || true
 
 ICONSET="$STAGING/FolioForge.iconset"
 PHASE=icon-generation
@@ -167,14 +188,31 @@ plutil -lint "$CONTENTS/Info.plist"
 PHASE=app-version-check
 test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$CONTENTS/Info.plist")" = "$MARKETING_VERSION"
 test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$CONTENTS/Info.plist")" = "$BUNDLE_BUILD_VERSION"
+PHASE=app-deployment-version-check
+test "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$CONTENTS/Info.plist")" = "$MACOS_TARGET_VERSION"
 PHASE=app-content-executable
 test -x "$CONTENTS/MacOS/FolioForge"
+PHASE=app-content-signature
+if codesign -dv "$CONTENTS/MacOS/FolioForge" >/dev/null 2>&1; then
+    printf '%s\n' "Unexpected code signature in unsigned app executable" >&2
+    exit 2
+fi
 PHASE=app-content-bundle-logo
 test -f "$RESOURCE_BUNDLE/Contents/Resources/folioforge-logo.png"
 PHASE=app-content-icon
 test -f "$CONTENTS/Resources/FolioForge.icns"
 PHASE=app-content-architecture
 file "$CONTENTS/MacOS/FolioForge" | grep -q 'arm64'
+PHASE=app-content-dependencies
+if otool -L "$CONTENTS/MacOS/FolioForge" | sed '1d' | grep -Eq '/Volumes/Repositories|/opt/homebrew|/usr/local/opt|/target/'; then
+    printf '%s\n' 'App executable contains a repository or private Homebrew dependency' >&2
+    exit 2
+fi
+PHASE=app-content-library-boundary
+if find "$APP" -type f \( -name 'library.sqlite' -o -name '*.sqlite' -o -name '*.sqlite3' \) -print -quit | grep -q .; then
+    printf '%s\n' 'GUI bundle unexpectedly contains a Library database' >&2
+    exit 2
+fi
 
 cp macos/FolioForge/README.md "$STAGING/README.md"
 PHASE=zip-validation

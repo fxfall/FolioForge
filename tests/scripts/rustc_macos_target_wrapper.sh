@@ -25,7 +25,7 @@ done
 # Keep host procedural macros at the host default. Only Rust units explicitly
 # compiled for the macOS app target receive the deployment-version override.
 if [ "$TARGET" = "aarch64-apple-darwin" ]; then
-    MACOSX_DEPLOYMENT_TARGET=13.0 exec "$RUSTC" "$@"
+    MACOSX_DEPLOYMENT_TARGET=27.0 exec "$RUSTC" "$@"
 fi
 
 exec "$RUSTC" "$@"

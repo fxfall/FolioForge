@@ -8,8 +8,15 @@ permissions:
   contents: read
 
 jobs:
-  linux:
-    runs-on: ubuntu-24.04
+  source:
+    runs-on: ubuntu-26.04
+    env:
+      FOLIOFORGE_VALIDATION_ROOT: ${{ runner.temp }}/folioforge-validation
+      CARGO_TARGET_DIR: ${{ runner.temp }}/folioforge-validation/cargo-target
+      TMPDIR: ${{ runner.temp }}/folioforge-validation/tmp
+      FOLIOFORGE_TEMP_ROOT: ${{ runner.temp }}/folioforge-validation/runtime
+      FOLIO_BIN: ${{ runner.temp }}/folioforge-validation/cargo-target/release/folio
+      FOLIO_SERVICE_BIN: ${{ runner.temp }}/folioforge-validation/cargo-target/release/folio-service
     steps:
       # actions/checkout v4.2.2; immutable commit verified for the 0.1 baseline.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -18,6 +25,8 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt, clippy
+      - name: Prepare external validation root
+        run: mkdir -p "$FOLIOFORGE_VALIDATION_ROOT" "$TMPDIR" "$FOLIOFORGE_TEMP_ROOT"
       - name: Repository clean gate
         run: python3 tools/release/repository-audit.py
       - name: Format check
@@ -33,40 +42,9 @@ jobs:
       - name: Public semantic probes
         run: |
           python3 tools/dev/kfx_probe.py validate --all \
-            --artifact-root "$RUNNER_TEMP/folioforge-probes"
+            --artifact-root "$FOLIOFORGE_VALIDATION_ROOT/kfx-probes"
       - name: Public conversion matrix
-        env:
-          FOLIO_BIN: ${{ github.workspace }}/target/release/folio
-          FOLIO_SERVICE_BIN: ${{ github.workspace }}/target/release/folio-service
         run: |
           tests/scripts/run_degradation_golden.sh
           tests/scripts/run_conversion_matrix.sh
           tests/scripts/run_service_smoke.sh
-
-  macos:
-    runs-on: macos-14
-    steps:
-      # actions/checkout v4.2.2; immutable commit verified for the 0.1 baseline.
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      # dtolnay/rust-toolchain master; immutable commit verified for the 0.1 baseline.
-      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
-        with:
-          toolchain: stable
-      - name: Repository clean gate
-        run: python3 tools/release/repository-audit.py
-      - name: Rust sanity
-        run: |
-          cargo fmt --all -- --check
-          cargo test --workspace --locked
-      - name: Build arm64 FFI archive
-        env:
-          MACOSX_DEPLOYMENT_TARGET: "13.0"
-        run: cargo build --locked --release -p folio-ffi
-      - name: SwiftUI Debug
-        env:
-          FOLIOFORGE_FFI_ARCHIVE: ${{ github.workspace }}/target/release/libfolio_ffi.a
-        run: swift build --package-path macos/FolioForge --scratch-path "$RUNNER_TEMP/folioforge-swift-debug"
-      - name: SwiftUI Release
-        env:
-          FOLIOFORGE_FFI_ARCHIVE: ${{ github.workspace }}/target/release/libfolio_ffi.a
-        run: swift build --package-path macos/FolioForge --scratch-path "$RUNNER_TEMP/folioforge-swift-release" -c release

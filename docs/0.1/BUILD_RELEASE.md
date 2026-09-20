@@ -4,7 +4,7 @@
 
 - Rust stable with `cargo`, `rustfmt` and `clippy`.
 - Python 3 for public scripts and the architecture/repository gates.
-- macOS 13 or newer, Swift 5.9 or newer and Xcode command-line tools for the
+- macOS 27 or newer, Swift 6.4 or newer and Xcode 27 command-line tools for the
   SwiftUI package and macOS arm64 packaging.
 - Docker only for the optional Service image smoke test.
 
@@ -67,10 +67,40 @@ FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/release/libfolio_ffi.a" \
 ```
 
 The arm64 packaging entry point is `tests/scripts/build_macos_app.sh`. It
-checks Rust format/tests/clippy, builds the macOS 13 arm64 FFI and SwiftUI
+checks Rust format/tests/clippy, builds the macOS 27 arm64 FFI and SwiftUI
 release, creates the checked-in logo icon, validates the intentionally unsigned
 app/ZIP and writes the timestamped product under ignored `dist/`. It does not
-invoke `codesign`, use certificates or perform notarization.
+use certificates or perform notarization; it also strips any ad-hoc signature
+automatically emitted by the Apple linker.
+
+For a host-native package on a newer macOS SDK, set
+`FOLIOFORGE_MACOS_TARGET_VERSION` before invoking the same script. For example,
+the macOS 27 package used for local and hosted validation is built with
+`FOLIOFORGE_MACOS_TARGET_VERSION=27.0`; the script passes that target to SwiftPM
+and writes the matching minimum system version into the staged app bundle. The
+default is the public macOS 27 release floor; an older deployment target is not
+part of the 0.1 release contract.
+
+## GitHub Actions Phase 7.7
+
+The multi-platform release definition is recorded in
+[PHASE_7_7_CI.md](PHASE_7_7_CI.md). The public workflow set is deliberately
+limited to `ci.yml`, `build.yml` and `release.yml`:
+
+- `ci.yml` is the source-quality and architecture gate and produces no release
+  archive.
+- `build.yml` builds native Linux x86_64/ARM64, Windows x86_64/ARM64 and
+  macOS 27 ARM64 Core/GUI artifacts on `main` or manual dispatch.
+- `release.yml` rebuilds the same six artifacts from a `v*` tag, creates
+  `SHA256SUMS`, and publishes only those artifacts.
+
+The GitHub release build does not sign macOS output. The GUI job uses
+`xcode-27`, sets the minimum target to `27.0`, checks the self-contained bundle
+and rejects repository or private Homebrew dynamic dependencies. Linux and
+Windows ARM jobs execute their own binaries on native ARM runners. The hosted
+runner labels are intentionally explicit because the 26/27 images are a
+moving hosted-image boundary; changing a future label must not change the Core
+or GUI packaging contract.
 
 ## Docker Service
 

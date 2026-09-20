@@ -1,6 +1,6 @@
 import Foundation
 
-enum FolioError: LocalizedError {
+enum FolioError: LocalizedError, @unchecked Sendable {
     case core(String)
     case invalidResponse
     case encoding(Error)

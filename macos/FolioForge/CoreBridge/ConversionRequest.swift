@@ -1,6 +1,6 @@
 import Foundation
 
-struct FolioTarget: Codable, Identifiable, Hashable {
+struct FolioTarget: Codable, Identifiable, Hashable, Sendable {
     let rawValue: String
     let canonicalName: String?
     let extensions: [String]
@@ -52,7 +52,7 @@ struct FolioTarget: Codable, Identifiable, Hashable {
     }
 }
 
-enum FolioDegradationMode: String, CaseIterable, Codable, Identifiable, Hashable {
+enum FolioDegradationMode: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
     case strict = "Strict"
     case compatible = "Compatible"
     case readable = "Readable"
@@ -68,7 +68,7 @@ enum FolioDegradationMode: String, CaseIterable, Codable, Identifiable, Hashable
     }
 }
 
-enum FolioBatchMode: String, CaseIterable, Codable, Identifiable, Hashable {
+enum FolioBatchMode: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
     case bestEffort = "BestEffort"
     case strict = "Strict"
 
@@ -82,7 +82,7 @@ enum FolioBatchMode: String, CaseIterable, Codable, Identifiable, Hashable {
     }
 }
 
-enum FolioPreviewDevice: String, CaseIterable, Codable, Identifiable, Hashable {
+enum FolioPreviewDevice: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
     case eReader = "e_reader"
     case phone
     case tablet
@@ -98,7 +98,7 @@ enum FolioPreviewDevice: String, CaseIterable, Codable, Identifiable, Hashable {
     }
 }
 
-enum FolioPreviewOrientation: String, CaseIterable, Codable, Identifiable, Hashable {
+enum FolioPreviewOrientation: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
     case portrait
     case landscape
 
@@ -106,7 +106,7 @@ enum FolioPreviewOrientation: String, CaseIterable, Codable, Identifiable, Hasha
     var title: String { rawValue.capitalized }
 }
 
-struct FolioPreviewSettings: Codable, Hashable {
+struct FolioPreviewSettings: Codable, Hashable, Sendable {
     var device: FolioPreviewDevice = .eReader
     var orientation: FolioPreviewOrientation = .portrait
     var fontSizePercent = 100
@@ -118,7 +118,7 @@ struct FolioPreviewSettings: Codable, Hashable {
     }
 }
 
-struct FolioDegradationOptions: Codable, Hashable {
+struct FolioDegradationOptions: Codable, Hashable, Sendable {
     var linearizeComplexTables = false
     var preferRasterization = false
     var stripEmbeddedFonts = false
@@ -130,7 +130,7 @@ struct FolioDegradationOptions: Codable, Hashable {
     }
 }
 
-enum FolioTextImportMode: String, CaseIterable, Codable, Identifiable, Hashable {
+enum FolioTextImportMode: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
     case auto = "auto"
     case novel = "novel"
     case markdown = "markdown"
@@ -139,7 +139,7 @@ enum FolioTextImportMode: String, CaseIterable, Codable, Identifiable, Hashable 
     var title: String { rawValue.capitalized }
 }
 
-enum FolioParagraphMode: String, CaseIterable, Codable, Identifiable, Hashable {
+enum FolioParagraphMode: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
     case auto = "auto"
     case blankLine = "blank_line"
     case everyLine = "every_line"
@@ -157,7 +157,7 @@ enum FolioParagraphMode: String, CaseIterable, Codable, Identifiable, Hashable {
     }
 }
 
-enum FolioTextEncoding: String, CaseIterable, Codable, Identifiable, Hashable {
+enum FolioTextEncoding: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
     case utf8 = "utf8"
     case utf16Le = "utf16_le"
     case utf16Be = "utf16_be"
@@ -179,7 +179,7 @@ enum FolioTextEncoding: String, CaseIterable, Codable, Identifiable, Hashable {
     }
 }
 
-struct FolioTextImportOptions: Codable, Hashable {
+struct FolioTextImportOptions: Codable, Hashable, Sendable {
     var mode: FolioTextImportMode = .auto
     var paragraphMode: FolioParagraphMode = .auto
     var encodingOverride: FolioTextEncoding?
@@ -195,7 +195,7 @@ struct FolioTextImportOptions: Codable, Hashable {
     }
 }
 
-enum FolioCompression: String, CaseIterable, Codable, Identifiable {
+enum FolioCompression: String, CaseIterable, Codable, Identifiable, Sendable {
     case none = "None"
     case palmDoc = "PalmDoc"
 
@@ -209,7 +209,7 @@ enum FolioCompression: String, CaseIterable, Codable, Identifiable {
     }
 }
 
-struct FolioConversionOptions: Encodable {
+struct FolioConversionOptions: Encodable, Sendable {
     let deterministic: Bool
     let compression: FolioCompression
     let degradationMode: FolioDegradationMode
@@ -225,7 +225,7 @@ struct FolioConversionOptions: Encodable {
     }
 }
 
-struct FolioBatchInput: Encodable {
+struct FolioBatchInput: Encodable, Sendable {
     let source: String
     let relativePath: String?
     let outputRoot: String?
@@ -239,7 +239,7 @@ struct FolioBatchInput: Encodable {
     }
 }
 
-struct FolioBatchOptions: Encodable {
+struct FolioBatchOptions: Encodable, Sendable {
     let target: FolioTarget
     let conversion: FolioConversionOptions
     let batchMode: FolioBatchMode
@@ -257,7 +257,7 @@ struct FolioBatchOptions: Encodable {
     }
 }
 
-struct FolioBatchConversionRequest: Encodable {
+struct FolioBatchConversionRequest: Encodable, Sendable {
     let inputs: [FolioBatchInput]
     let outputDirectory: String
     let options: FolioBatchOptions
@@ -269,7 +269,7 @@ struct FolioBatchConversionRequest: Encodable {
     }
 }
 
-struct FolioDiscoveredBook: Decodable {
+struct FolioDiscoveredBook: Decodable, Sendable {
     let source: String
     let relativePath: String?
 
@@ -400,7 +400,7 @@ struct FolioOnlineMetadataMergeRequest: Encodable, Sendable {
     let confirmed: Bool
 }
 
-struct FolioTypographyEdit: Encodable {
+struct FolioTypographyEdit: Encodable, Sendable {
     var fontFamily: String? = nil
     var bodyFontSize: String? = nil
     var lineHeight: String? = nil
@@ -414,7 +414,7 @@ struct FolioTypographyEdit: Encodable {
     }
 }
 
-struct FolioFontEdit: Encodable {
+struct FolioFontEdit: Encodable, Sendable {
     var stripEmbeddedFonts = false
     var preferredFamily: String? = nil
     var replacement: FolioFontReplacement? = nil
@@ -426,7 +426,7 @@ struct FolioFontEdit: Encodable {
     }
 }
 
-struct FolioFontReplacement: Encodable {
+struct FolioFontReplacement: Encodable, Sendable {
     let fileName: String
     let mediaType: String
     let bytes: [UInt8]
@@ -439,7 +439,7 @@ struct FolioFontReplacement: Encodable {
     }
 }
 
-struct FolioStyleEdit: Encodable {
+struct FolioStyleEdit: Encodable, Sendable {
     var nodeID: UInt32? = nil
     var role: String? = nil
     var properties: [String: String] = [:]
@@ -451,7 +451,7 @@ struct FolioStyleEdit: Encodable {
     }
 }
 
-struct FolioStructureEdit: Encodable {
+struct FolioStructureEdit: Encodable, Sendable {
     var documentOrder: [UInt32]? = nil
     var documentTitles: [String: String] = [:]
     var tocLabels: [String: String] = [:]
@@ -465,14 +465,14 @@ struct FolioStructureEdit: Encodable {
     }
 }
 
-enum FolioCoverFit: String, CaseIterable, Hashable, Identifiable, Encodable {
+enum FolioCoverFit: String, CaseIterable, Hashable, Identifiable, Encodable, Sendable {
     case fill = "Fill"
     case fit = "Fit"
 
     var id: String { rawValue }
 }
 
-enum FolioCoverEdit: Encodable {
+enum FolioCoverEdit: Encodable, Sendable {
     case keep
     case remove
     case replace(fileName: String, mediaType: String, bytes: [UInt8], fit: FolioCoverFit)
@@ -513,7 +513,7 @@ enum FolioCoverEdit: Encodable {
     }
 }
 
-struct FolioBookEditPlan: Encodable {
+struct FolioBookEditPlan: Encodable, Sendable {
     var metadata = FolioMetadataEdit()
     var cover: FolioCoverEdit = .keep
     var typography = FolioTypographyEdit()
@@ -529,7 +529,7 @@ struct FolioBookEditPlan: Encodable {
     }
 }
 
-struct FolioPreviewRequest: Encodable {
+struct FolioPreviewRequest: Encodable, Sendable {
     let input: String
     let target: FolioTarget
     let mode: FolioDegradationMode
@@ -543,7 +543,7 @@ struct FolioPreviewRequest: Encodable {
     }
 }
 
-struct FolioAnalysisRequest: Encodable {
+struct FolioAnalysisRequest: Encodable, Sendable {
     let input: String
     let target: FolioTarget
     let mode: FolioDegradationMode

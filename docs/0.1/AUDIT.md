@@ -1,7 +1,9 @@
 # FolioForge 0.1 Final Audit
 
-Status: local F0–F5 validation and hosted F7 CI passed on 2026-09-19. F6
-repository sync is complete; F8 tag/RC validation remains pending. This file
+Status: local F0–F5 validation and hosted F7 CI passed on 2026-09-19. Phase
+7.7 workflow implementation is recorded, while its first hosted multi-platform
+run and F8 tag/RC validation remain pending. F6 repository sync is complete.
+This file
 is the only final audit for the public 0.1 working tree; historical
 investigation reports are not authoritative.
 
@@ -215,7 +217,36 @@ release tag points to the audited commit.
   the proven F7 macOS gate, while Linux retains the full workspace release
   build.
 
-## 20. Provenance
+## 20. Phase 7.7 CI implementation record
+
+- Change classification: minor release-infrastructure maintenance. No Core,
+  Semantic IR, format, FFI, Service or SwiftUI behavior was changed.
+- The old Release workflow produced only Linux x86_64 plus a macOS package and
+  included `folio-service` in the Core archive. Phase 7.7 separates Core and
+  GUI artifacts and removes the Service binary from release packages.
+- Native runner jobs now cover Linux x86_64/ARM64, Windows x86_64/ARM64 and
+  macOS 27 ARM64 Core/GUI. Each Core job runs version/help, Unicode-path
+  conversion, validation and semantic inspection before packaging.
+- The Linux ARM parity gate compares canonical Semantic IR inspection output
+  for the same deterministic public fixture across x86_64 and ARM64.
+- Core and GUI packaging rejects Library SQLite data and machine/private
+  dynamic dependencies. macOS artifacts remain intentionally unsigned under
+  the 0.1 public-build policy.
+- SwiftPM is aligned with the macOS 27/Xcode 27 contract (`swift-tools-version:
+  6.4`); SwiftUI bridge value models are explicitly `Sendable` and batch
+  completion is retained in a controlled callback box so Swift 6.4 strict
+  concurrency can compile without changing conversion behavior.
+- Build and scratch paths are external to the repository. The tagged Release
+  workflow rebuilds from source and generates `SHA256SUMS`; it does not reuse
+  `build.yml` artifacts.
+- Local status on 2026-09-20: shell/Python syntax, workflow YAML parsing, Rust
+  formatting, architecture, full workspace tests and Clippy passed; the
+  macOS arm64 Core smoke package and complete unsigned macOS 27 arm64 GUI
+  package also passed with Swift 6.4. Native Windows, Linux ARM64 and hosted
+  Xcode 27 execution remain pending until GitHub Actions runs the new
+  workflows.
+
+## 21. Provenance
 
 The repository-content and dependency provenance review is recorded in
 [PROVENANCE_AUDIT.md](PROVENANCE_AUDIT.md). It found no bundled Calibre,

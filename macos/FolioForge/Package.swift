@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.4
 
 import Foundation
 import PackageDescription
@@ -9,7 +9,7 @@ let folioFFIArchive = ProcessInfo.processInfo.environment["FOLIOFORGE_FFI_ARCHIV
 let package = Package(
     name: "FolioForge",
     platforms: [
-        .macOS(.v13),
+        .macOS(.v27),
     ],
     products: [
         .executable(name: "FolioForge", targets: ["FolioForge"]),
@@ -23,8 +23,8 @@ let package = Package(
                 .process("Resources"),
             ],
             linkerSettings: [
-                // Build the Rust FFI for macOS 13 first with:
-                // CFLAGS_aarch64_apple_darwin='-mmacosx-version-min=13.0' RUSTC_WRAPPER=tests/scripts/rustc_macos_target_wrapper.sh cargo build --target aarch64-apple-darwin --release -p folio-ffi
+                // Build the Rust FFI for macOS 27 first with:
+                // CFLAGS_aarch64_apple_darwin='-mmacosx-version-min=27.0' RUSTC_WRAPPER=tests/scripts/rustc_macos_target_wrapper.sh cargo build --target aarch64-apple-darwin --release -p folio-ffi
                 // The static archive keeps the command-line-toolchain build
                 // independent of the host's dynamic linker layout. The
                 // release app is intentionally unsigned.

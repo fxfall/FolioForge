@@ -12,7 +12,6 @@ import argparse
 import hashlib
 import json
 import os
-import platform
 import re
 import shutil
 import subprocess
@@ -359,14 +358,6 @@ def executable(path: Path, name: str) -> Path:
     return candidate
 
 
-def kp3_command(previewer: Path, epub: Path, output: Path) -> list[str]:
-    command = [str(previewer), str(epub), "-convert", "-output", str(output), "-locale", "en"]
-    file_result = subprocess.run(["file", str(previewer)], capture_output=True, text=True, check=False)
-    if platform.machine() in {"arm64", "aarch64"} and "x86_64" in file_result.stdout:
-        return ["arch", "-x86_64", *command]
-    return command
-
-
 def one_kpf(directory: Path) -> Path:
     paths = sorted(directory.rglob("*.kpf"))
     if not paths:
@@ -421,7 +412,15 @@ def build_probe(
     preview_root.mkdir(parents=True, exist_ok=True)
     command_output(
         run_root / "kp3.log",
-        kp3_command(previewer, source_epub, preview_root),
+        [
+            str(previewer),
+            str(source_epub),
+            "-convert",
+            "-output",
+            str(preview_root),
+            "-locale",
+            "en",
+        ],
         env,
     )
     try:

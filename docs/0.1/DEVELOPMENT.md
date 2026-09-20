@@ -195,10 +195,11 @@ progress/events, download, preview and explicitly disabled-by-default online
 metadata endpoints. Request limits and safe archive paths are enforced before
 conversion.
 
-The SwiftUI target is a macOS 13 Swift Package. It displays queue, editor,
-compatibility preview, diagnostics, capability and KFX inspection data. It
-calls FFI and never parses an ebook itself. Its checked-in logo resource is
-the same FolioForge logo used by the package script and Service endpoint.
+The SwiftUI target is a macOS 27 Swift Package for the 0.1 release. It
+displays queue, editor, compatibility preview, diagnostics, capability and KFX
+inspection data. It calls FFI and never parses an ebook itself. Its checked-in
+logo resource is the same FolioForge logo used by the package script and
+Service endpoint.
 
 ## 13. Validation contract
 
