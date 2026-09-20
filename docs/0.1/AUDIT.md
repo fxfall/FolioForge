@@ -245,6 +245,10 @@ release tag points to the audited commit.
   package also passed with Swift 6.4. Native Windows, Linux ARM64 and hosted
   Xcode 27 execution remain pending until GitHub Actions runs the new
   workflows.
+- First hosted attempt for commit `a0868d3` (CI run `35545575349`) was
+  rejected before job scheduling because `runner.temp` was used in a job-level
+  `env` block. The correction moves all job bootstrap paths to `$RUNNER_TEMP`
+  plus `GITHUB_ENV`; this is release-infrastructure maintenance only.
 
 ## 21. Provenance
 

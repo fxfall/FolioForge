@@ -10,13 +10,6 @@ permissions:
 jobs:
   source:
     runs-on: ubuntu-26.04
-    env:
-      FOLIOFORGE_VALIDATION_ROOT: ${{ runner.temp }}/folioforge-validation
-      CARGO_TARGET_DIR: ${{ runner.temp }}/folioforge-validation/cargo-target
-      TMPDIR: ${{ runner.temp }}/folioforge-validation/tmp
-      FOLIOFORGE_TEMP_ROOT: ${{ runner.temp }}/folioforge-validation/runtime
-      FOLIO_BIN: ${{ runner.temp }}/folioforge-validation/cargo-target/release/folio
-      FOLIO_SERVICE_BIN: ${{ runner.temp }}/folioforge-validation/cargo-target/release/folio-service
     steps:
       # actions/checkout v4.2.2; immutable commit verified for the 0.1 baseline.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -25,6 +18,17 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt, clippy
+      - name: Configure external validation root
+        run: |
+          validation_root="$RUNNER_TEMP/folioforge-validation"
+          {
+            echo "FOLIOFORGE_VALIDATION_ROOT=$validation_root"
+            echo "CARGO_TARGET_DIR=$validation_root/cargo-target"
+            echo "TMPDIR=$validation_root/tmp"
+            echo "FOLIOFORGE_TEMP_ROOT=$validation_root/runtime"
+            echo "FOLIO_BIN=$validation_root/cargo-target/release/folio"
+            echo "FOLIO_SERVICE_BIN=$validation_root/cargo-target/release/folio-service"
+          } >> "$GITHUB_ENV"
       - name: Prepare external validation root
         run: mkdir -p "$FOLIOFORGE_VALIDATION_ROOT" "$TMPDIR" "$FOLIOFORGE_TEMP_ROOT"
       - name: Repository clean gate

@@ -98,3 +98,10 @@ existing macOS deprecation/linker warnings are non-fatal. Native Windows,
 Linux ARM64, and GitHub-hosted Xcode 27 execution cannot be reproduced on the
 local macOS host; their first hosted run remains an explicit release gate and
 is not presented as locally passed.
+
+The first hosted push (`a0868d3`, CI run `35545575349`) was rejected before
+starting because GitHub does not expose the `runner` context in a job-level
+`env` block. All job-level `runner.temp` references were removed; each build
+job now initializes external paths from the runner-provided `$RUNNER_TEMP` and
+persists them through `GITHUB_ENV`. The artifact action paths remain
+step-level expressions, where the runner context is valid.

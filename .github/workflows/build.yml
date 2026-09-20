@@ -25,15 +25,20 @@ jobs:
             target: aarch64-unknown-linux-gnu
             label: linux-aarch64
     runs-on: ${{ matrix.runner }}
-    env:
-      FOLIOFORGE_VALIDATION_ROOT: ${{ runner.temp }}/folioforge-validation
-      FOLIOFORGE_CORE_BUILD_ROOT: ${{ runner.temp }}/folioforge-core-build
-      FOLIOFORGE_ARTIFACT_ROOT: ${{ runner.temp }}/folioforge-artifacts
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
         with:
           toolchain: stable
+      - name: Configure external build roots
+        run: |
+          validation_root="$RUNNER_TEMP/folioforge-validation"
+          {
+            echo "FOLIOFORGE_VALIDATION_ROOT=$validation_root"
+            echo "FOLIOFORGE_CORE_BUILD_ROOT=$RUNNER_TEMP/folioforge-core-build"
+            echo "FOLIOFORGE_ARTIFACT_ROOT=$RUNNER_TEMP/folioforge-artifacts"
+          } >> "$GITHUB_ENV"
+          mkdir -p "$validation_root" "$RUNNER_TEMP/folioforge-artifacts"
       - name: Runner and toolchain identity
         run: |
           uname -m
@@ -66,13 +71,17 @@ jobs:
             target: aarch64-pc-windows-msvc
             label: windows-aarch64
     runs-on: ${{ matrix.runner }}
-    env:
-      FOLIOFORGE_VALIDATION_ROOT: ${{ runner.temp }}\folioforge-validation
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
         with:
           toolchain: stable
+      - name: Configure external build roots
+        shell: pwsh
+        run: |
+          $validationRoot = Join-Path $env:RUNNER_TEMP "folioforge-validation"
+          "FOLIOFORGE_VALIDATION_ROOT=$validationRoot" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Force -Path $validationRoot, (Join-Path $env:RUNNER_TEMP "folioforge-artifacts") | Out-Null
       - name: Runner and toolchain identity
         shell: pwsh
         run: |
@@ -95,15 +104,20 @@ jobs:
   macos-core:
     name: macOS 27 Core (arm64)
     runs-on: xcode-27
-    env:
-      FOLIOFORGE_VALIDATION_ROOT: ${{ runner.temp }}/folioforge-validation
-      FOLIOFORGE_CORE_BUILD_ROOT: ${{ runner.temp }}/folioforge-core-build
-      FOLIOFORGE_ARTIFACT_ROOT: ${{ runner.temp }}/folioforge-artifacts
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
         with:
           toolchain: stable
+      - name: Configure external build roots
+        run: |
+          validation_root="$RUNNER_TEMP/folioforge-validation"
+          {
+            echo "FOLIOFORGE_VALIDATION_ROOT=$validation_root"
+            echo "FOLIOFORGE_CORE_BUILD_ROOT=$RUNNER_TEMP/folioforge-core-build"
+            echo "FOLIOFORGE_ARTIFACT_ROOT=$RUNNER_TEMP/folioforge-artifacts"
+          } >> "$GITHUB_ENV"
+          mkdir -p "$validation_root" "$RUNNER_TEMP/folioforge-artifacts"
       - name: macOS 27 runner identity
         run: |
           sw_vers
@@ -127,15 +141,20 @@ jobs:
   macos-gui:
     name: macOS 27 GUI (arm64)
     runs-on: xcode-27
-    env:
-      FOLIOFORGE_VALIDATION_ROOT: ${{ runner.temp }}/folioforge-validation
-      FOLIOFORGE_OUTPUT_ROOT: ${{ runner.temp }}/folioforge-gui-output
-      FOLIOFORGE_MACOS_TARGET_VERSION: "27.0"
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
         with:
           toolchain: stable
+      - name: Configure external build roots
+        run: |
+          validation_root="$RUNNER_TEMP/folioforge-validation"
+          {
+            echo "FOLIOFORGE_VALIDATION_ROOT=$validation_root"
+            echo "FOLIOFORGE_OUTPUT_ROOT=$RUNNER_TEMP/folioforge-gui-output"
+            echo 'FOLIOFORGE_MACOS_TARGET_VERSION=27.0'
+          } >> "$GITHUB_ENV"
+          mkdir -p "$validation_root" "$RUNNER_TEMP/folioforge-gui-output"
       - name: macOS 27 GUI runner identity
         run: |
           sw_vers
