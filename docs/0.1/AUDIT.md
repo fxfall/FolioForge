@@ -1,8 +1,10 @@
 # FolioForge 0.1 Final Audit
 
-Status: local F0–F5 validation and hosted F7 CI passed on 2026-09-19. Phase
-7.7 workflow implementation is recorded, while its first hosted multi-platform
-run and F8 tag/RC validation remain pending. F6 repository sync is complete.
+Status: local F0–F5 validation and hosted F7 CI passed. The Phase 7.7
+multi-platform workflow passed on the corrected public commit. The
+maintainer-only validation bundle was separated from the public tree on
+2026-09-21; F8 tag/RC validation remains pending. F6 repository sync is
+complete.
 This file
 is the only final audit for the public 0.1 working tree; historical
 investigation reports are not authoritative.
@@ -30,13 +32,15 @@ The architecture baseline was rechecked after document cleanup:
 - generated output is validated before atomic commit;
 - KFX research tools are external to runtime conversion logic.
 
-Result: PASS (`python3 tests/architecture/check_boundaries.py`).
+Result: PASS in the local validation record. The static architecture helper is
+maintainer-only and is not tracked in the public checkout.
 
 ## 3. Module boundary audit
 
-The architecture gate is `tests/architecture/check_boundaries.py`. Explicitly
-forbidden edges include Core → Library and Library → concrete format adapters.
-Result: PASS.
+Explicitly forbidden edges include Core → Library and Library → concrete
+format adapters. The static boundary script used for the local audit is kept
+in the ignored development bundle rather than the public checkout. Result:
+PASS.
 
 ## 4. Format validation
 
@@ -46,9 +50,10 @@ The final local run recorded the following results:
 - `cargo test --workspace --locked`: PASS.
 - `cargo clippy --workspace --all-targets --locked -- -D warnings`: PASS.
 - `cargo build --workspace --locked --release`: PASS.
-- degradation golden set: PASS, 10 cases.
-- deterministic conversion matrix: PASS, 36 cases across 12 directions.
-- public KFX semantic probes: PASS for all checked-in probe sources.
+- maintainer-local degradation golden set: PASS, 10 cases.
+- maintainer-local deterministic conversion matrix: PASS, 36 cases across 12
+  directions.
+- maintainer-local KFX semantic probes: PASS for all retained probe sources.
 
 The first offline test attempt stopped at the uncached `blake3` package; the
 same locked test was then rerun with the configured sparse registry and the
@@ -60,10 +65,10 @@ or test failure. The public format matrix is in
 
 The IR validator, deterministic IDs/order, metadata/edit-plan path, anchors,
 links, notes, resources, styles, fonts, ruby, MathML, tables, layout intent
-and target degradation reports are covered by public fixtures and workspace
-tests. The workspace test run passed all 85 KFX unit tests (one private-corpus
-test remains opt-in). KFX input keeps unresolved relationships unresolved; it
-does not guess from string pools.
+and target degradation reports are covered by workspace tests and the
+maintainer-only validation bundle. The workspace test run passed all 85 KFX
+unit tests (one private-corpus test remains opt-in). KFX input keeps unresolved
+relationships unresolved; it does not guess from string pools.
 
 ## 6. Cross-format validation
 
@@ -225,10 +230,12 @@ release tag points to the audited commit.
   included `folio-service` in the Core archive. Phase 7.7 separates Core and
   GUI artifacts and removes the Service binary from release packages.
 - Native runner jobs now cover Linux x86_64/ARM64, Windows x86_64/ARM64 and
-  macOS 27 ARM64 Core/GUI. Each Core job runs version/help, Unicode-path
-  conversion, validation and semantic inspection before packaging.
-- The Linux ARM parity gate compares canonical Semantic IR inspection output
-  for the same deterministic public fixture across x86_64 and ARM64.
+  macOS 27 ARM64 Core/GUI. Each Core job validates the Rust target build,
+  version/help output, archive layout and the absence of Library data before
+  uploading the artifact.
+- Unicode-path conversion, Semantic IR parity, KFX probes and third-party
+  converter comparisons are maintainer-local checks in `.folioforge-dev/`;
+  they are not part of the public GitHub release job.
 - Core and GUI packaging rejects Library SQLite data and machine/private
   dynamic dependencies. macOS artifacts remain intentionally unsigned under
   the 0.1 public-build policy.
@@ -239,16 +246,31 @@ release tag points to the audited commit.
 - Build and scratch paths are external to the repository. The tagged Release
   workflow rebuilds from source and generates `SHA256SUMS`; it does not reuse
   `build.yml` artifacts.
-- Local status on 2026-09-20: shell/Python syntax, workflow YAML parsing, Rust
+- Local status on 2026-09-21: shell/Python syntax, workflow YAML parsing, Rust
   formatting, architecture, full workspace tests and Clippy passed; the
-  macOS arm64 Core smoke package and complete unsigned macOS 27 arm64 GUI
-  package also passed with Swift 6.4. Native Windows, Linux ARM64 and hosted
-  Xcode 27 execution remain pending until GitHub Actions runs the new
-  workflows.
+  conversion matrix and degradation golden checks in the local bundle also
+  passed; the macOS arm64 Core package and complete unsigned macOS 27 arm64 GUI package
+  also passed with Swift 6.4. The extended Python/oracle validation material
+  is now retained only in the ignored local development bundle.
 - First hosted attempt for commit `a0868d3` (CI run `35545575349`) was
   rejected before job scheduling because `runner.temp` was used in a job-level
   `env` block. The correction moves all job bootstrap paths to `$RUNNER_TEMP`
   plus `GITHUB_ENV`; this is release-infrastructure maintenance only.
+
+## 22. Local development bundle separation
+
+- Change classification: minor repository/release-infrastructure maintenance.
+- The top-level `tests/`, `tools/` and `bench/` trees were moved to the
+  ignored `.folioforge-dev/` directory. They are not tracked by GitHub,
+  included in release archives or sent to Docker build contexts.
+- Build-only helpers were moved to `packaging/` so clean GitHub checkouts can
+  still build Core and the unsigned macOS 27 GUI without Python or local
+  fixture data.
+- Rust source-level tests remain part of the public crates; the move removes
+  external fixture/oracle material, not the Rust implementation's own test
+  modules or the conversion pipeline.
+- The migration record, including the initial broken-reference risk and its
+  correction, is in the local-only `.folioforge-dev/DEVELOPMENT_LOG.md`.
 
 ## 21. Provenance
 

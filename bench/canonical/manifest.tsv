@@ -1,5 +1,0 @@
-# name<TAB>input
-basic-text	 tests/semantic-equivalence/basic/basic.txt
-basic-markdown	 tests/semantic-equivalence/basic/basic.md
-basic-html	 tests/semantic-equivalence/basic/basic.html
-basic-fb2	 tests/semantic-equivalence/basic/basic.fb2

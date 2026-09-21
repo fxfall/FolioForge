@@ -24,7 +24,7 @@ let package = Package(
             ],
             linkerSettings: [
                 // Build the Rust FFI for macOS 27 first with:
-                // CFLAGS_aarch64_apple_darwin='-mmacosx-version-min=27.0' RUSTC_WRAPPER=tests/scripts/rustc_macos_target_wrapper.sh cargo build --target aarch64-apple-darwin --release -p folio-ffi
+                // CFLAGS_aarch64_apple_darwin='-mmacosx-version-min=27.0' RUSTC_WRAPPER=packaging/rustc_macos_target_wrapper.sh cargo build --target aarch64-apple-darwin --release -p folio-ffi
                 // The static archive keeps the command-line-toolchain build
                 // independent of the host's dynamic linker layout. The
                 // release app is intentionally unsigned.

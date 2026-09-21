@@ -31,24 +31,11 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: Prepare external validation root
         run: mkdir -p "$FOLIOFORGE_VALIDATION_ROOT" "$TMPDIR" "$FOLIOFORGE_TEMP_ROOT"
-      - name: Repository clean gate
-        run: python3 tools/release/repository-audit.py
       - name: Format check
         run: cargo fmt --all -- --check
-      - name: Architecture boundary gate
-        run: python3 tests/architecture/check_boundaries.py
       - name: Workspace tests
         run: cargo test --workspace --locked
       - name: Clippy
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - name: Release build
         run: cargo build --workspace --locked --release
-      - name: Public semantic probes
-        run: |
-          python3 tools/dev/kfx_probe.py validate --all \
-            --artifact-root "$FOLIOFORGE_VALIDATION_ROOT/kfx-probes"
-      - name: Public conversion matrix
-        run: |
-          tests/scripts/run_degradation_golden.sh
-          tests/scripts/run_conversion_matrix.sh
-          tests/scripts/run_service_smoke.sh

@@ -19,11 +19,18 @@ compatibility rule, an exporter, FFI, batch execution, or the service boundary:
 6. Classify the change as major or minor under the frozen-scope rules in
    `docs/0.1/DEVELOPMENT.md`; record the classification in the audit/change
    notes.
-7. Run the targeted tests, the canonical matrix, and the architecture check.
+7. Run the targeted Rust tests and the canonical local validation bundle when
+   it is available; the bundle is intentionally outside the public checkout.
 8. Run the required A/B comparison before accepting a behavior-changing
    change, then update the behavior/performance baseline and API changelog.
 9. Remove temporary code and keep build/scratch data under the path selected by
    `FOLIOFORGE_VALIDATION_ROOT`, outside the repository.
+
+The maintainer-only validation bundle lives in the ignored `.folioforge-dev/`
+directory. It contains Python/oracle tooling, synthetic corpora, private
+comparison notes and development records. It is not part of the public GitHub
+checkout, release archives or Docker build context. Runtime code must never
+import or depend on it.
 
 If the implementation and a contract disagree, stop and record the mismatch as
 Architecture Drift before deciding whether the code or the document is wrong.

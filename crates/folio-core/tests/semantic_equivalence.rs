@@ -177,21 +177,41 @@ fn write_docx(path: &Path) {
 fn write_sources(root: &Path) -> BTreeMap<&'static str, PathBuf> {
     let source_root = root.join("sources");
     fs::create_dir_all(&source_root).unwrap();
-    let basic_root =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/semantic-equivalence/basic");
     let mut paths = BTreeMap::new();
     let markdown = source_root.join("basic.md");
-    fs::copy(basic_root.join("basic.md"), &markdown).unwrap();
+    fs::write(
+        &markdown,
+        "---\ntitle: Canonical Book\nauthor: FolioForge Test\nlanguage: en\n---\n\n# Chapter One\n\nShared paragraph.\n\n- Item one\n- Item two\n\n[Internal target](#target) and [external reference](https://example.invalid/reference).\n\n![Shared image](cover.png)\n\n## Target\n\nTarget paragraph.\n",
+    )
+    .unwrap();
     fs::write(source_root.join("cover.png"), b"image fixture").unwrap();
     paths.insert("markdown", markdown);
     let html = source_root.join("basic.html");
-    fs::copy(basic_root.join("basic.html"), &html).unwrap();
+    fs::write(
+        &html,
+        "<!doctype html><html lang=\"en\"><head><title>Canonical Book</title><meta name=\"author\" content=\"FolioForge Test\"></head><body><h1 id=\"chapter-one\">Chapter One</h1><p>Shared paragraph.</p><ul><li>Item one</li><li>Item two</li></ul><p><a href=\"#target\">Internal target</a> and <a href=\"https://example.invalid/reference\">external reference</a>.</p><p><img src=\"cover.png\" alt=\"Shared image\"></p><h2 id=\"target\">Target</h2><p>Target paragraph.</p></body></html>",
+    )
+    .unwrap();
     paths.insert("html", html);
     let text = source_root.join("Canonical Book.txt");
-    fs::copy(basic_root.join("basic.txt"), &text).unwrap();
+    fs::write(
+        &text,
+        "Chapter One\n\nShared paragraph.\n\nItem one\n\nItem two\n\nChapter Two\n\nTarget paragraph.\n",
+    )
+    .unwrap();
     paths.insert("text", text);
     let fb2 = source_root.join("basic.fb2");
-    fs::copy(basic_root.join("basic.fb2"), &fb2).unwrap();
+    fs::write(
+        &fb2,
+        r###"<?xml version="1.0" encoding="utf-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink">
+  <description><title-info><book-title>Canonical Book</book-title><author><nickname>FolioForge Test</nickname></author><lang>en</lang></title-info></description>
+  <body><section id="chapter-one"><title><p>Chapter One</p></title><p>Shared paragraph.</p><list><p>Item one</p><p>Item two</p></list><p><a l:href="#target">Internal target</a>.</p><p><image l:href="#cover" alt="Shared image"/></p></section><section id="target"><title><p>Target</p></title><p>Target paragraph.</p></section></body>
+  <binary id="cover" content-type="image/png">aGVsbG8=</binary>
+</FictionBook>
+"###,
+    )
+    .unwrap();
     paths.insert("fb2", fb2);
     let docx = source_root.join("basic.docx");
     write_docx(&docx);

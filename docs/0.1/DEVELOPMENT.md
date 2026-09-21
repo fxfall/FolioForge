@@ -72,7 +72,10 @@ consume these contracts rather than reimplementing them.
 - FFI, Service and SwiftUI are transport/presentation adapters. They do not
   become a second capability registry or metadata authority.
 
-The executable architecture gate is `tests/architecture/check_boundaries.py`.
+The public architecture boundary is enforced by the Rust workspace layout and
+crate-level tests. The extended static architecture script is maintainer-only
+and lives in the ignored `.folioforge-dev/tests/architecture/` directory; it
+is never a runtime dependency or a public release input.
 
 ## 4. Semantic IR
 
@@ -203,11 +206,11 @@ Service endpoint.
 
 ## 13. Validation contract
 
-The public validation set includes Rust unit/integration tests, the
-architecture gate, degradation golden fixtures, semantic-equivalence fixtures,
-the deterministic conversion matrix, public KFX semantic probes and Service
-smoke tests. Private real-book KFX/Calibre/KP3 comparisons are local evidence
-only and are not release inputs.
+The public validation set includes Rust unit/integration tests, formatting,
+Clippy and release builds. The extended degradation golden fixtures,
+semantic-equivalence fixtures, deterministic conversion matrix, KFX semantic
+probes, Service smoke tests and Calibre/Bōkō/KP3 comparisons are maintainer
+local evidence kept in `.folioforge-dev/`; they are not public release inputs.
 
 Release validation must use a fresh external artifact root selected by
 `FOLIOFORGE_VALIDATION_ROOT`; the repository must contain no generated output.

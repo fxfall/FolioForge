@@ -680,8 +680,8 @@ mod tests {
             std::env::temp_dir().join(format!("folio-batch-parallel-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(&root).unwrap();
-        let input = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/semantic-equivalence/basic/basic.txt");
+        let input = root.join("input.txt");
+        fs::write(&input, "Chapter One\n\nShared paragraph.\n").unwrap();
         let inputs = vec![
             BatchInput {
                 source: input.clone(),

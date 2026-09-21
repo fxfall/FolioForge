@@ -6,7 +6,7 @@ if [ "$#" -ne 3 ]; then
     exit 2
 fi
 
-ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 RUST_TARGET=$1
 ARTIFACT_LABEL=$2
 ARTIFACT_ROOT=$3
@@ -67,22 +67,8 @@ printf '%s\n' "$VERSION_OUTPUT"
 printf '%s\n' "$VERSION_OUTPUT" | grep -q '0\.1\.0'
 "$BINARY" --help >/dev/null
 
-SMOKE_ROOT="$BUILD_ROOT/smoke"
-mkdir -p "$SMOKE_ROOT"
-SMOKE_INPUT="$SMOKE_ROOT/图书.epub"
-SMOKE_OUTPUT="$SMOKE_ROOT/输出.azw3"
-python3 "$ROOT_DIR/tests/scripts/build_smoke_fixture.py" "$SMOKE_INPUT"
-"$BINARY" convert "$SMOKE_INPUT" --to kf8 --mode compatible --output "$SMOKE_OUTPUT" >"$SMOKE_ROOT/convert.json"
-test -s "$SMOKE_OUTPUT"
-"$BINARY" validate "$SMOKE_OUTPUT" >"$SMOKE_ROOT/validate.json"
-"$BINARY" inspect "$SMOKE_OUTPUT" --semantic >"$SMOKE_ROOT/semantic.json"
-
-SMOKE_HASH="$ARTIFACT_ROOT/FolioForge-Core-0.1.0-$ARTIFACT_LABEL.tar.gz.smoke.semantic.sha256"
-python3 "$ROOT_DIR/tests/scripts/canonical_json_hash.py" \
-    "$SMOKE_ROOT/semantic.json" "$SMOKE_HASH"
-
 if find "$BUILD_ROOT" -type f \( -name 'library.sqlite' -o -name '*.sqlite' -o -name '*.sqlite3' \) -print -quit | grep -q .; then
-    printf '%s\n' 'Core smoke unexpectedly created a Library database' >&2
+    printf '%s\n' 'Core build unexpectedly created a Library database' >&2
     exit 1
 fi
 
@@ -102,4 +88,4 @@ if tar -tzf "$ARCHIVE" | grep -Eq '(^|/)(library\.sqlite|.*\.sqlite3?)$'; then
     exit 1
 fi
 
-printf '%s\n' "Built and smoke-tested $ARCHIVE"
+printf '%s\n' "Built and packaged $ARCHIVE"

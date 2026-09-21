@@ -1,10 +1,12 @@
 use std::{
     fs,
-    path::{Path, PathBuf},
+    io::{Cursor, Write},
+    path::PathBuf,
     time::{SystemTime, UNIX_EPOCH},
 };
 
 use folio_library::{scan, BookMetadata, Library, QueryBudget, ScanOptions, SyncStatus};
+use zip::{write::SimpleFileOptions, ZipWriter};
 
 fn test_root(name: &str) -> PathBuf {
     let base = std::env::var_os("FOLIOFORGE_PHASE7_5_TEST_ROOT")
@@ -19,8 +21,32 @@ fn test_root(name: &str) -> PathBuf {
     base.join(format!("{name}-{}-{stamp}", std::process::id()))
 }
 
-fn fixture() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/parity/input.epub")
+fn write_fixture(path: &PathBuf) {
+    let mut archive = ZipWriter::new(Cursor::new(Vec::new()));
+    let stored = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
+    archive.start_file("mimetype", stored).expect("mimetype");
+    archive
+        .write_all(b"application/epub+zip")
+        .expect("mimetype bytes");
+    archive
+        .start_file("META-INF/container.xml", stored)
+        .expect("container");
+    archive
+        .write_all(br#"<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf"/></rootfiles></container>"#)
+        .expect("container bytes");
+    archive
+        .start_file("OEBPS/content.opf", stored)
+        .expect("opf");
+    archive
+        .write_all(br#"<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="book-id">urn:folioforge:library-fixture</dc:identifier><dc:title>Library fixture</dc:title><dc:creator>FolioForge Fixture</dc:creator><dc:language>en</dc:language></metadata><manifest><item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="chapter"/></spine></package>"#)
+        .expect("opf bytes");
+    archive
+        .start_file("OEBPS/chapter.xhtml", stored)
+        .expect("chapter");
+    archive
+        .write_all(b"<html xmlns=\"http://www.w3.org/1999/xhtml\"><body><h1>Library fixture</h1><p>Fixture text.</p></body></html>")
+        .expect("chapter bytes");
+    fs::write(path, archive.finish().expect("archive").into_inner()).expect("fixture write");
 }
 
 #[test]
@@ -28,7 +54,7 @@ fn repository_schema_relations_search_and_bounded_queries_work() {
     let root = test_root("library-contract");
     fs::create_dir_all(&root).expect("test root");
     let source = root.join("source.epub");
-    fs::copy(fixture(), &source).expect("fixture");
+    write_fixture(&source);
     let database = root.join("library.sqlite3");
 
     let mut library = Library::open(&database).expect("open library");
@@ -92,7 +118,7 @@ fn metadata_write_back_is_atomic_and_reinspectable_for_epub() {
     let root = test_root("library-write-back");
     fs::create_dir_all(&root).expect("test root");
     let source = root.join("source.epub");
-    fs::copy(fixture(), &source).expect("fixture");
+    write_fixture(&source);
     let mut library = Library::open(root.join("library.sqlite3")).expect("open library");
     let storage_root = library.add_storage_root(&root).expect("root");
     let report = scan(&mut library, storage_root.id, ScanOptions::default()).expect("scan");
@@ -138,7 +164,7 @@ fn scanner_failure_is_recoverable_without_creating_a_partial_book() {
     assert_eq!(failed.failed, 1, "failure report: {failed:?}");
     assert_eq!(library.stats().expect("stats").books, 0);
 
-    fs::copy(fixture(), &broken).expect("repair file");
+    write_fixture(&broken);
     let recovered =
         scan(&mut library, storage_root.id, ScanOptions::default()).expect("recovery scan");
     assert_eq!(recovered.new, 1, "recovery report: {recovered:?}");

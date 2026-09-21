@@ -10,6 +10,7 @@ DerivedData/
 # Local/private corpora and generated fixture material.
 /tests-private/
 /private-corpus/
+/\.folioforge-dev/
 /tests/corpus/generated/
 /tests/kfx-resource-identity/fixtures-private/
 /tests/semantic-probes/kfx/generated/

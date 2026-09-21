@@ -43,9 +43,9 @@ jobs:
         run: |
           uname -m
           rustc -Vv
-      - name: Build, smoke-test and package Core
+      - name: Build and package Core
         run: |
-          sh tests/scripts/package_core_artifact.sh \
+          sh packaging/package_core_artifact.sh \
             "${{ matrix.target }}" \
             "${{ matrix.label }}" \
             "$FOLIOFORGE_ARTIFACT_ROOT"
@@ -87,10 +87,10 @@ jobs:
         run: |
           [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
           rustc -Vv
-      - name: Build, smoke-test and package Core
+      - name: Build and package Core
         shell: pwsh
         run: |
-          & "$env:GITHUB_WORKSPACE\tests\scripts\package_core_artifact.ps1" `
+          & "$env:GITHUB_WORKSPACE\packaging\package_core_artifact.ps1" `
             -Target "${{ matrix.target }}" `
             -Label "${{ matrix.label }}" `
             -OutputRoot "$env:RUNNER_TEMP\folioforge-artifacts"
@@ -125,9 +125,9 @@ jobs:
           xcodebuild -version
           rustc -Vv
           test "$(uname -m)" = arm64
-      - name: Build, smoke-test and package Core
+      - name: Build and package Core
         run: |
-          sh tests/scripts/package_core_artifact.sh \
+          sh packaging/package_core_artifact.sh \
             aarch64-apple-darwin \
             macos27-aarch64 \
             "$FOLIOFORGE_ARTIFACT_ROOT"
@@ -163,7 +163,7 @@ jobs:
           rustc -Vv
           test "$(uname -m)" = arm64
       - name: Build GUI release gate
-        run: tests/scripts/build_macos_app.sh
+        run: packaging/build_macos_app.sh
       - name: Validate self-contained GUI bundle
         run: |
           app=$(find "$FOLIOFORGE_OUTPUT_ROOT" -type d -name 'FolioForge.app' -print -quit)
@@ -193,21 +193,3 @@ jobs:
           name: gui-macos-aarch64
           path: ${{ runner.temp }}/FolioForge-GUI-0.1.0-macos27-aarch64.zip
           if-no-files-found: error
-
-  linux-semantic-parity:
-    name: Linux Core semantic parity
-    needs: linux-core
-    runs-on: ubuntu-26.04
-    steps:
-      - name: Download Linux Core smoke hashes
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          pattern: core-linux-*
-          path: ${{ runner.temp }}/folioforge-linux-artifacts
-          merge-multiple: true
-      - name: Compare x86_64 and ARM64 semantic smoke output
-        run: |
-          x86=$(find "$RUNNER_TEMP/folioforge-linux-artifacts" -name '*linux-x86_64.tar.gz.smoke.semantic.sha256' -print -quit)
-          arm=$(find "$RUNNER_TEMP/folioforge-linux-artifacts" -name '*linux-aarch64.tar.gz.smoke.semantic.sha256' -print -quit)
-          test -n "$x86" -a -n "$arm"
-          test "$(awk '{print $1}' "$x86")" = "$(awk '{print $1}' "$arm")"

@@ -77,7 +77,9 @@ The current 0.1 documentation is the only authoritative development contract:
 3. the relevant [format](docs/formats/) or [Library](docs/library/DATA_MODEL.md)
    contract
 4. [KNOWN_LIMITS.md](docs/0.1/KNOWN_LIMITS.md)
-5. source and tests
+5. source-level Rust tests; maintainer-only validation material is kept in the
+   ignored local `.folioforge-dev/` directory and is not part of GitHub
 
-Historical stage notes are retained outside the public working tree and are
-not authoritative for the 0.1 code.
+Historical stage notes, Python/oracle tools, synthetic validation fixtures and
+development logs are retained in the ignored local `.folioforge-dev/` bundle;
+they are not authoritative runtime code and are not published to GitHub.

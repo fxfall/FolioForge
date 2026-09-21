@@ -1,7 +1,0 @@
-{
-  "target": "Kf7",
-  "mode": "Compatible",
-  "feature": "PageBreak",
-  "quality": "Exact",
-  "fallback_contains": "native target representation"
-}

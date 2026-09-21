@@ -11,10 +11,12 @@ the public tree and were not copied into this repository.
 No Calibre, Bōkō, Kindle Previewer, or other converter source file, executable,
 patch, archive, or extracted book bytes were found in the tracked tree.
 
-The repository contains FolioForge implementation code, synthetic fixtures,
-the user-supplied FolioForge logo, and normal crates.io dependencies declared
-through Cargo. Calibre and Bōkō are used as explicitly external compatibility
-references/oracles; they are not runtime dependencies and are not bundled.
+The repository contains FolioForge implementation code, public contracts, the
+user-supplied FolioForge logo, and normal crates.io dependencies declared
+through Cargo. Synthetic fixtures and external-oracle scripts are kept in the
+ignored local `.folioforge-dev/` bundle. Calibre and Bōkō are used as explicitly
+external compatibility references/oracles; they are not runtime dependencies
+and are not bundled.
 
 This is a repository-content audit, not a formal source-similarity proof
 against every historical release of every external project. The repository was
@@ -25,7 +27,8 @@ history is available for a line-by-line ancestry claim.
 
 ### 1. Tracked-tree inventory
 
-- 350 tracked paths were audited.
+- The tracked tree was audited after the local validation bundle was removed
+  from the public checkout.
 - No tracked `vendor/`, `third_party/`, `upstream/`, `calibre/` or `boko/`
   source directory exists.
 - The only tracked project license file is the FolioForge MIT `LICENSE`.
@@ -37,16 +40,16 @@ history is available for a line-by-line ancestry claim.
 
 ### 2. Calibre/Bōkō/Kindle references
 
-References occur in documentation, oracle scripts, tests and a small number of
-behavior-reference comments. Examples are:
+References occur in documentation, the ignored local oracle bundle and a small
+number of behavior-reference comments. Examples are:
 
-- `tools/dev/kfx_probe.py` invokes installed Kindle Previewer and Calibre only
-  when a developer explicitly runs the probe.
-- `tools/oracle/kfx/` contains comparison and evidence scripts that invoke
-  externally supplied Calibre/Bōkō executables; generated book output is kept
-  outside the repository.
-- `docs/0.1/FORMAT_SUPPORT.md` and `tests/semantic-probes/kfx/README.md`
-  describe them as compatibility references, not authorities or dependencies.
+- `.folioforge-dev/tools/dev/kfx_probe.py` invokes installed Kindle Previewer
+  and Calibre only when a developer explicitly runs the probe.
+- `.folioforge-dev/tools/oracle/kfx/` contains comparison and evidence scripts
+  that invoke externally supplied Calibre/Bōkō executables; generated book
+  output is kept outside the repository.
+- `docs/0.1/FORMAT_SUPPORT.md` describes them as compatibility references, not
+  authorities or dependencies.
 - Comments in `crates/folio-kfx/src/amazon/mod.rs` and
   `crates/folio-epub/src/lib.rs` identify observed behavior being compared.
 
@@ -74,12 +77,9 @@ those obligations are not converted into FolioForge source ownership.
   `macos/FolioForge/Resources/folioforge-logo.png` are byte-identical
   (`SHA-256 6030e378edb0cd42c5c63b2ddc3ab091fdb86e850073f9243ec5bbf6d47bc5c9`)
   copies of the logo supplied for this project.
-- `tests/degradation/font/font.woff` is a 38-byte deterministic text fixture
-  whose contents identify it as a FolioForge fixture; it is not a font copied
-  from another project.
-- The checked-in EPUB/SVG files are small synthetic parity/degradation/KFX
-  probes. No private book, Calibre EPUB, Bōkō EPUB, KPF or KFX output is
-  tracked.
+- Synthetic EPUB/SVG/KFX probes and the deterministic font fixture live only
+  under `.folioforge-dev/`. No private book, Calibre EPUB, Bōkō EPUB, KPF or
+  KFX output is tracked.
 
 ## Limitations and follow-up
 

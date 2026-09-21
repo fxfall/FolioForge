@@ -7,6 +7,10 @@
 - Added platform smoke packaging, Unicode-path conversion checks, semantic
   parity checks, Library-database exclusion checks and tagged SHA256 release
   assembly. No conversion behavior or public API changed.
+- Separated maintainer-only Python/oracle tooling, synthetic validation
+  fixtures, benchmarks and development records into the ignored
+  `.folioforge-dev/` bundle. Public packaging helpers now live under
+  `packaging/`; no conversion behavior or public API changed.
 
 ## 0.1.0
 

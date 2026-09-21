@@ -23,8 +23,8 @@ The public repository has exactly three workflow files:
 
 | Workflow | Trigger | Responsibility |
 | --- | --- | --- |
-| `ci.yml` | push and pull request | format, architecture, workspace tests, Clippy, release build, public probes and conversion/service matrix; no release artifacts |
-| `build.yml` | `main` push and manual dispatch | native multi-platform Core/GUI builds, smoke tests, packages and uploaded workflow artifacts |
+| `ci.yml` | push and pull request | Rust format, workspace tests, Clippy and release build; no release artifacts |
+| `build.yml` | `main` push and manual dispatch | native multi-platform Core/GUI builds, packages and uploaded workflow artifacts |
 | `release.yml` | `v*` tags | clean tagged rebuild, validation, six release packages, SHA256SUMS and GitHub Release publication |
 
 The tagged workflow never downloads artifacts from `build.yml`; it rebuilds
@@ -65,11 +65,10 @@ and machine-specific paths are not release contents.
 
 ## Gates implemented
 
-Each Core job runs `--version`, `--help`, a Unicode-path fixture conversion
-(`图书.epub` → KF8), output validation and semantic inspection. The semantic
-inspection is canonicalized and the Linux x86_64/ARM64 jobs compare the same
-fixture result. Packaging then verifies the archive layout and the absence of
-SQLite Library data.
+Each Core job runs `--version` and `--help`, builds the target binary and
+verifies the archive layout and the absence of SQLite Library data. Extended
+fixture conversion, semantic parity, KFX probes and third-party converter
+comparisons remain in the ignored local development bundle.
 
 The GUI job builds with `FOLIOFORGE_MACOS_TARGET_VERSION=27.0` and checks:
 
@@ -81,23 +80,20 @@ The GUI job builds with `FOLIOFORGE_MACOS_TARGET_VERSION=27.0` and checks:
 - ZIP integrity;
 - intentionally unsigned executable, matching the public 0.1 signing policy.
 
-The shared helpers are `tests/scripts/package_core_artifact.sh`,
-`tests/scripts/package_core_artifact.ps1`,
-`tests/scripts/build_smoke_fixture.py` and
-`tests/scripts/canonical_json_hash.py`. All build, scratch and smoke data are
-created below `FOLIOFORGE_VALIDATION_ROOT` or the hosted runner temporary
-directory.
+The public build helpers are `packaging/package_core_artifact.sh`,
+`packaging/package_core_artifact.ps1` and `packaging/build_macos_app.sh`.
+They contain no fixture generator or Python dependency. All build and scratch
+data are created below `FOLIOFORGE_VALIDATION_ROOT` or the hosted runner
+temporary directory.
 
 ## Validation record
 
-Local validation on 2026-09-20 passed shell/Python syntax, workflow YAML
-parsing, Rust formatting, the architecture gate, the full workspace test and
-Clippy gates, the Core macOS arm64 smoke package, and the complete unsigned
-macOS 27 arm64 GUI package. The GUI build used Swift 6.4 and confirmed the
-existing macOS deprecation/linker warnings are non-fatal. Native Windows,
-Linux ARM64, and GitHub-hosted Xcode 27 execution cannot be reproduced on the
-local macOS host; their first hosted run remains an explicit release gate and
-is not presented as locally passed.
+Local validation on 2026-09-21 passed shell/Python syntax, workflow YAML
+parsing, Rust formatting, the local architecture/degradation/matrix gates, the
+Core macOS arm64 package, and the complete unsigned macOS 27 arm64 GUI package.
+The GUI build used Swift 6.4 and confirmed the existing macOS
+deprecation/linker warnings are non-fatal. The public GitHub workflow does not
+require the local Python or oracle bundle.
 
 The first hosted push (`a0868d3`, CI run `35545575349`) was rejected before
 starting because GitHub does not expose the `runner` context in a job-level

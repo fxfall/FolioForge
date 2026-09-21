@@ -10,7 +10,7 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-$root = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $validationRoot = $env:FOLIOFORGE_VALIDATION_ROOT
 if ([string]::IsNullOrWhiteSpace($validationRoot)) {
     throw "FOLIOFORGE_VALIDATION_ROOT must point outside the repository"
@@ -56,26 +56,8 @@ try {
     & $binary --help | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "folio --help failed" }
 
-    $smokeRoot = Join-Path $buildRoot "smoke"
-    New-Item -ItemType Directory -Force -Path $smokeRoot | Out-Null
-    $smokeInput = Join-Path $smokeRoot "图书.epub"
-    $smokeOutput = Join-Path $smokeRoot "输出.azw3"
-    & python (Join-Path $root "tests\scripts\build_smoke_fixture.py") $smokeInput
-    & $binary convert $smokeInput --to kf8 --mode compatible --output $smokeOutput *> (Join-Path $smokeRoot "convert.log")
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $smokeOutput -PathType Leaf)) {
-        Get-Content (Join-Path $smokeRoot "convert.log")
-        throw "Windows Core smoke conversion failed"
-    }
-    & $binary validate $smokeOutput *> (Join-Path $smokeRoot "validate.json")
-    if ($LASTEXITCODE -ne 0) {
-        throw "Windows Core smoke validation failed"
-    }
-    & $binary inspect $smokeOutput --semantic *> (Join-Path $smokeRoot "semantic.json")
-    if ($LASTEXITCODE -ne 0) {
-        throw "Windows Core semantic smoke inspection failed"
-    }
     if (Get-ChildItem -LiteralPath $buildRoot -Recurse -File | Where-Object { $_.Name -match '^library\.sqlite(3)?$' -or $_.Extension -in @('.sqlite', '.sqlite3') }) {
-        throw "Core smoke unexpectedly created a Library database"
+        throw "Core build unexpectedly created a Library database"
     }
 
     $packageName = "FolioForge-Core-0.1.0-$Label"
@@ -95,14 +77,7 @@ try {
         throw "Windows Core archive contains a Library database"
     }
 
-    $semanticPath = Join-Path $smokeRoot "semantic.json"
-    $semanticHash = Join-Path $artifactRoot "$packageName.zip.smoke.semantic.sha256"
-    & python (Join-Path $root "tests\scripts\canonical_json_hash.py") $semanticPath $semanticHash
-    if ($LASTEXITCODE -ne 0) {
-        throw "semantic smoke hash failed"
-    }
-
-    Write-Host "Built and smoke-tested $archive"
+    Write-Host "Built and packaged $archive"
 }
 finally {
     if (Test-Path -LiteralPath $buildRoot) {

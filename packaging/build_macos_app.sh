@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT_DIR"
 PHASE=host-validation
 STAGING=
@@ -92,7 +92,7 @@ else
     PHASE=rust-ffi-cross-release
     rustup target add aarch64-apple-darwin
     CFLAGS_aarch64_apple_darwin="-mmacosx-version-min=$MACOS_TARGET_VERSION" \
-    RUSTC_WRAPPER="$ROOT_DIR/tests/scripts/rustc_macos_target_wrapper.sh" \
+    RUSTC_WRAPPER="$ROOT_DIR/packaging/rustc_macos_target_wrapper.sh" \
         cargo build --locked --target aarch64-apple-darwin --release -p folio-ffi
     FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/aarch64-apple-darwin/release/libfolio_ffi.a"
 fi

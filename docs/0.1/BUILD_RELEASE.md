@@ -3,7 +3,6 @@
 ## Prerequisites
 
 - Rust stable with `cargo`, `rustfmt` and `clippy`.
-- Python 3 for public scripts and the architecture/repository gates.
 - macOS 27 or newer, Swift 6.4 or newer and Xcode 27 command-line tools for the
   SwiftUI package and macOS arm64 packaging.
 - Docker only for the optional Service image smoke test.
@@ -30,26 +29,28 @@ export FOLIOFORGE_TEMP_ROOT="$FOLIOFORGE_VALIDATION_ROOT/runtime"
 
 ```bash
 cargo fmt --all -- --check
-python3 tests/architecture/check_boundaries.py
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace --locked
 cargo build --workspace --locked --release
 ```
 
-The public scripts use only synthetic fixtures. Their generated files must be
-passed an external output directory.
+The extended synthetic/oracle validation bundle is local-only. When present,
+run it from `.folioforge-dev/` and keep all generated files under the external
+`FOLIOFORGE_VALIDATION_ROOT`.
 
-## Service and CLI smoke
+## Optional maintainer-local Service and CLI smoke
 
 ```bash
-tests/scripts/build_minimal_corpus.sh "$FOLIOFORGE_VALIDATION_ROOT/minimal"
+.folioforge-dev/tests/scripts/build_minimal_corpus.sh "$FOLIOFORGE_VALIDATION_ROOT/minimal"
 FOLIO_BIN="$CARGO_TARGET_DIR/release/folio" \
-  tests/scripts/run_conversion_matrix.sh \
+  .folioforge-dev/tests/scripts/run_conversion_matrix.sh \
   "$FOLIOFORGE_VALIDATION_ROOT/minimal/001-text.epub"
 FOLIO_BIN="$CARGO_TARGET_DIR/release/folio" \
 FOLIO_SERVICE_BIN="$CARGO_TARGET_DIR/release/folio-service" \
-  tests/scripts/run_service_smoke.sh
+  .folioforge-dev/tests/scripts/run_service_smoke.sh
 ```
+
+These scripts are not available in a clean public checkout by design.
 
 ## SwiftUI debug/release
 
@@ -66,7 +67,7 @@ FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/release/libfolio_ffi.a" \
   --scratch-path "$FOLIOFORGE_VALIDATION_ROOT/swift-release" -c release
 ```
 
-The arm64 packaging entry point is `tests/scripts/build_macos_app.sh`. It
+The arm64 packaging entry point is `packaging/build_macos_app.sh`. It
 checks Rust format/tests/clippy, builds the macOS 27 arm64 FFI and SwiftUI
 release, creates the checked-in logo icon, validates the intentionally unsigned
 app/ZIP and writes the timestamped product under ignored `dist/`. It does not
@@ -87,8 +88,7 @@ The multi-platform release definition is recorded in
 [PHASE_7_7_CI.md](PHASE_7_7_CI.md). The public workflow set is deliberately
 limited to `ci.yml`, `build.yml` and `release.yml`:
 
-- `ci.yml` is the source-quality and architecture gate and produces no release
-  archive.
+- `ci.yml` is the Rust source-quality gate and produces no release archive.
 - `build.yml` builds native Linux x86_64/ARM64, Windows x86_64/ARM64 and
   macOS 27 ARM64 Core/GUI artifacts on `main` or manual dispatch.
 - `release.yml` rebuilds the same six artifacts from a `v*` tag, creates
@@ -115,9 +115,11 @@ docker run --rm -p 127.0.0.1:8080:8080 \
 ## Repository clean gate
 
 Before a commit or push, preview ignored files with `git clean -ndX`. Review
-the list; do not run a blind `git clean -fdx`. The checked-in repository audit
-is `python3 tools/release/repository-audit.py`; it fails for tracked private
-corpora, generated output, local paths, high-signal secrets or oversized files.
+the list; do not run a blind `git clean -fdx`. The public repository clean
+gate verifies that the maintainer-only `.folioforge-dev/` tree and its
+historical `tests/`, `tools/` and `bench/` paths are not tracked. Full private
+corpus and provenance audits remain in the local development record and are
+never release inputs.
 
 ## Release sequence
 
