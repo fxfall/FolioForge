@@ -86,52 +86,6 @@ jobs:
           path: ${{ runner.temp }}/folioforge-artifacts/*
           if-no-files-found: error
 
-  windows-core:
-    name: Release Windows Core (${{ matrix.arch }})
-    needs: release-policy
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: x86_64
-            runner: windows-2025
-            target: x86_64-pc-windows-msvc
-            label: windows-x86_64
-          - arch: aarch64
-            runner: windows-11-vs2026-arm
-            target: aarch64-pc-windows-msvc
-            label: windows-aarch64
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
-        with:
-          toolchain: stable
-      - name: Configure external build roots
-        shell: pwsh
-        run: |
-          $validationRoot = Join-Path $env:RUNNER_TEMP "folioforge-validation"
-          "FOLIOFORGE_VALIDATION_ROOT=$validationRoot" >> $env:GITHUB_ENV
-          New-Item -ItemType Directory -Force -Path $validationRoot, (Join-Path $env:RUNNER_TEMP "folioforge-artifacts") | Out-Null
-      - name: Runner and toolchain identity
-        shell: pwsh
-        run: |
-          [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
-          rustc -Vv
-      - name: Build and package Core
-        shell: pwsh
-        run: |
-          & "$env:GITHUB_WORKSPACE\packaging\package_core_artifact.ps1" `
-            -Target "${{ matrix.target }}" `
-            -Label "${{ matrix.label }}" `
-            -OutputRoot "$env:RUNNER_TEMP\folioforge-artifacts"
-      - name: Upload release Windows Core artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: release-core-windows-${{ matrix.arch }}
-          path: ${{ runner.temp }}\folioforge-artifacts\*
-          if-no-files-found: error
-
   macos-core:
     name: Release macOS 27 Core (arm64)
     needs: release-policy
@@ -229,7 +183,7 @@ jobs:
 
   publish:
     name: Publish GitHub Release
-    needs: [release-policy, linux-core, windows-core, macos-core, macos-gui]
+    needs: [release-policy, linux-core, macos-core, macos-gui]
     runs-on: ubuntu-26.04
     permissions:
       contents: write
@@ -240,7 +194,7 @@ jobs:
           pattern: release-*
           path: ${{ runner.temp }}/folioforge-release-assets
           merge-multiple: true
-      - name: Assemble exactly six release artifacts and checksums
+      - name: Assemble exactly four release artifacts and checksums
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
@@ -251,8 +205,6 @@ jobs:
           find "$source_dir" -type f \( -name 'FolioForge-Core-*.tar.gz' -o -name 'FolioForge-Core-*.zip' -o -name 'FolioForge-GUI-*.zip' \) -exec cp {} "$publish_dir/" \;
           expected='FolioForge-Core-0.1.0-linux-x86_64.tar.gz
           FolioForge-Core-0.1.0-linux-aarch64.tar.gz
-          FolioForge-Core-0.1.0-windows-x86_64.zip
-          FolioForge-Core-0.1.0-windows-aarch64.zip
           FolioForge-Core-0.1.0-macos27-aarch64.tar.gz
           FolioForge-GUI-0.1.0-macos27-aarch64.zip'
           while IFS= read -r name; do
@@ -261,9 +213,9 @@ jobs:
           done <<EOF
           $expected
           EOF
-          [ "$(find "$publish_dir" -maxdepth 1 -type f | wc -l | tr -d ' ')" = 6 ]
+          [ "$(find "$publish_dir" -maxdepth 1 -type f | wc -l | tr -d ' ')" = 4 ]
           (cd "$publish_dir" && sha256sum $(printf '%s\n' "$expected") | sort -k2 > SHA256SUMS)
-          test "$(wc -l < "$publish_dir/SHA256SUMS" | tr -d ' ')" = 6
+          test "$(wc -l < "$publish_dir/SHA256SUMS" | tr -d ' ')" = 4
           printf '%s\n' "prepared release $RELEASE_TAG"
       - name: Create or update GitHub Release
         env:

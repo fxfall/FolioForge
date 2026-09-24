@@ -56,51 +56,6 @@ jobs:
           path: ${{ runner.temp }}/folioforge-artifacts/*
           if-no-files-found: error
 
-  windows-core:
-    name: Windows Core (${{ matrix.arch }})
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: x86_64
-            runner: windows-2025
-            target: x86_64-pc-windows-msvc
-            label: windows-x86_64
-          - arch: aarch64
-            runner: windows-11-vs2026-arm
-            target: aarch64-pc-windows-msvc
-            label: windows-aarch64
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
-        with:
-          toolchain: stable
-      - name: Configure external build roots
-        shell: pwsh
-        run: |
-          $validationRoot = Join-Path $env:RUNNER_TEMP "folioforge-validation"
-          "FOLIOFORGE_VALIDATION_ROOT=$validationRoot" >> $env:GITHUB_ENV
-          New-Item -ItemType Directory -Force -Path $validationRoot, (Join-Path $env:RUNNER_TEMP "folioforge-artifacts") | Out-Null
-      - name: Runner and toolchain identity
-        shell: pwsh
-        run: |
-          [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
-          rustc -Vv
-      - name: Build and package Core
-        shell: pwsh
-        run: |
-          & "$env:GITHUB_WORKSPACE\packaging\package_core_artifact.ps1" `
-            -Target "${{ matrix.target }}" `
-            -Label "${{ matrix.label }}" `
-            -OutputRoot "$env:RUNNER_TEMP\folioforge-artifacts"
-      - name: Upload Windows Core artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: core-windows-${{ matrix.arch }}
-          path: ${{ runner.temp }}\folioforge-artifacts\*
-          if-no-files-found: error
-
   macos-core:
     name: macOS 27 Core (arm64)
     runs-on: xcode-27

@@ -2,8 +2,10 @@
 
 ## 0.1.0 release infrastructure
 
-- Added Phase 7.7 GitHub Actions definitions for native Linux, Windows and
-  macOS 27 Core builds plus the separate SwiftUI GUI artifact.
+- Added Phase 7.7 GitHub Actions definitions for native Linux and macOS 27
+  Core builds plus the separate SwiftUI GUI artifact.
+- Removed the unvalidated Windows packaging path from the frozen
+  0.1 public artifact matrix; tagged releases now publish four archives.
 - Added platform smoke packaging, Unicode-path conversion checks, semantic
   parity checks, Library-database exclusion checks and tagged SHA256 release
   assembly. No conversion behavior or public API changed.

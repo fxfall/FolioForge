@@ -89,18 +89,19 @@ The multi-platform release definition is recorded in
 limited to `ci.yml`, `build.yml` and `release.yml`:
 
 - `ci.yml` is the Rust source-quality gate and produces no release archive.
-- `build.yml` builds native Linux x86_64/ARM64, Windows x86_64/ARM64 and
-  macOS 27 ARM64 Core/GUI artifacts on `main` or manual dispatch.
-- `release.yml` rebuilds the same six artifacts from a `v*` tag, creates
+- `build.yml` builds native Linux x86_64/ARM64 and macOS 27 ARM64 Core/GUI
+  artifacts on `main` or manual dispatch.
+- `release.yml` rebuilds the same four artifacts from a `v*` tag, creates
   `SHA256SUMS`, and publishes only those artifacts.
 
 The GitHub release build does not sign macOS output. The GUI job uses
 `xcode-27`, sets the minimum target to `27.0`, checks the self-contained bundle
-and rejects repository or private Homebrew dynamic dependencies. Linux and
-Windows ARM jobs execute their own binaries on native ARM runners. The hosted
-runner labels are intentionally explicit because the 26/27 images are a
-moving hosted-image boundary; changing a future label must not change the Core
-or GUI packaging contract.
+and rejects repository or private Homebrew dynamic dependencies. Linux ARM
+jobs execute their own binaries on native ARM runners. The hosted runner
+labels are intentionally explicit because the 26/27 images are a moving
+hosted-image boundary; changing a future label must not change the Core or GUI
+packaging contract. Windows packaging and its former Windows helper are not
+part of the frozen 0.1 public build.
 
 ## Docker Service
 

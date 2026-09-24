@@ -156,8 +156,9 @@ Amazon production KFX.
 ## 16. Out of scope
 
 New formats, new Library/Reader features, a second pipeline, proprietary
-converter dependencies in Core/CI, Windows packaging without a validated
-runner and production signing/notarization are outside 0.1.
+converter dependencies in Core/CI and production signing/notarization are
+outside 0.1. Windows packaging is not part of the public 0.1 artifact set;
+reintroducing it requires a separately validated runner and release contract.
 
 ## 17. Final result
 
@@ -229,8 +230,8 @@ release tag points to the audited commit.
 - The old Release workflow produced only Linux x86_64 plus a macOS package and
   included `folio-service` in the Core archive. Phase 7.7 separates Core and
   GUI artifacts and removes the Service binary from release packages.
-- Native runner jobs now cover Linux x86_64/ARM64, Windows x86_64/ARM64 and
-  macOS 27 ARM64 Core/GUI. Each Core job validates the Rust target build,
+- Native runner jobs cover Linux x86_64/ARM64 and macOS 27 ARM64 Core/GUI.
+  Each Core job validates the Rust target build,
   version/help output, archive layout and the absence of Library data before
   uploading the artifact.
 - Unicode-path conversion, Semantic IR parity, KFX probes and third-party
@@ -279,3 +280,19 @@ The repository-content and dependency provenance review is recorded in
 Bōkō, Kindle Previewer or other converter source/byte payload. Their use is
 limited to explicit external comparison tooling and documented behavior
 references.
+
+## 23. Removal of the unvalidated Windows packaging path
+
+- Change classification: minor release-infrastructure maintenance. No Core,
+  Semantic IR, format, FFI, Service or SwiftUI behavior changed.
+- The Windows packaging helper and Windows jobs in the public Build/Release
+  workflows were removed on 2026-09-24. The path had remained
+  queued without producing a validated artifact and was not part of the
+  tested macOS 27/Linux release baseline.
+- The public 0.1 artifact contract is now four archives: Linux x86_64 Core,
+  Linux ARM64 Core, macOS 27 ARM64 Core and macOS 27 ARM64 GUI, plus
+  `SHA256SUMS` in a tagged release.
+- Maintainer tests, corpora, oracle tooling and development records remain in
+  the ignored `.folioforge-dev/` directory and are not pushed to GitHub. Rust
+  source-level tests remain public because they are part of the Core crates'
+  normal build contract.
