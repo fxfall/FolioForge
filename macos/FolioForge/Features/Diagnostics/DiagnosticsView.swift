@@ -4,7 +4,7 @@ struct DiagnosticsView: View {
     let item: BookItem?
 
     var body: some View {
-        GroupBox("Preflight & diagnostics") {
+        GroupBox(FolioL10n.string("ui.preflight_diagnostics", default: "Preflight & diagnostics")) {
             if let item {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 10) {
@@ -24,7 +24,7 @@ struct DiagnosticsView: View {
                                 .foregroundStyle(.red)
                                 .fixedSize(horizontal: false, vertical: true)
                         } else {
-                            Label("Preflight is required before conversion.", systemImage: FolioSymbol.checklist.name)
+                            Label(FolioL10n.string("ui.preflight_is_required_before_conversion", default: "Preflight is required before conversion."), systemImage: FolioSymbol.checklist.name)
                                 .foregroundStyle(.secondary)
                         }
 
@@ -41,7 +41,7 @@ struct DiagnosticsView: View {
                         let warnings = item.warnings
                         if !warnings.isEmpty {
                             Divider()
-                            Text("Diagnostics")
+                            Text(FolioL10n.string("ui.diagnostics", default: "Diagnostics"))
                                 .font(.headline)
                             ForEach(Array(warnings.enumerated()), id: \.offset) { _, diagnostic in
                                 DiagnosticRow(diagnostic: diagnostic)
@@ -52,7 +52,7 @@ struct DiagnosticsView: View {
                 }
                 .frame(maxHeight: 360)
             } else {
-                Text("Select a book to see its capability plan and diagnostics.")
+                Text(FolioL10n.string("ui.select_a_book_to_see_its_capability_plan_and", default: "Select a book to see its capability plan and diagnostics."))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -76,13 +76,15 @@ private struct AnalysisSummaryView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Compatibility plan")
+                Text(FolioL10n.string("ui.compatibility_plan", default: "Compatibility plan"))
                     .font(.headline)
                 Spacer()
                 Text(analysis.plan.quality.displayName)
                     .font(.headline)
                     .foregroundStyle(qualityColor(analysis.plan.quality))
-                Text(analysis.plan.blocked ? "Blocked" : "Ready")
+                Text(analysis.plan.blocked
+                    ? FolioL10n.string("status.blocked", default: "Blocked")
+                    : FolioL10n.string("status.ready", default: "Ready"))
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
@@ -95,15 +97,19 @@ private struct AnalysisSummaryView: View {
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 6) {
-                MetricPill(title: "Exact", value: count("Exact"), color: .green)
-                MetricPill(title: "Equivalent", value: count("Equivalent"), color: .blue)
-                MetricPill(title: "Approx", value: count("CompatibleApproximation"), color: .orange)
-                MetricPill(title: "Fallback", value: count("StructuralFallback"), color: .purple)
-                MetricPill(title: "Drop", value: count("Drop"), color: .red)
+                MetricPill(title: FolioL10n.string("quality.exact", default: "Exact"), value: count("Exact"), color: .green)
+                MetricPill(title: FolioL10n.string("metric.equivalent", default: "Equivalent"), value: count("Equivalent"), color: .blue)
+                MetricPill(title: FolioL10n.string("metric.approx", default: "Approx"), value: count("CompatibleApproximation"), color: .orange)
+                MetricPill(title: FolioL10n.string("metric.fallback", default: "Fallback"), value: count("StructuralFallback"), color: .purple)
+                MetricPill(title: FolioL10n.string("metric.drop", default: "Drop"), value: count("Drop"), color: .red)
             }
 
             if !analysis.plan.items.isEmpty {
-                DisclosureGroup("Fallback plan details (\(analysis.plan.items.count))") {
+                DisclosureGroup(FolioL10n.format(
+                    "error.fallback_plan_details",
+                    default: "Fallback plan details: %@",
+                    String(analysis.plan.items.count)
+                )) {
                     VStack(alignment: .leading, spacing: 8) {
                         ForEach(analysis.plan.items) { planItem in
                             VStack(alignment: .leading, spacing: 3) {
@@ -125,7 +131,11 @@ private struct AnalysisSummaryView: View {
                                     .foregroundStyle(.secondary)
                                     .fixedSize(horizontal: false, vertical: true)
                                 if !planItem.possibleAlternatives.isEmpty {
-                                    Text("Alternatives: \(planItem.possibleAlternatives.joined(separator: " · "))")
+                                    Text(FolioL10n.format(
+                                        "error.alternatives",
+                                        default: "Alternatives: %@",
+                                        planItem.possibleAlternatives.joined(separator: " · ")
+                                    ))
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
                                         .fixedSize(horizontal: false, vertical: true)
@@ -142,7 +152,7 @@ private struct AnalysisSummaryView: View {
                     .padding(.top, 6)
                 }
             } else {
-                Text("No degradation required for this target.")
+                Text(FolioL10n.string("ui.no_degradation_required_for_this_target", default: "No degradation required for this target."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -190,10 +200,10 @@ private struct ConversionResultView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Divider()
-            Text("Conversion result")
+            Text(FolioL10n.string("ui.conversion_result", default: "Conversion result"))
                 .font(.headline)
             HStack {
-                Text("Compatibility: \(report.compatibility.userSummary)")
+                Text(FolioL10n.format("error.compatibility", default: "Compatibility: %@", report.compatibility.userSummary))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(qualityColor(report.compatibility))
                 Spacer()
@@ -201,19 +211,23 @@ private struct ConversionResultView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Text("Output: \(report.outputPath)")
+            Text(FolioL10n.format("error.output", default: "Output: %@", report.outputPath))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
             HStack(spacing: 6) {
-                MetricPill(title: "Exact", value: report.degradation.exact, color: .green)
-                MetricPill(title: "Equivalent", value: report.degradation.equivalent, color: .blue)
-                MetricPill(title: "Approx", value: report.degradation.approximation, color: .orange)
-                MetricPill(title: "Fallback", value: report.degradation.structuralFallback, color: .purple)
-                MetricPill(title: "Drop", value: report.degradation.dropped, color: .red)
+                MetricPill(title: FolioL10n.string("quality.exact", default: "Exact"), value: report.degradation.exact, color: .green)
+                MetricPill(title: FolioL10n.string("metric.equivalent", default: "Equivalent"), value: report.degradation.equivalent, color: .blue)
+                MetricPill(title: FolioL10n.string("metric.approx", default: "Approx"), value: report.degradation.approximation, color: .orange)
+                MetricPill(title: FolioL10n.string("metric.fallback", default: "Fallback"), value: report.degradation.structuralFallback, color: .purple)
+                MetricPill(title: FolioL10n.string("metric.drop", default: "Drop"), value: report.degradation.dropped, color: .red)
             }
             if !report.degradation.items.isEmpty {
-                DisclosureGroup("Applied fallback details (\(report.degradation.items.count))") {
+                DisclosureGroup(FolioL10n.format(
+                    "error.applied_fallback_details",
+                    default: "Applied fallback details: %@",
+                    String(report.degradation.items.count)
+                )) {
                     VStack(alignment: .leading, spacing: 8) {
                         ForEach(report.degradation.items) { item in
                             VStack(alignment: .leading, spacing: 3) {
@@ -244,7 +258,9 @@ private struct ConversionResultView: View {
                 }
             }
             Label(
-                report.roundTrip.passed ? "Semantic round-trip passed" : "Semantic round-trip reported a loss",
+                report.roundTrip.passed
+                    ? FolioL10n.string("status.round_trip_passed", default: "Semantic round-trip passed")
+                    : FolioL10n.string("status.round_trip_loss", default: "Semantic round-trip reported a loss"),
                 systemImage: (report.roundTrip.passed ? FolioSymbol.checkSealFilled : FolioSymbol.warning).name
             )
             .font(.caption)
@@ -255,7 +271,7 @@ private struct ConversionResultView: View {
                     .foregroundStyle(.orange)
             }
             if !report.degradation.diagnostics.isEmpty {
-                Text("Planner diagnostics")
+                Text(FolioL10n.string("ui.planner_diagnostics", default: "Planner diagnostics"))
                     .font(.caption.weight(.semibold))
                 ForEach(report.degradation.diagnostics) { diagnostic in
                     DiagnosticRow(diagnostic: diagnostic)

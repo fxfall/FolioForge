@@ -47,28 +47,28 @@ PASS.
 The final local run recorded the following results:
 
 - `cargo fmt --all -- --check`: PASS.
-- `cargo test --workspace --locked`: PASS.
-- `cargo clippy --workspace --all-targets --locked -- -D warnings`: PASS.
+- Maintainer-only Rust regression suites: PASS in the historical local audit;
+  test sources and detailed run records now remain outside GitHub.
+- `cargo clippy --workspace --lib --bins --locked -- -D warnings`: PASS in
+  the historical production-target validation.
 - `cargo build --workspace --locked --release`: PASS.
 - maintainer-local degradation golden set: PASS, 10 cases.
 - maintainer-local deterministic conversion matrix: PASS, 36 cases across 12
   directions.
 - maintainer-local KFX semantic probes: PASS for all retained probe sources.
 
-The first offline test attempt stopped at the uncached `blake3` package; the
-same locked test was then rerun with the configured sparse registry and the
-external target/cache root. This was an environment cache miss, not a source
-or test failure. The public format matrix is in
+Detailed test execution notes are retained in the local-only development log.
+The public format matrix is in
 [FORMAT_SUPPORT.md](FORMAT_SUPPORT.md).
 
 ## 5. Semantic validation
 
 The IR validator, deterministic IDs/order, metadata/edit-plan path, anchors,
 links, notes, resources, styles, fonts, ruby, MathML, tables, layout intent
-and target degradation reports are covered by workspace tests and the
-maintainer-only validation bundle. The workspace test run passed all 85 KFX
-unit tests (one private-corpus test remains opt-in). KFX input keeps unresolved
-relationships unresolved; it does not guess from string pools.
+and target degradation reports were covered by the historical maintainer-only
+regression suite. Its source and per-run records are local-only. KFX input
+keeps unresolved relationships unresolved; it does not guess from string
+pools.
 
 ## 6. Cross-format validation
 
@@ -79,10 +79,10 @@ release inputs.
 
 ## 7. Library validation
 
-`folio-library` is optional to standalone conversion. The final run passed its
-three Library contract tests, including schema migrations, scanner path safety,
-metadata projection, rebuildable FTS search, query budgets and conversion
-provenance. The durable contract is
+`folio-library` is optional to standalone conversion. Its private contract
+suite covers schema migrations, scanner path safety, metadata projection,
+rebuildable FTS search, query budgets and conversion provenance. The durable
+contract is
 [../library/DATA_MODEL.md](../library/DATA_MODEL.md).
 
 ## 8. FFI / Service / SwiftUI validation
@@ -94,7 +94,8 @@ The final run must include:
   logo smoke: PASS.
 - SwiftUI macOS Debug and Release SwiftPM builds against the matching FFI
   archive: PASS.
-- FFI ownership, cancellation and progress callback tests: PASS.
+- FFI ownership, cancellation and progress callback regressions are maintained
+  locally and are not present in the public checkout.
 
 The local Swift linker emitted the same two missing-Command-Line-Tools
 search-path warnings in each configuration, but both builds completed
@@ -248,7 +249,7 @@ release tag points to the audited commit.
   workflow rebuilds from source and generates `SHA256SUMS`; it does not reuse
   `build.yml` artifacts.
 - Local status on 2026-09-21: shell/Python syntax, workflow YAML parsing, Rust
-  formatting, architecture, full workspace tests and Clippy passed; the
+  formatting, architecture and production Clippy passed; the
   conversion matrix and degradation golden checks in the local bundle also
   passed; the macOS arm64 Core package and complete unsigned macOS 27 arm64 GUI package
   also passed with Swift 6.4. The extended Python/oracle validation material
@@ -258,18 +259,19 @@ release tag points to the audited commit.
   `env` block. The correction moves all job bootstrap paths to `$RUNNER_TEMP`
   plus `GITHUB_ENV`; this is release-infrastructure maintenance only.
 
-## 22. Local development bundle separation
+## 22. Local test and development material separation
 
 - Change classification: minor repository/release-infrastructure maintenance.
-- The top-level `tests/`, `tools/` and `bench/` trees were moved to the
-  ignored `.folioforge-dev/` directory. They are not tracked by GitHub,
+- Local test sources, fixtures and runners live in the ignored repository-root
+  `tests/` directory. Development tools, benchmarks and process records live
+  in the ignored `.folioforge-dev/` directory. Neither is tracked by GitHub,
   included in release archives or sent to Docker build contexts.
 - Build-only helpers were moved to `packaging/` so clean GitHub checkouts can
   still build Core and the unsigned macOS 27 GUI without Python or local
   fixture data.
-- Rust source-level tests remain part of the public crates; the move removes
-  external fixture/oracle material, not the Rust implementation's own test
-  modules or the conversion pipeline.
+- Rust unit tests are loaded from the local `tests/` directory only when the
+  maintainer-tests feature is enabled. Public CI and packaging do not execute
+  them; normal product builds have no dependency on the private files.
 - The migration record, including the initial broken-reference risk and its
   correction, is in the local-only `.folioforge-dev/DEVELOPMENT_LOG.md`.
 

@@ -1,0 +1,65 @@
+name: Cross-platform Slint GUI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  slint-native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: Linux x86_64
+            runner: ubuntu-26.04
+          - platform: Linux ARM64
+            runner: ubuntu-26.04-arm
+          - platform: Windows x86_64
+            runner: windows-2025
+          - platform: Windows ARM64
+            runner: windows-11-vs2026-arm
+    name: Slint · ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    env:
+      FOLIOFORGE_VALIDATION_ROOT: ${{ runner.temp }}/folioforge-validation
+      CARGO_TARGET_DIR: ${{ runner.temp }}/folioforge-validation/cargo-target
+      FOLIOFORGE_TEMP_ROOT: ${{ runner.temp }}/folioforge-validation/runtime
+      TMPDIR: ${{ runner.temp }}/folioforge-validation/tmp
+      TMP: ${{ runner.temp }}/folioforge-validation/tmp
+      TEMP: ${{ runner.temp }}/folioforge-validation/tmp
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - name: Install Linux windowing and font build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential pkg-config cmake \
+            libx11-dev libx11-xcb-dev libxcb1-dev libxcb-randr0-dev \
+            libxcb-shape0-dev libxcb-xfixes0-dev libxcb-xinput-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libxcursor-dev \
+            libfontconfig1-dev libfreetype-dev
+      - name: Prepare external validation directories
+        shell: bash
+        run: mkdir -p "$CARGO_TARGET_DIR" "$FOLIOFORGE_TEMP_ROOT" "$TMPDIR"
+      - name: Confirm native runner architecture
+        shell: bash
+        run: |
+          rustc -Vv
+          cargo -V
+          uname -m || true
+      - name: Formatting
+        if: matrix.runner == 'ubuntu-26.04'
+        run: cargo fmt --all -- --check
+      - name: Slint static analysis
+        run: cargo clippy -p folioforge-slint --all-targets --locked -- -D warnings
+      - name: Native Slint release build
+        run: cargo build -p folioforge-slint --locked --release

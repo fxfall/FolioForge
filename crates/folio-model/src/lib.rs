@@ -148,11 +148,43 @@ pub enum LayoutMode {
     Fixed,
 }
 
+/// Declared horizontal placement of one fixed-layout document in a
+/// two-page presentation. This is semantic input, not a Reader's current
+/// display arrangement.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PageSide {
+    Left,
+    Right,
+    Center,
+}
+
+/// Generic source intent for grouping one fixed-layout document with an
+/// adjacent document when a Reader explicitly enables synthetic spreads.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SpreadHint {
+    /// No source-specific grouping instruction; Reader display policy applies.
+    #[default]
+    Automatic,
+    /// Keep this document out of a two-document spread.
+    SinglePage,
+    /// Pair this document with an adjacent document when its metadata permits.
+    Pair,
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Presentation {
     pub layout: LayoutMode,
     pub direction: Option<String>,
     pub writing_mode: Option<String>,
+    /// Explicit per-document side declarations. Missing entries mean the
+    /// importer could not prove a source-declared side.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub page_sides: BTreeMap<DocumentId, PageSide>,
+    /// Explicit per-document spread intent. Missing entries are `Automatic`.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub spread_hints: BTreeMap<DocumentId, SpreadHint>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -918,78 +950,7 @@ impl Diagnostic {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn style_pool_interns_identical_computed_styles() {
-        let mut pool = StylePool::new();
-        let first = pool.intern(ComputedStyle::default().with("color", "#000"));
-        let second = pool.intern(ComputedStyle::default().with("color", "#000"));
-        assert_eq!(first, second);
-        assert_eq!(pool.len(), 1);
-    }
-
-    #[test]
-    fn node_text_content_preserves_block_boundaries() {
-        let style = StyleId::new(0);
-        let node = Node::new(
-            NodeId::new(0),
-            NodeKind::Paragraph,
-            style,
-            vec![Node::new(
-                NodeId::new(1),
-                NodeKind::Text {
-                    value: "hello".to_owned(),
-                },
-                style,
-                Vec::new(),
-            )],
-        );
-        assert_eq!(node.text_content(), "hello\n");
-    }
-
-    #[test]
-    fn ruby_projection_keeps_base_and_annotation_separate() {
-        let style = StyleId::new(0);
-        let ruby = Node::new(
-            NodeId::new(0),
-            NodeKind::Ruby,
-            style,
-            vec![
-                Node::new(
-                    NodeId::new(1),
-                    NodeKind::Text {
-                        value: "漢".to_owned(),
-                    },
-                    style,
-                    Vec::new(),
-                ),
-                Node::new(
-                    NodeId::new(2),
-                    NodeKind::GenericInline {
-                        tag: "rt".to_owned(),
-                    },
-                    style,
-                    vec![Node::new(
-                        NodeId::new(3),
-                        NodeKind::Text {
-                            value: "かん".to_owned(),
-                        },
-                        style,
-                        Vec::new(),
-                    )],
-                ),
-            ],
-        );
-        assert_eq!(
-            ruby.ruby_projection(),
-            Some(RubyProjection {
-                base: "漢".to_owned(),
-                annotation: "かん".to_owned(),
-            })
-        );
-        assert_eq!(ruby.visible_text_content(), "漢かん");
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-model/src/lib.rs"]
+mod tests;

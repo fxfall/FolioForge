@@ -60,15 +60,7 @@ pub fn normalize_text_owned(source: String) -> (String, NormalizationReport) {
     )
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn reports_bom_removal_and_preserves_spaces_and_blank_lines() {
-        let (normalized, report) = normalize_text("\u{feff}x  \r\n\n  y");
-        assert_eq!(normalized, "x  \n\n  y");
-        assert!(report.removed_leading_bom);
-        assert_eq!(report.newline_sequences_normalized, 1);
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-text/src/normalize.rs"]
+mod tests;

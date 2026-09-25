@@ -517,26 +517,7 @@ pub fn inline_css(style: &ComputedStyle) -> String {
         .join(";")
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn media_queries_and_cascade_are_target_aware() {
-        let mut resolver = StyleResolver::new(TargetProfile::Kf7);
-        resolver.add_stylesheet(
-            "p { color: red; } @media amzn-mobi { p { color: blue; } } @media amzn-kf8 { p { color: green; } }",
-        );
-        let style = resolver.resolve(&ElementContext::new("p"), None);
-        assert_eq!(style.get("color"), Some("blue"));
-    }
-
-    #[test]
-    fn class_rules_win_over_element_rules() {
-        let mut resolver = StyleResolver::new(TargetProfile::Generic);
-        resolver.add_stylesheet("p { color: red } .accent { color: blue }");
-        let mut element = ElementContext::new("p");
-        element.classes.insert("accent".to_owned());
-        assert_eq!(resolver.resolve(&element, None).get("color"), Some("blue"));
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-style/src/lib.rs"]
+mod tests;

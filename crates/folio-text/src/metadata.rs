@@ -162,36 +162,7 @@ fn labeled_first_lines(text: &str) -> Option<(Option<String>, Option<String>)> {
     (title.is_some() || author.is_some()).then_some((title, author))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn supports_documented_chinese_filename_patterns_as_heuristics() {
-        for (filename, expected_title, expected_author) in [
-            ("《书名》作者：作者.txt", "书名", Some("作者")),
-            ("书名 - 作者.txt", "书名", Some("作者")),
-            ("书名[作者].txt", "书名", Some("作者")),
-        ] {
-            let (metadata, guess) = infer_metadata(Some(filename), "正文", None, None);
-            assert_eq!(metadata.title.as_deref(), Some(expected_title));
-            assert_eq!(
-                metadata.author_names().first().map(String::as_str),
-                expected_author
-            );
-            assert_eq!(guess.confidence, Some(Confidence::Heuristic));
-        }
-    }
-
-    #[test]
-    fn explicit_user_overrides_win_over_guesses() {
-        let (metadata, _) = infer_metadata(
-            Some("Guess - Author.txt"),
-            "Title: body title\nAuthor: body author",
-            Some("Chosen title"),
-            Some("Chosen author"),
-        );
-        assert_eq!(metadata.title.as_deref(), Some("Chosen title"));
-        assert_eq!(metadata.author_names(), ["Chosen author"]);
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-text/src/metadata.rs"]
+mod tests;

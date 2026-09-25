@@ -258,21 +258,7 @@ pub fn all_profiles() -> [CapabilityProfile; 4] {
     ]
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn matrix_has_one_profile_per_target() {
-        let profiles = all_profiles();
-        assert_eq!(profiles.len(), 4);
-        assert_eq!(
-            profile_for(Format::Kf7).level(Feature::Ruby),
-            CapabilityLevel::Approximate
-        );
-        assert_eq!(
-            profile_for(Format::Epub3).level(Feature::Svg),
-            CapabilityLevel::Native
-        );
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-capabilities/src/lib.rs"]
+mod tests;

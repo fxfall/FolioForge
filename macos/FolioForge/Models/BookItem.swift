@@ -9,11 +9,11 @@ enum QueueItemStatus: String {
 
     var label: String {
         switch self {
-        case .ready: "Ready"
-        case .converting: "Converting"
-        case .completed: "Completed"
-        case .failed: "Failed"
-        case .cancelled: "Cancelled"
+        case .ready: FolioL10n.string("status.ready", default: "Ready")
+        case .converting: FolioL10n.string("status.converting", default: "Converting")
+        case .completed: FolioL10n.string("status.completed", default: "Completed")
+        case .failed: FolioL10n.string("status.failed", default: "Failed")
+        case .cancelled: FolioL10n.string("status.cancelled", default: "Cancelled")
         }
     }
 }

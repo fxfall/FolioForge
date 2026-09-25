@@ -19,19 +19,19 @@ private enum OnlineMetadataField: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .title: "Title"
-        case .subtitle: "Subtitle"
-        case .authors: "Authors"
-        case .language: "Language"
-        case .publisher: "Publisher"
-        case .date: "Published"
-        case .series: "Series"
-        case .seriesIndex: "Series number"
-        case .contributors: "Contributors"
-        case .subjects: "Subjects"
-        case .identifiers: "Identifiers"
-        case .description: "Description"
-        case .rights: "Rights"
+        case .title: FolioL10n.string("ui.title", default: "Title")
+        case .subtitle: FolioL10n.string("ui.subtitle", default: "Subtitle")
+        case .authors: FolioL10n.string("online.field.authors", default: "Authors")
+        case .language: FolioL10n.string("online.field.language", default: "Language")
+        case .publisher: FolioL10n.string("ui.publisher", default: "Publisher")
+        case .date: FolioL10n.string("ui.published", default: "Published")
+        case .series: FolioL10n.string("ui.series", default: "Series")
+        case .seriesIndex: FolioL10n.string("ui.series_number", default: "Series number")
+        case .contributors: FolioL10n.string("online.field.contributors", default: "Contributors")
+        case .subjects: FolioL10n.string("online.field.subjects", default: "Subjects")
+        case .identifiers: FolioL10n.string("online.field.identifiers", default: "Identifiers")
+        case .description: FolioL10n.string("online.field.description", default: "Description")
+        case .rights: FolioL10n.string("ui.rights", default: "Rights")
         }
     }
 
@@ -120,21 +120,21 @@ struct OnlineMetadataSearchView: View {
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
-                    TextField("Title", text: $state.titleQuery)
-                        .accessibilityLabel("Search title")
-                    TextField("Author", text: $state.authorQuery)
-                        .accessibilityLabel("Search author")
-                    TextField("ISBN", text: $state.isbnQuery)
-                        .accessibilityLabel("Search ISBN")
+                    TextField(FolioL10n.string("ui.title", default: "Title"), text: $state.titleQuery)
+                        .accessibilityLabel(FolioL10n.string("ui.search_title", default: "Search title"))
+                    TextField(FolioL10n.string("ui.author", default: "Author"), text: $state.authorQuery)
+                        .accessibilityLabel(FolioL10n.string("ui.search_author", default: "Search author"))
+                    TextField(FolioL10n.string("ui.isbn", default: "ISBN"), text: $state.isbnQuery)
+                        .accessibilityLabel(FolioL10n.string("ui.search_isbn", default: "Search ISBN"))
                         .frame(maxWidth: 170)
                     Button(action: search) {
-                        Label("Search Open Library", systemImage: FolioAction.findMetadata.symbol.name)
+                        Label(FolioL10n.string("ui.search_open_library", default: "Search Open Library"), systemImage: FolioAction.findMetadata.symbol.name)
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(state.isSearching || !hasSearchTerms)
                 }
 
-                Label("Only these search terms are sent to Open Library. FolioForge does not upload the book file.", systemImage: FolioSymbol.privacy.name)
+                Label(FolioL10n.string("ui.only_these_search_terms_are_sent_to_open_library", default: "Only these search terms are sent to Open Library. FolioForge does not upload the book file."), systemImage: FolioSymbol.privacy.name)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -143,22 +143,25 @@ struct OnlineMetadataSearchView: View {
             Divider()
 
             if state.isSearching {
-                ProgressView("Searching Open Library…")
+                ProgressView(FolioL10n.string("ui.searching_open_library", default: "Searching Open Library…"))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let errorMessage = state.errorMessage {
                 emptyState(
-                    title: "Search Unavailable",
+                    title: FolioL10n.string("online.search_unavailable", default: "Search Unavailable"),
                     message: errorMessage,
                     symbol: .alertCircle,
-                    action: "Try Again",
+                    action: FolioL10n.string("online.try_again", default: "Try Again"),
                     actionHandler: search
                 )
             } else if state.candidates.isEmpty {
                 emptyState(
-                    title: state.completedSearch ? "No Matching Records" : "Search Book Metadata",
+                    title: FolioL10n.string(
+                        state.completedSearch ? "online.no_matching_records" : "online.search_book_metadata",
+                        default: state.completedSearch ? "No Matching Records" : "Search Book Metadata"
+                    ),
                     message: state.completedSearch
-                        ? "No records matched these terms. Try a shorter title or a different identifier."
-                        : "Search is manual and opt-in. Results are never applied automatically.",
+                        ? FolioL10n.string("online.no_matching_message", default: "No records matched these terms. Try a shorter title or a different identifier.")
+                        : FolioL10n.string("online.search_manual_opt_in", default: "Search is manual and opt-in. Results are never applied automatically."),
                     symbol: .onlineMetadata
                 )
             } else {
@@ -169,9 +172,9 @@ struct OnlineMetadataSearchView: View {
 
             HStack {
                 Spacer()
-                Button("Cancel", role: .cancel) { dismiss() }
+                Button(FolioL10n.string("ui.cancel", default: "Cancel"), role: .cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)
-                Button("Apply Selected Changes…") {
+                Button(FolioL10n.string("ui.apply_selected_changes", default: "Apply Selected Changes…")) {
                     state.showingApplyConfirmation = true
                 }
                 .buttonStyle(.borderedProminent)
@@ -181,14 +184,14 @@ struct OnlineMetadataSearchView: View {
         }
         .frame(minWidth: 780, idealWidth: 900, minHeight: 560, idealHeight: 680)
         .confirmationDialog(
-            "Apply selected metadata to this book’s edit plan?",
+            FolioL10n.string("ui.apply_selected_metadata_to_this_book_s_edit_plan", default: "Apply selected metadata to this book’s edit plan?"),
             isPresented: $state.showingApplyConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Apply Selected Fields") { buildAndApplyPlan() }
-            Button("Cancel", role: .cancel) {}
+            Button(FolioL10n.string("ui.apply_selected_fields", default: "Apply Selected Fields")) { buildAndApplyPlan() }
+            Button(FolioL10n.string("ui.cancel", default: "Cancel"), role: .cancel) {}
         } message: {
-            Text("Only fields set to Replace or Append will change. The source book remains untouched until conversion.")
+            Text(FolioL10n.string("ui.only_fields_set_to_replace_or_append_will_change", default: "Only fields set to Replace or Append will change. The source book remains untouched until conversion."))
         }
     }
 
@@ -200,14 +203,14 @@ struct OnlineMetadataSearchView: View {
                 .frame(width: 40, height: 40)
                 .background(Color.accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 3) {
-                Text("Find Metadata Online")
+                Text(FolioL10n.string("ui.find_metadata_online", default: "Find Metadata Online"))
                     .font(.title3.weight(.semibold))
-                Text("Review candidates and choose exactly which fields to use.")
+                Text(FolioL10n.string("ui.review_candidates_and_choose_exactly_which_fields_to_use", default: "Review candidates and choose exactly which fields to use."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Button("Close") { dismiss() }
+            Button(FolioL10n.string("ui.close", default: "Close")) { dismiss() }
                 .buttonStyle(.borderless)
         }
         .padding(16)
@@ -230,7 +233,11 @@ struct OnlineMetadataSearchView: View {
             if let selectedCandidate {
                 candidateDetails(selectedCandidate)
             } else {
-                emptyState(title: "Select a Result", message: "Choose a candidate to review its fields.", symbol: .onlineMetadata)
+                emptyState(
+                    title: FolioL10n.string("online.select_result", default: "Select a Result"),
+                    message: FolioL10n.string("online.choose_candidate", default: "Choose a candidate to review its fields."),
+                    symbol: .onlineMetadata
+                )
             }
         }
     }
@@ -269,17 +276,21 @@ struct OnlineMetadataSearchView: View {
             state.fieldActions = [:]
         } label: {
             VStack(alignment: .leading, spacing: 6) {
-                Text(candidate.metadata.title ?? "Untitled result")
+            Text(candidate.metadata.title ?? FolioL10n.string("metadata.untitled_result", default: "Untitled result"))
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Text(candidate.metadata.authorNames.joined(separator: ", ").ifEmpty("Author not listed"))
+                Text(candidate.metadata.authorNames.joined(separator: ", ").ifEmpty(FolioL10n.string("online.author_not_listed", default: "Author not listed")))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 HStack {
-                    Text("\(Int((candidate.confidence * 100).rounded()))% match")
+            Text(FolioL10n.format(
+                "metadata.match",
+                default: "Match: %@%%",
+                String(Int((candidate.confidence * 100).rounded()))
+            ))
                     Spacer()
                     Text(candidate.metadata.date ?? candidate.metadata.dates.first ?? "")
                 }
@@ -305,18 +316,18 @@ struct OnlineMetadataSearchView: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(candidate.metadata.title ?? "Untitled result")
+                        Text(candidate.metadata.title ?? FolioL10n.string("metadata.untitled_result", default: "Untitled result"))
                             .font(.title3.weight(.semibold))
-                        Text(candidate.metadata.authorNames.joined(separator: ", ").ifEmpty("Author not listed"))
+                        Text(candidate.metadata.authorNames.joined(separator: ", ").ifEmpty(FolioL10n.string("online.author_not_listed", default: "Author not listed")))
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
                     if let source = candidate.sourceURL, let url = URL(string: source) {
-                        Link("Source", destination: url)
+                        Link(FolioL10n.string("ui.source", default: "Source"), destination: url)
                     }
                 }
 
-                Text("Choose Keep current, Replace, or Append for each available field.")
+                Text(FolioL10n.string("ui.choose_keep_current_replace_or_append_for_each_available", default: "Choose Keep current, Replace, or Append for each available field."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -346,11 +357,11 @@ struct OnlineMetadataSearchView: View {
                 .controlSize(.small)
                 .frame(width: 132)
             }
-            Text("Current: \(field.value(in: current) ?? "—")")
+            Text(FolioL10n.format("metadata.current_value", default: "Current: %@", field.value(in: current) ?? "—"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
-            Text("Online: \(field.value(in: candidate.metadata) ?? "—")")
+            Text(FolioL10n.format("metadata.online_value", default: "Online: %@", field.value(in: candidate.metadata) ?? "—"))
                 .font(.caption)
                 .lineLimit(3)
         }

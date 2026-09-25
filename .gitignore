@@ -7,13 +7,20 @@ DerivedData/
 .swiftpm/
 /macos/FolioForge/.build/
 
+# Local-only test sources, fixtures and runner crates. Never add with -f.
+/tests/
 # Local/private corpora and generated fixture material.
 /tests-private/
 /private-corpus/
 /\.folioforge-dev/
-/tests/corpus/generated/
-/tests/kfx-resource-identity/fixtures-private/
-/tests/semantic-probes/kfx/generated/
+/.codex/
+# Maintainer-side scripts are not runtime or release sources.
+*.py
+*.pyc
+*.pyo
+*.ps1
+*.psm1
+*.psd1
 /bench/output/
 /local-audit/
 /tmp/

@@ -77,8 +77,8 @@ The current 0.1 documentation is the only authoritative development contract:
 3. the relevant [format](docs/formats/) or [Library](docs/library/DATA_MODEL.md)
    contract
 4. [KNOWN_LIMITS.md](docs/0.1/KNOWN_LIMITS.md)
-5. source-level Rust tests; maintainer-only validation material is kept in the
-   ignored local `.folioforge-dev/` directory and is not part of GitHub
+5. local Rust regression tests in the ignored repository-root `tests/`
+   directory; these are intentionally not published to GitHub
 
 Historical stage notes, Python/oracle tools, synthetic validation fixtures and
 development logs are retained in the ignored local `.folioforge-dev/` bundle;

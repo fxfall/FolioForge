@@ -22,6 +22,13 @@ decisions and export remain outside the views.
 The app owns presentation state only. It reads the registered format and target
 capabilities from FFI, so the UI cannot drift into a second capability matrix.
 
+The unreleased 0.2 development line adds a separate Comics tab. Its current GUI
+scope is image folders and ZIP/CBZ sources, with page order, stable page IDs,
+dimensions, thumbnails, preview rendering and CBZ output supplied by Core.
+Only CBZ is currently advertised as an output target; device profiles, comic
+editing and other comic outputs remain unimplemented. This does not expand the
+frozen 0.1 Books workflow or its format claims.
+
 ## Build
 
 From the repository root, build the Rust FFI archive and pass it to SwiftPM:

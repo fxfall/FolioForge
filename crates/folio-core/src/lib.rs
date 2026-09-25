@@ -3,19 +3,31 @@
 //! This crate is deliberately local-file oriented.  It has no networking,
 //! GUI, Swift, AppKit, Foundation, or Amazon publishing dependencies.
 
+mod reader_runtime;
+pub use reader_runtime::*;
+mod preview_runtime;
+pub use preview_runtime::*;
+
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     fs::{self, File},
-    io::{Read, Write},
+    io::{Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
-        Arc,
+        Arc, Mutex, OnceLock,
     },
     time::Instant,
 };
 
 use folio_capabilities::{CapabilityProfile, Format};
+use folio_comic::output::ComicOutputError;
+use folio_comic::preview::{ComicImageBounds, ComicImageKind, ComicRenderError};
+use folio_comic::{
+    ComicContainerKind, ComicImportError, ComicImportLimits, ComicSourceFormat,
+    ComicSourceImporter, ComicSourcePage, ImportedComic, SourcePageId,
+};
+pub use folio_compat::ComicOutputTarget;
 pub use folio_compat::{
     CompatibilityQuality, DegradationMode, DegradationOptions, DegradationPlan, DegradationReport,
 };
@@ -27,8 +39,9 @@ use folio_kfx::amazon::{
     AmazonKfxError, InputReport as AmazonInputReport, KfxResourceDiagnostic, ParseMode,
 };
 use folio_kindle_common::Compression;
-use folio_model::{Diagnostic, Metadata, Node, NodeKind, ResourceKind, Severity};
-use folio_preview::PreviewBundle;
+use folio_model::{
+    Diagnostic, Metadata, Node, NodeKind, ResourceKind, ResourceLoadError, Severity,
+};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -36,6 +49,8 @@ pub const CORE_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const ABI_VERSION: u32 = 1;
 
 static ROUND_TRIP_COUNTER: AtomicU64 = AtomicU64::new(0);
+static COMIC_SESSION_COUNTER: AtomicU64 = AtomicU64::new(1);
+static COMIC_SESSIONS: OnceLock<Mutex<HashMap<String, Arc<ComicSession>>>> = OnceLock::new();
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Target {
@@ -245,6 +260,196 @@ pub struct ConversionReport {
     pub compatibility_report: CompatibilityReport,
     #[serde(default)]
     pub output_report: OutputReport,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ComicWarningDto {
+    pub code: String,
+    pub severity: String,
+    pub message: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ComicSummaryDto {
+    pub session_id: String,
+    pub title: String,
+    pub authors: Vec<String>,
+    pub page_count: usize,
+    pub source_type: String,
+    pub reading_direction: Option<String>,
+    pub dimensions_summary: Option<String>,
+    pub warnings: Vec<ComicWarningDto>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ComicPageDto {
+    pub page_id: String,
+    pub display_index: usize,
+    pub name: String,
+    pub source_format: String,
+    pub width: Option<u32>,
+    pub height: Option<u32>,
+    pub orientation: Option<String>,
+    pub spread_state: Option<String>,
+    pub color_state: Option<String>,
+    pub warning_flags: Vec<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ComicImageDto {
+    pub bytes: Vec<u8>,
+    pub width: u32,
+    pub height: u32,
+    pub source_width: u32,
+    pub source_height: u32,
+    pub mime_type: String,
+    pub cache_identity: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ComicTargetDto {
+    pub id: String,
+    pub display_name: String,
+    pub extension: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ComicConversionOptionsDto {
+    pub targets: Vec<ComicTargetDto>,
+    pub device_profiles: Vec<String>,
+    pub notes: Vec<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ComicPageRequest {
+    pub session_id: String,
+    pub page_id: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ComicImageRequest {
+    pub session_id: String,
+    pub page_id: String,
+    pub max_width: u32,
+    pub max_height: u32,
+    #[serde(default = "default_comic_scale")]
+    pub scale: f32,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ComicConversionRequest {
+    pub session_id: String,
+    pub target: ComicOutputTarget,
+    pub output: PathBuf,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ComicConversionReport {
+    pub output_path: PathBuf,
+    pub output_size: u64,
+    pub page_count: usize,
+    pub target: String,
+    pub duration_ms: u128,
+    pub warnings: Vec<ComicWarningDto>,
+}
+
+fn default_comic_scale() -> f32 {
+    1.0
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct ComicImageCacheKey {
+    page_id: String,
+    width: u32,
+    height: u32,
+    scale_bits: u32,
+}
+
+struct CachedComicImage {
+    bytes: Arc<[u8]>,
+    width: u32,
+    height: u32,
+    source_width: u32,
+    source_height: u32,
+    cache_identity: String,
+    last_used: u64,
+}
+
+#[derive(Default)]
+struct ComicImageCache {
+    entries: HashMap<ComicImageCacheKey, CachedComicImage>,
+    bytes: usize,
+    clock: u64,
+}
+
+impl ComicImageCache {
+    const MAX_ENTRIES: usize = 128;
+    const MAX_BYTES: usize = 32 * 1024 * 1024;
+
+    fn get(&mut self, key: &ComicImageCacheKey) -> Option<ComicImageDto> {
+        self.clock = self.clock.saturating_add(1);
+        let entry = self.entries.get_mut(key)?;
+        entry.last_used = self.clock;
+        Some(ComicImageDto {
+            bytes: entry.bytes.to_vec(),
+            width: entry.width,
+            height: entry.height,
+            source_width: entry.source_width,
+            source_height: entry.source_height,
+            mime_type: "image/png".to_owned(),
+            cache_identity: entry.cache_identity.clone(),
+        })
+    }
+
+    fn insert(&mut self, key: ComicImageCacheKey, image: ComicImageDto) {
+        if image.bytes.is_empty() || image.bytes.len() > Self::MAX_BYTES {
+            return;
+        }
+        self.clock = self.clock.saturating_add(1);
+        let size = image.bytes.len();
+        if let Some(previous) = self.entries.remove(&key) {
+            self.bytes = self.bytes.saturating_sub(previous.bytes.len());
+        }
+        while self.entries.len() >= Self::MAX_ENTRIES
+            || self.bytes.saturating_add(size) > Self::MAX_BYTES
+        {
+            let Some(oldest) = self
+                .entries
+                .iter()
+                .min_by_key(|(_, entry)| entry.last_used)
+                .map(|(key, _)| key.clone())
+            else {
+                break;
+            };
+            if let Some(removed) = self.entries.remove(&oldest) {
+                self.bytes = self.bytes.saturating_sub(removed.bytes.len());
+            }
+        }
+        self.bytes = self.bytes.saturating_add(size);
+        self.entries.insert(
+            key,
+            CachedComicImage {
+                bytes: Arc::from(image.bytes),
+                width: image.width,
+                height: image.height,
+                source_width: image.source_width,
+                source_height: image.source_height,
+                cache_identity: image.cache_identity,
+                last_used: self.clock,
+            },
+        );
+    }
+}
+
+struct ComicSession {
+    imported: ImportedComic,
+    projection: folio_comic::ComicIrProjection,
+    source_type: String,
+    pages_by_id: HashMap<String, SourcePageId>,
+    warnings: Vec<ComicWarningDto>,
+    dimensions: Mutex<HashMap<String, (u32, u32)>>,
+    images: Mutex<ComicImageCache>,
+    conversion_lock: Mutex<()>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -706,7 +911,7 @@ pub fn preview(
         mode,
         options,
         edits,
-        &folio_preview::PreviewSettings::default(),
+        &PreviewSettings::default(),
     )
 }
 
@@ -716,7 +921,7 @@ pub fn preview_with_settings(
     mode: DegradationMode,
     options: &DegradationOptions,
     edits: &BookEditPlan,
-    settings: &folio_preview::PreviewSettings,
+    settings: &PreviewSettings,
 ) -> Result<PreviewBundle, CoreError> {
     preview_with_settings_and_text_options(
         path,
@@ -735,24 +940,646 @@ pub fn preview_with_settings_and_text_options(
     mode: DegradationMode,
     options: &DegradationOptions,
     edits: &BookEditPlan,
-    settings: &folio_preview::PreviewSettings,
+    settings: &PreviewSettings,
     text: &folio_text::TextImportOptions,
 ) -> Result<PreviewBundle, CoreError> {
-    let imported = import_path_with_options(path.as_ref(), mode, text)?;
-    let mut bundle = folio_preview::build_with_settings(
-        &imported.book,
-        edits,
-        target.format(),
-        mode,
-        options,
-        settings,
-    )
-    .map_err(CoreError::from)?;
-    bundle.input_loss = imported.input_report.input_loss;
-    Ok(bundle)
+    let path = path.as_ref();
+    let imported = import_path_with_options(path, mode, text)?;
+    let request = CoreReaderPreviewRequest {
+        input: path.to_path_buf(),
+        mode: folio_reader::ReaderPreviewMode::Target,
+        location: None,
+        target: Some(target),
+        degradation_mode: mode,
+        degradation: options.clone(),
+        edit: edits.clone(),
+        settings: *settings,
+        text: text.clone(),
+    };
+    let reader =
+        preview_runtime::reader_preview_from_imported(&request, imported).map_err(|error| {
+            match error {
+                CoreError::Edit(error) => CoreError::Preview(PreviewError::Edit(error)),
+                CoreError::Compatibility(error) => {
+                    CoreError::Preview(PreviewError::Compatibility(error))
+                }
+                CoreError::Reader(error) => CoreError::Preview(PreviewError::Reader(error)),
+                other => other,
+            }
+        })?;
+    let CoreReaderPreviewBundle {
+        source_title,
+        content,
+        target,
+        degradation,
+        input_loss,
+        target_loss,
+        blocked,
+        ..
+    } = reader;
+    let CoreReaderPreviewContent::Reflowable { documents, html } = content else {
+        return Err(CoreError::Preview(PreviewError::Reader(
+            folio_reader::ReaderError::invalid_preview_request(),
+        )));
+    };
+    Ok(PreviewBundle {
+        target: target.ok_or_else(|| {
+            CoreError::Preview(PreviewError::Reader(
+                folio_reader::ReaderError::invalid_preview_request(),
+            ))
+        })?,
+        source_title,
+        documents,
+        html,
+        degradation: degradation.ok_or_else(|| {
+            CoreError::Preview(PreviewError::Reader(
+                folio_reader::ReaderError::invalid_preview_request(),
+            ))
+        })?,
+        input_loss,
+        target_loss,
+        blocked,
+    })
 }
 
-pub use folio_preview::{PreviewDevice, PreviewOrientation, PreviewSettings};
+/// Open one local comic folder or ZIP/CBZ as an immutable Core session and
+/// project its supported raster pages into the generic Semantic IR.
+pub fn comic_open(path: impl AsRef<Path>) -> Result<ComicSummaryDto, CoreError> {
+    comic_open_with_cancellation(path, &CancellationToken::new())
+}
+
+pub fn comic_open_with_cancellation(
+    path: impl AsRef<Path>,
+    cancellation: &CancellationToken,
+) -> Result<ComicSummaryDto, CoreError> {
+    let path = path.as_ref();
+    cancellation.check()?;
+    ensure_input(path)?;
+    if fs::symlink_metadata(path)?.file_type().is_symlink() {
+        return Err(ComicImportError::UnsafePath(
+            "the selected source root is a symbolic link".to_owned(),
+        )
+        .into());
+    }
+
+    let stable_key = path.canonicalize()?.to_string_lossy().into_owned();
+    let importer = ComicSourceImporter::new(ComicImportLimits::default())?;
+    let imported = importer
+        .import_path_with_cancel(path, &stable_key, || cancellation.is_cancelled())
+        .map_err(|error| match error {
+            ComicImportError::Cancelled => CoreError::Cancelled,
+            other => CoreError::ComicImport(other),
+        })?;
+    cancellation.check()?;
+    let source_type = match imported.container_kind() {
+        ComicContainerKind::Directory => "Folder".to_owned(),
+        ComicContainerKind::Zip => {
+            if path
+                .extension()
+                .and_then(|value| value.to_str())
+                .is_some_and(|value| value.eq_ignore_ascii_case("cbz"))
+            {
+                "CBZ".to_owned()
+            } else {
+                "ZIP".to_owned()
+            }
+        }
+        kind => {
+            return Err(CoreError::UnsupportedComicSource(format!(
+                "{} is outside the GUI's Folder / ZIP / CBZ scope",
+                comic_container_name(kind)
+            )))
+        }
+    };
+    let projection = imported.to_semantic_ir()?;
+    let validation = folio_validator::validate_book(&projection.book);
+    if !validation.is_valid() {
+        return Err(CoreError::ValidationFailed(validation.diagnostics));
+    }
+
+    let sequence = COMIC_SESSION_COUNTER
+        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
+            current.checked_add(1)
+        })
+        .map_err(|_| CoreError::InvalidComicRequest("session ID space is exhausted".to_owned()))?;
+    let session_id = format!("comic-session-{sequence:016x}");
+    let pages_by_id = imported
+        .native()
+        .source_pages()
+        .map(|page| (page.id().to_hex(), page.id().clone()))
+        .collect();
+    let warnings = projection.diagnostics.iter().map(comic_warning).collect();
+    let session = Arc::new(ComicSession {
+        imported,
+        projection,
+        source_type,
+        pages_by_id,
+        warnings,
+        dimensions: Mutex::new(HashMap::new()),
+        images: Mutex::new(ComicImageCache::default()),
+        conversion_lock: Mutex::new(()),
+    });
+    comic_sessions()
+        .lock()
+        .map_err(|_| CoreError::ComicSessionRegistryUnavailable)?
+        .insert(session_id.clone(), Arc::clone(&session));
+    Ok(comic_summary_for(&session_id, &session))
+}
+
+/// Close a Comic session. In-flight operations retain their own `Arc` until
+/// completion, so closing never invalidates a page read already in progress.
+pub fn comic_close(session_id: &str) -> Result<bool, CoreError> {
+    Ok(comic_sessions()
+        .lock()
+        .map_err(|_| CoreError::ComicSessionRegistryUnavailable)?
+        .remove(session_id)
+        .is_some())
+}
+
+pub fn comic_summary(session_id: &str) -> Result<ComicSummaryDto, CoreError> {
+    let session = comic_session(session_id)?;
+    Ok(comic_summary_for(session_id, &session))
+}
+
+pub fn comic_pages(session_id: &str) -> Result<Vec<ComicPageDto>, CoreError> {
+    let session = comic_session(session_id)?;
+    session
+        .imported
+        .native()
+        .source_pages()
+        .enumerate()
+        .map(|(index, page)| comic_page_dto(&session, page, index + 1))
+        .collect()
+}
+
+pub fn comic_page_info(request: &ComicPageRequest) -> Result<ComicPageDto, CoreError> {
+    let session = comic_session(&request.session_id)?;
+    let source_id = comic_source_page_id(&session, &request.page_id)?;
+    let page = session
+        .imported
+        .native()
+        .source_page(source_id)
+        .ok_or_else(|| {
+            CoreError::InvalidComicRequest("page ID is not in this session".to_owned())
+        })?;
+    if page.original_dimensions().is_none() {
+        let dimensions = folio_comic::preview::source_dimensions(&session.imported, source_id)?;
+        session
+            .dimensions
+            .lock()
+            .map_err(|_| CoreError::ComicSessionRegistryUnavailable)?
+            .insert(request.page_id.clone(), dimensions);
+    }
+    let index = session
+        .imported
+        .native()
+        .source_page_ids()
+        .iter()
+        .position(|id| id == source_id)
+        .ok_or_else(|| {
+            CoreError::InvalidComicRequest("page ID is not in source order".to_owned())
+        })?;
+    comic_page_dto(&session, page, index + 1)
+}
+
+pub fn comic_conversion_options() -> ComicConversionOptionsDto {
+    ComicConversionOptionsDto {
+        targets: folio_compat::comic_output_targets()
+            .into_iter()
+            .map(|target| ComicTargetDto {
+                id: target.id().to_owned(),
+                display_name: target.display_name().to_owned(),
+                extension: target.extension().to_owned(),
+            })
+            .collect(),
+        device_profiles: Vec::new(),
+        notes: vec![
+            "Only source-preserving CBZ output is currently implemented.".to_owned(),
+            "Comic device profiles are not yet implemented; target-specific preview and transformations are unavailable.".to_owned(),
+        ],
+    }
+}
+
+pub fn comic_thumbnail(
+    request: &ComicImageRequest,
+    cancellation: &CancellationToken,
+) -> Result<ComicImageDto, CoreError> {
+    comic_render_image(request, ComicImageKind::Thumbnail, cancellation)
+}
+
+pub fn comic_preview(
+    request: &ComicImageRequest,
+    cancellation: &CancellationToken,
+) -> Result<ComicImageDto, CoreError> {
+    comic_render_image(request, ComicImageKind::SourcePreview, cancellation)
+}
+
+fn comic_render_image(
+    request: &ComicImageRequest,
+    kind: ComicImageKind,
+    cancellation: &CancellationToken,
+) -> Result<ComicImageDto, CoreError> {
+    cancellation.check()?;
+    let session = comic_session(&request.session_id)?;
+    let source_id = comic_source_page_id(&session, &request.page_id)?;
+    let bounds = ComicImageBounds {
+        width: request.max_width,
+        height: request.max_height,
+        scale: request.scale,
+    };
+    let key = ComicImageCacheKey {
+        page_id: request.page_id.clone(),
+        width: bounds.width,
+        height: bounds.height,
+        scale_bits: bounds.scale.to_bits(),
+    };
+    if let Some(cached) = session
+        .images
+        .lock()
+        .map_err(|_| CoreError::ComicSessionRegistryUnavailable)?
+        .get(&key)
+    {
+        return Ok(cached);
+    }
+
+    let rendered = folio_comic::preview::render_source_page(
+        &session.imported,
+        source_id,
+        kind,
+        bounds,
+        || cancellation.is_cancelled(),
+    )
+    .map_err(|error| match error {
+        ComicRenderError::Cancelled => CoreError::Cancelled,
+        other => CoreError::ComicRender(other),
+    })?;
+    let cache_identity = blake3::hash(&rendered.bytes).to_hex().to_string();
+    let image = ComicImageDto {
+        bytes: rendered.bytes,
+        width: rendered.width,
+        height: rendered.height,
+        source_width: rendered.source_width,
+        source_height: rendered.source_height,
+        mime_type: "image/png".to_owned(),
+        cache_identity,
+    };
+    session
+        .dimensions
+        .lock()
+        .map_err(|_| CoreError::ComicSessionRegistryUnavailable)?
+        .insert(
+            request.page_id.clone(),
+            (image.source_width, image.source_height),
+        );
+    session
+        .images
+        .lock()
+        .map_err(|_| CoreError::ComicSessionRegistryUnavailable)?
+        .insert(key, image.clone());
+    cancellation.check()?;
+    Ok(image)
+}
+
+pub fn comic_convert_with_progress<F>(
+    request: &ComicConversionRequest,
+    cancellation: &CancellationToken,
+    mut progress: F,
+) -> Result<ComicConversionReport, CoreError>
+where
+    F: FnMut(ProgressEvent),
+{
+    cancellation.check()?;
+    let session = comic_session(&request.session_id)?;
+    let _conversion_guard = session
+        .conversion_lock
+        .lock()
+        .map_err(|_| CoreError::ComicSessionRegistryUnavailable)?;
+    let target = folio_compat::comic_output_targets()
+        .into_iter()
+        .find(|target| *target == request.target)
+        .ok_or_else(|| CoreError::UnsupportedTarget(request.target.id().to_owned()))?;
+    if !request
+        .output
+        .extension()
+        .and_then(|value| value.to_str())
+        .is_some_and(|value| value.eq_ignore_ascii_case(target.extension()))
+    {
+        return Err(CoreError::InvalidComicRequest(format!(
+            "output path must use the .{} extension",
+            target.extension()
+        )));
+    }
+    let source_path = session.imported.source_path().canonicalize()?;
+    let output_path = canonical_output_path(&request.output)?;
+    if source_path == output_path {
+        return Err(CoreError::InvalidComicRequest(
+            "output cannot overwrite the comic source".to_owned(),
+        ));
+    }
+
+    let started = Instant::now();
+    emit(
+        &mut progress,
+        ProgressStage::Opening,
+        0,
+        None,
+        "using the open Comic source session",
+    );
+    cancellation.check()?;
+    let validation = folio_validator::validate_book(&session.projection.book);
+    if !validation.is_valid() {
+        return Err(CoreError::ValidationFailed(validation.diagnostics));
+    }
+    emit(
+        &mut progress,
+        ProgressStage::Normalizing,
+        session.imported.native().source_pages().len() as u64,
+        Some(session.imported.native().source_pages().len() as u64),
+        "Comic source is represented in the generic Semantic IR",
+    );
+
+    let sink = AtomicFileSink::new(&request.output)?;
+    let mut sink = folio_comic::output::write_cbz(
+        &session.projection.book,
+        sink,
+        || cancellation.is_cancelled(),
+        |current, total| {
+            emit(
+                &mut progress,
+                ProgressStage::Writing,
+                current as u64,
+                Some(total as u64),
+                format!("writing CBZ page {current} of {total}"),
+            );
+        },
+    )
+    .map_err(|error| match error {
+        ComicOutputError::Cancelled => CoreError::Cancelled,
+        other => CoreError::ComicOutput(other),
+    })?;
+    cancellation.check()?;
+    emit(
+        &mut progress,
+        ProgressStage::Validating,
+        0,
+        Some(session.projection.book.documents.len() as u64),
+        "reopening generated CBZ and comparing page images through Semantic IR",
+    );
+    validate_cbz_ir_roundtrip(
+        &sink.temporary,
+        &session.projection.book,
+        cancellation,
+        &mut progress,
+    )?;
+    cancellation.check()?;
+    sink.finalize()?;
+    let output_size = fs::metadata(&request.output)?.len();
+    emit(
+        &mut progress,
+        ProgressStage::Finished,
+        1,
+        Some(1),
+        "Comic conversion finished",
+    );
+
+    let page_count = session.imported.native().source_pages().len();
+    let mut warnings = session.warnings.clone();
+    warnings.push(ComicWarningDto {
+        code: "FF-COMIC-CBZ-0001".to_owned(),
+        severity: "warning".to_owned(),
+        message: "CBZ output preserves page image bytes and order; ComicInfo metadata and fixed-layout geometry are not embedded by this initial output target.".to_owned(),
+    });
+    Ok(ComicConversionReport {
+        output_path: request.output.clone(),
+        output_size,
+        page_count,
+        target: target.id().to_owned(),
+        duration_ms: started.elapsed().as_millis(),
+        warnings,
+    })
+}
+
+fn validate_cbz_ir_roundtrip<F>(
+    generated_path: &Path,
+    source_book: &folio_model::Book,
+    cancellation: &CancellationToken,
+    progress: &mut F,
+) -> Result<(), CoreError>
+where
+    F: FnMut(ProgressEvent),
+{
+    let importer = ComicSourceImporter::new(ComicImportLimits::default())?;
+    let generated = importer
+        .import_path_with_cancel(
+            generated_path,
+            "folioforge:comic-cbz-output-validation:v1",
+            || cancellation.is_cancelled(),
+        )
+        .map_err(|error| match error {
+            ComicImportError::Cancelled => CoreError::Cancelled,
+            other => CoreError::ComicImport(other),
+        })?;
+    let generated_ir = generated.to_semantic_ir()?;
+    let validation = folio_validator::validate_book(&generated_ir.book);
+    if !validation.is_valid() {
+        return Err(CoreError::ValidationFailed(validation.diagnostics));
+    }
+    if generated_ir.book.documents.len() != source_book.documents.len() {
+        return Err(CoreError::ValidationFailed(vec![Diagnostic::error(
+            "FF-COMIC-CBZ-ROUNDTRIP-0001",
+            format!(
+                "CBZ re-import produced {} pages; source IR contains {}",
+                generated_ir.book.documents.len(),
+                source_book.documents.len()
+            ),
+        )]));
+    }
+
+    let total = source_book.documents.len();
+    for index in 0..total {
+        cancellation.check()?;
+        let source_resource =
+            document_image_resource(&source_book.documents[index]).ok_or_else(|| {
+                CoreError::ValidationFailed(vec![Diagnostic::error(
+                    "FF-COMIC-CBZ-ROUNDTRIP-0002",
+                    format!("source IR document {} is not one image page", index + 1),
+                )])
+            })?;
+        let generated_resource = document_image_resource(&generated_ir.book.documents[index])
+            .ok_or_else(|| {
+                CoreError::ValidationFailed(vec![Diagnostic::error(
+                    "FF-COMIC-CBZ-ROUNDTRIP-0003",
+                    format!("CBZ re-import document {} is not one image page", index + 1),
+                )])
+            })?;
+        let source_bytes = source_book
+            .load_resource(source_resource, Some(256 * 1024 * 1024))
+            .map_err(CoreError::ComicResource)?;
+        let generated_bytes = generated_ir
+            .book
+            .load_resource(generated_resource, Some(256 * 1024 * 1024))
+            .map_err(CoreError::ComicResource)?;
+        if source_bytes != generated_bytes {
+            return Err(CoreError::ValidationFailed(vec![Diagnostic::error(
+                "FF-COMIC-CBZ-ROUNDTRIP-0004",
+                format!(
+                    "CBZ page {} differs from its source Semantic IR image",
+                    index + 1
+                ),
+            )]));
+        }
+        emit(
+            progress,
+            ProgressStage::Validating,
+            (index + 1) as u64,
+            Some(total as u64),
+            format!("verified CBZ page {} through Semantic IR", index + 1),
+        );
+    }
+    Ok(())
+}
+
+fn document_image_resource(document: &folio_model::Document) -> Option<folio_model::ResourceId> {
+    match document.nodes.as_slice() {
+        [node] if node.children.is_empty() => match &node.kind {
+            NodeKind::Image { resource, .. } => Some(*resource),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+fn comic_sessions() -> &'static Mutex<HashMap<String, Arc<ComicSession>>> {
+    COMIC_SESSIONS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn comic_session(session_id: &str) -> Result<Arc<ComicSession>, CoreError> {
+    comic_sessions()
+        .lock()
+        .map_err(|_| CoreError::ComicSessionRegistryUnavailable)?
+        .get(session_id)
+        .cloned()
+        .ok_or_else(|| CoreError::ComicSessionNotFound(session_id.to_owned()))
+}
+
+fn comic_summary_for(session_id: &str, session: &ComicSession) -> ComicSummaryDto {
+    ComicSummaryDto {
+        session_id: session_id.to_owned(),
+        title: session
+            .imported
+            .native()
+            .metadata()
+            .display_title()
+            .to_owned(),
+        authors: session.imported.native().metadata().author_names(),
+        page_count: session.imported.native().source_pages().len(),
+        source_type: session.source_type.clone(),
+        reading_direction: None,
+        dimensions_summary: None,
+        warnings: session.warnings.clone(),
+    }
+}
+
+fn comic_page_dto(
+    session: &ComicSession,
+    page: &ComicSourcePage,
+    display_index: usize,
+) -> Result<ComicPageDto, CoreError> {
+    let id = page.id().to_hex();
+    let cached_dimensions = session
+        .dimensions
+        .lock()
+        .map_err(|_| CoreError::ComicSessionRegistryUnavailable)?
+        .get(&id)
+        .copied();
+    let dimensions = page
+        .original_dimensions()
+        .map(|value| (value.width(), value.height()))
+        .or(cached_dimensions);
+    let (width, height, orientation) = match dimensions {
+        Some((width, height)) => (
+            Some(width),
+            Some(height),
+            Some(
+                if width == height {
+                    "square"
+                } else if width > height {
+                    "landscape"
+                } else {
+                    "portrait"
+                }
+                .to_owned(),
+            ),
+        ),
+        None => (None, None, None),
+    };
+    Ok(ComicPageDto {
+        page_id: id,
+        display_index,
+        name: page.source_name().to_owned(),
+        source_format: comic_image_format_name(page.source_format()).to_owned(),
+        width,
+        height,
+        orientation,
+        spread_state: None,
+        color_state: None,
+        warning_flags: Vec::new(),
+    })
+}
+
+fn comic_source_page_id<'a>(
+    session: &'a ComicSession,
+    page_id: &str,
+) -> Result<&'a SourcePageId, CoreError> {
+    session
+        .pages_by_id
+        .get(page_id)
+        .ok_or_else(|| CoreError::InvalidComicRequest("page ID is not in this session".to_owned()))
+}
+
+fn comic_warning(diagnostic: &Diagnostic) -> ComicWarningDto {
+    ComicWarningDto {
+        code: diagnostic.code.clone(),
+        severity: format!("{:?}", diagnostic.severity).to_ascii_lowercase(),
+        message: diagnostic.message.clone(),
+    }
+}
+
+fn comic_container_name(kind: ComicContainerKind) -> &'static str {
+    match kind {
+        ComicContainerKind::Directory => "Folder",
+        ComicContainerKind::Zip => "ZIP/CBZ",
+        ComicContainerKind::SevenZip => "7z/CB7",
+        ComicContainerKind::Pdf => "PDF",
+        ComicContainerKind::FixedLayoutEpub => "Fixed Layout EPUB",
+    }
+}
+
+fn comic_image_format_name(format: ComicSourceFormat) -> &'static str {
+    match format {
+        ComicSourceFormat::Jpeg => "JPEG",
+        ComicSourceFormat::Png => "PNG",
+        ComicSourceFormat::Gif => "GIF",
+        ComicSourceFormat::Webp => "WebP",
+        ComicSourceFormat::PdfPage => "PDF page",
+        ComicSourceFormat::FixedLayoutResource => "Fixed Layout resource",
+        ComicSourceFormat::Unknown => "Unknown",
+    }
+}
+
+fn canonical_output_path(path: &Path) -> Result<PathBuf, CoreError> {
+    if path.exists() {
+        return Ok(path.canonicalize()?);
+    }
+    let file_name = path
+        .file_name()
+        .ok_or_else(|| CoreError::InvalidComicRequest("output path has no file name".to_owned()))?;
+    let parent = path
+        .parent()
+        .filter(|value| !value.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    Ok(parent.canonicalize()?.join(file_name))
+}
 
 #[derive(Debug, Error)]
 pub enum CoreError {
@@ -787,9 +1614,33 @@ pub enum CoreError {
     #[error("compatibility planning failed: {0}")]
     Compatibility(#[from] folio_compat::CompatError),
     #[error("preview failed: {0}")]
-    Preview(#[from] folio_preview::PreviewError),
+    Preview(#[from] PreviewError),
     #[error("format adapter failed: {0}")]
     Format(#[from] folio_format::FormatError),
+    #[error("Comic source import failed: {0}")]
+    ComicImport(#[from] ComicImportError),
+    #[error("Comic output failed: {0}")]
+    ComicOutput(#[from] ComicOutputError),
+    #[error("Comic image rendering failed: {0}")]
+    ComicRender(#[from] ComicRenderError),
+    #[error("Comic Semantic IR resource could not be loaded: {0}")]
+    ComicResource(#[from] ResourceLoadError),
+    #[error("unsupported Comic source: {0}")]
+    UnsupportedComicSource(String),
+    #[error("invalid Comic request: {0}")]
+    InvalidComicRequest(String),
+    #[error("Comic session does not exist: {0}")]
+    ComicSessionNotFound(String),
+    #[error("Comic session registry is unavailable")]
+    ComicSessionRegistryUnavailable,
+    #[error("Reader error: {0}")]
+    Reader(#[from] folio_reader::ReaderError),
+    #[error("Reader session does not exist: {0}")]
+    ReaderSessionNotFound(String),
+    #[error("Reader session registry is unavailable")]
+    ReaderSessionRegistryUnavailable,
+    #[error("Reader session ID space is exhausted")]
+    ReaderSessionIdExhausted,
 }
 
 /// Destination contract for future streaming exporters. Writers may still
@@ -805,6 +1656,22 @@ pub struct AtomicFileSink {
     temporary: PathBuf,
     file: File,
     finalized: bool,
+}
+
+impl Write for AtomicFileSink {
+    fn write(&mut self, buffer: &[u8]) -> std::io::Result<usize> {
+        self.file.write(buffer)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.file.flush()
+    }
+}
+
+impl Seek for AtomicFileSink {
+    fn seek(&mut self, position: SeekFrom) -> std::io::Result<u64> {
+        self.file.seek(position)
+    }
 }
 
 impl AtomicFileSink {
@@ -1948,81 +2815,7 @@ fn read_file(path: &Path) -> Result<Vec<u8>, CoreError> {
     Ok(bytes)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn cancellation_is_observable_without_a_gui() {
-        let token = CancellationToken::new();
-        assert!(!token.is_cancelled());
-        token.cancel();
-        assert!(token.is_cancelled());
-        assert!(matches!(token.check(), Err(CoreError::Cancelled)));
-    }
-
-    #[test]
-    fn target_extensions_are_stable() {
-        assert_eq!(Target::KF7.extension(), "mobi");
-        assert_eq!(Target::KF8.extension(), "azw3");
-        assert_eq!(Target::KFX.extension(), "kfx");
-    }
-
-    #[test]
-    fn kfx_resource_identity_diagnostics_keep_their_codes_and_context() {
-        let report = InputReport {
-            resource_identity_diagnostics: vec![KfxResourceDiagnostic {
-                code: "KFX-R002".to_owned(),
-                message: "No exact raw media match.".to_owned(),
-                location: Some("resource/example.jpg".to_owned()),
-                location_symbol_id: Some(77),
-                location_source: "container_symbol_table".to_owned(),
-                normalized_location: Some("resource/example.jpg".to_owned()),
-                location_field_id: 165,
-                input_index: 1,
-                container_origin: 3,
-                external_resource_entity_id: 99,
-                body_reference_count: 7,
-                visible_placement_count: 2,
-            }],
-            ..InputReport::default()
-        };
-
-        let diagnostics = diagnostics_from_input(&report);
-
-        assert_eq!(diagnostics.len(), 1);
-        assert_eq!(diagnostics[0].code, "KFX-R002");
-        assert_eq!(
-            diagnostics[0].context.get("visible_placement_count"),
-            Some(&"2".to_owned())
-        );
-        assert_eq!(
-            diagnostics[0].context.get("location"),
-            Some(&"resource/example.jpg".to_owned())
-        );
-    }
-
-    #[test]
-    fn txt_import_enters_the_shared_ir_and_preserves_structure_evidence() {
-        let imported = import_bytes(
-            Path::new("《测试书》作者：测试作者.txt"),
-            "第一卷\n\n第一章 初遇\n\n这是正文。\n\n第二章 再会\n\n这是下一段。".as_bytes(),
-        )
-        .unwrap();
-        assert_eq!(imported.format, DetectedFormat::Text);
-        assert_eq!(imported.book.metadata.title.as_deref(), Some("测试书"));
-        assert_eq!(imported.book.navigation.toc.len(), 1);
-        assert_eq!(imported.book.navigation.toc[0].children.len(), 2);
-        assert_eq!(
-            imported
-                .input_report
-                .text
-                .as_ref()
-                .unwrap()
-                .encoding
-                .selected,
-            Some(folio_text::TextEncoding::Utf8)
-        );
-        assert!(folio_validator::validate_book(&imported.book).is_valid());
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-core/src/lib.rs"]
+mod tests;

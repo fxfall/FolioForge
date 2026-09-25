@@ -4,12 +4,19 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+# Local-only test modules resolve from the ignored repository-root tests/ tree.
+[features]
+maintainer-tests = []
+
 [dependencies]
+base64.workspace = true
+blake3.workspace = true
 folio-capabilities = { path = "../folio-capabilities" }
 folio-compat = { path = "../folio-compat" }
+folio-comic = { path = "../folio-comic" }
 folio-edit = { path = "../folio-edit" }
 folio-input = { path = "../folio-input" }
-folio-preview = { path = "../folio-preview" }
+folio-reader = { path = "../folio-reader" }
 folio-kindle-common = { path = "../folio-kindle-common" }
 folio-epub = { path = "../folio-epub" }
 folio-format = { path = "../folio-format" }

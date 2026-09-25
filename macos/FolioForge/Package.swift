@@ -8,6 +8,7 @@ let folioFFIArchive = ProcessInfo.processInfo.environment["FOLIOFORGE_FFI_ARCHIV
 
 let package = Package(
     name: "FolioForge",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v27),
     ],

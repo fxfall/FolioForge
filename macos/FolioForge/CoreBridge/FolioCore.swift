@@ -19,8 +19,8 @@ private func ffCapabilities() -> UnsafeMutablePointer<CChar>?
 @_silgen_name("folio_analyze")
 private func ffAnalyze(_ requestJSON: UnsafePointer<CChar>?) -> UnsafeMutablePointer<FolioResultC>?
 
-@_silgen_name("folio_preview")
-private func ffPreview(_ requestJSON: UnsafePointer<CChar>?) -> UnsafeMutablePointer<FolioResultC>?
+@_silgen_name("folio_reader_preview")
+private func ffReaderPreview(_ requestJSON: UnsafePointer<CChar>?) -> UnsafeMutablePointer<FolioResultC>?
 
 @_silgen_name("folio_online_metadata_search")
 private func ffOnlineMetadataSearch(_ requestJSON: UnsafePointer<CChar>?) -> UnsafeMutablePointer<FolioResultC>?
@@ -101,6 +101,10 @@ final class FolioCancellationHandle: @unchecked Sendable {
 
     init(pointer: UnsafeMutableRawPointer?) {
         self.pointer = pointer
+    }
+
+    static func make() -> FolioCancellationHandle {
+        FolioCancellationHandle(pointer: ffCancellationNew())
     }
 
     func cancel() {
@@ -310,11 +314,12 @@ final class FolioCoreBridge: @unchecked Sendable {
         edit: FolioBookEditPlan,
         settings: FolioPreviewSettings = FolioPreviewSettings(),
         text: FolioTextImportOptions
-    ) throws -> FolioPreviewBundle {
-        let request = FolioPreviewRequest(
+    ) throws -> FolioReaderPreviewBundle {
+        let request = FolioReaderPreviewRequest(
             input: url.path,
+            mode: .target,
             target: target,
-            mode: mode,
+            degradationMode: mode,
             degradation: degradation,
             edit: edit,
             settings: settings,
@@ -322,8 +327,8 @@ final class FolioCoreBridge: @unchecked Sendable {
         )
         let data = try encoder.encode(request)
         guard let requestJSON = String(data: data, encoding: .utf8) else { throw FolioError.invalidResponse }
-        let result = requestJSON.withCString { ffPreview($0) }
-        return try decodePreviewResult(result)
+        let result = requestJSON.withCString { ffReaderPreview($0) }
+        return try decodeReaderPreviewResult(result)
     }
 
     func inspect(url: URL) throws -> FolioInspectReport {
@@ -353,6 +358,11 @@ private func responseData(_ result: UnsafeMutablePointer<FolioResultC>?) -> (Int
     let data = result.pointee.json.flatMap { String(cString: $0).data(using: .utf8) }
     ffResultFree(result)
     return (code, data)
+}
+
+func folioCoreFreeOpaqueResult(_ result: UnsafeMutableRawPointer?) {
+    guard let result else { return }
+    ffResultFree(result.assumingMemoryBound(to: FolioResultC.self))
 }
 
 private func decodeBatchConversionResult(_ result: UnsafeMutablePointer<FolioResultC>?) -> Result<FolioBatchReport, FolioError> {
@@ -400,7 +410,9 @@ private func decodeAnalysisResult(_ result: UnsafeMutablePointer<FolioResultC>?)
     }
 }
 
-private func decodePreviewResult(_ result: UnsafeMutablePointer<FolioResultC>?) throws -> FolioPreviewBundle {
+private func decodeReaderPreviewResult(
+    _ result: UnsafeMutablePointer<FolioResultC>?
+) throws -> FolioReaderPreviewBundle {
     let (code, data) = responseData(result)
     guard let data else { throw FolioError.invalidResponse }
     if code != 0 {
@@ -409,7 +421,9 @@ private func decodePreviewResult(_ result: UnsafeMutablePointer<FolioResultC>?) 
         throw FolioError.core(message)
     }
     do {
-        return try JSONDecoder().decode(FolioPreviewBundle.self, from: data)
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(FolioReaderPreviewBundle.self, from: data)
     } catch {
         throw FolioError.decoding(error)
     }

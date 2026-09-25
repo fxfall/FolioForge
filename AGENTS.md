@@ -1,8 +1,11 @@
-# FolioForge 0.1 development contract
+# FolioForge development contract
 
-Read `docs/0.1/DEVELOPMENT.md` first. It is the current 0.1 source of truth;
-historical stage notes are kept outside the public working tree and are not
-authoritative.
+For 0.1 maintenance, read `docs/0.1/DEVELOPMENT.md` first; it remains the
+frozen 0.1 source of truth. For 0.2 comic work, read
+`docs/0.2/COMIC_CORE_DEVELOPMENT.md` and its linked architecture and editing
+contracts. For 0.2.1 Reader work, also read
+`docs/0.2/READER_RUNTIME.md`. The 0.1 freeze applies to the 0.1 release line;
+0.2 work is additive and must preserve existing 0.1 behavior.
 
 For any change that touches conversion, the Semantic IR, an importer, a
 compatibility rule, an exporter, FFI, batch execution, or the service boundary:
@@ -19,25 +22,32 @@ compatibility rule, an exporter, FFI, batch execution, or the service boundary:
 6. Classify the change as major or minor under the frozen-scope rules in
    `docs/0.1/DEVELOPMENT.md`; record the classification in the audit/change
    notes.
-7. Run the targeted Rust tests and the canonical local validation bundle when
-   it is available; the bundle is intentionally outside the public checkout.
+7. Run targeted Rust tests from the ignored repository-root `tests/` tree and
+   the canonical local validation bundle when available. Test sources and
+   fixtures must not be tracked or pushed to GitHub.
 8. Run the required A/B comparison before accepting a behavior-changing
    change, then update the behavior/performance baseline and API changelog.
 9. Remove temporary code and keep build/scratch data under the path selected by
    `FOLIOFORGE_VALIDATION_ROOT`, outside the repository.
 
-The maintainer-only validation bundle lives in the ignored `.folioforge-dev/`
-directory. It contains Python/oracle tooling, synthetic corpora, private
-comparison notes and development records. It is not part of the public GitHub
-checkout, release archives or Docker build context. Runtime code must never
-import or depend on it.
+Local regression tests and fixtures live in the ignored repository-root
+`tests/` directory. Python/oracle tooling, private comparison notes, benchmark
+seeds and chronological process records live in the ignored `.folioforge-dev/`
+directory; project status lives in ignored `.codex/`. These directories are
+inside this checkout but are excluded from GitHub, release archives and Docker
+build contexts. Runtime code must never import or depend on them.
 
 If the implementation and a contract disagree, stop and record the mismatch as
 Architecture Drift before deciding whether the code or the document is wrong.
 The document is a design/behavior contract; it is not a reason to hide a
 regression.
 
-The 0.1 release is frozen: do not add formats, Library features, Reader
-features, pagination, annotations, cloud sync, or a second conversion pipeline.
-Client layers consume Core contracts; they do not become capability or
-compatibility authorities.
+The 0.1 release is frozen: do not change its product scope or claim new 0.1
+capabilities. FolioForge 0.2 adds only the comic/manga Core scope defined in
+`docs/0.2/`; it does not add Library or Reader features, pagination,
+annotations, cloud sync, or a second format-specific exporter pipeline. Client
+layers consume Core/Reader contracts; they do not become capability or
+compatibility authorities. Private project status and process notes live in
+ignored `.codex/`; maintainer-only tests and fixtures live in ignored root
+`tests/`; private tools, benchmarks and chronological process logs live in
+ignored `.folioforge-dev/`.

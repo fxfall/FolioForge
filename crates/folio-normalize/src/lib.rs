@@ -936,6 +936,93 @@ pub fn normalize_xhtml_for_xml(value: &str) -> String {
     normalize_common_html_entities(&strip_external_xhtml_doctype(value))
 }
 
+/// Normalize an NCX document that declares the canonical DAISY 2005 NCX DTD.
+/// The external subset is never fetched or expanded: only that exact public
+/// and system identifier pair is removed. Internal subsets and other external
+/// identifiers remain intact so the strict XML parser rejects them.
+pub fn normalize_ncx_for_xml(value: &str) -> String {
+    normalize_common_html_entities(&strip_standard_ncx_doctype(value))
+}
+
+/// Remove only the canonical external DAISY NCX 2005 DTD declaration, and
+/// only when it has no internal subset.
+pub fn strip_standard_ncx_doctype(value: &str) -> String {
+    const PUBLIC_ID: &str = "-//NISO//DTD ncx 2005-1//EN";
+    const SYSTEM_ID: &str = "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd";
+
+    let lower = value.to_ascii_lowercase();
+    let Some(start) = lower.find("<!doctype") else {
+        return value.to_owned();
+    };
+    let Some(end) = doctype_end(value, start) else {
+        return value.to_owned();
+    };
+    let declaration = &value[start..end];
+    let Some(body) = declaration.get("<!DOCTYPE".len()..declaration.len().saturating_sub(1)) else {
+        return value.to_owned();
+    };
+    let mut tokens = body.trim_start().splitn(2, char::is_whitespace);
+    let Some(root_name) = tokens.next() else {
+        return value.to_owned();
+    };
+    let Some(external_id) = tokens.next().map(str::trim_start) else {
+        return value.to_owned();
+    };
+    if root_name != "ncx"
+        || !external_id
+            .get(..6)
+            .is_some_and(|id| id.eq_ignore_ascii_case("PUBLIC"))
+    {
+        return value.to_owned();
+    }
+
+    let Some((public_id, after_public)) = take_quoted(external_id[6..].trim_start()) else {
+        return value.to_owned();
+    };
+    let Some((system_id, trailing)) = take_quoted(after_public.trim_start()) else {
+        return value.to_owned();
+    };
+    if public_id != PUBLIC_ID || system_id != SYSTEM_ID || !trailing.trim().is_empty() {
+        return value.to_owned();
+    }
+
+    let mut normalized = String::with_capacity(value.len() - (end - start));
+    normalized.push_str(&value[..start]);
+    normalized.push_str(&value[end..]);
+    normalized
+}
+
+fn take_quoted(value: &str) -> Option<(&str, &str)> {
+    let quote = value.chars().next()?;
+    if quote != '\'' && quote != '"' {
+        return None;
+    }
+    let rest = &value[quote.len_utf8()..];
+    let end = rest.find(quote)?;
+    Some((&rest[..end], &rest[end + quote.len_utf8()..]))
+}
+
+fn doctype_end(value: &str, start: usize) -> Option<usize> {
+    let mut quote = None;
+    let mut subset_depth = 0usize;
+    for (offset, character) in value[start..].char_indices() {
+        if let Some(delimiter) = quote {
+            if character == delimiter {
+                quote = None;
+            }
+            continue;
+        }
+        match character {
+            '\'' | '"' => quote = Some(character),
+            '[' => subset_depth = subset_depth.checked_add(1)?,
+            ']' => subset_depth = subset_depth.checked_sub(1)?,
+            '>' if subset_depth == 0 => return Some(start + offset + character.len_utf8()),
+            _ => {}
+        }
+    }
+    None
+}
+
 /// Kindle's legacy XHTML commonly uses HTML named entities even though its
 /// document is declared as XML.  XML only defines five named entities, so
 /// translate the common typographic/spacing entities to numeric references and
@@ -1198,301 +1285,7 @@ fn serialize_mathml(
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use folio_model::{MemoryResourceLoader, NodeKind};
-
-    fn image_resources(nodes: &[Node], result: &mut Vec<ResourceId>) {
-        for node in nodes {
-            if let NodeKind::Image { resource, .. } = &node.kind {
-                result.push(*resource);
-            }
-            image_resources(&node.children, result);
-        }
-    }
-
-    #[test]
-    fn recovers_shared_semantics_styles_anchors_and_relative_images() {
-        let mut resolver = StyleResolver::new(TargetProfile::Generic);
-        resolver.add_stylesheet(".center { text-align: center }");
-        let input = XhtmlDocumentInput {
-            href: "text/chapter.xhtml".to_owned(),
-            media_type: "application/xhtml+xml".to_owned(),
-            content: "<html xmlns:epub=\"http://www.idpf.org/2007/ops\"><head><style>h1{writing-mode:vertical-rl}</style></head><body><h1 id=\"title\">Title</h1><p epub:type=\"poem\" class=\"center\">Line</p><img src=\"../images/cover%20one.png\" alt=\"cover\"/><a href=\"next.xhtml#part\">Next</a></body></html>".to_owned(),
-        };
-        let options = XhtmlImportOptions {
-            resolver,
-            require_body_element: true,
-            ..XhtmlImportOptions::default()
-        };
-        let report = import_xhtml_documents_with_options(
-            Metadata::default(),
-            &[input],
-            vec![Resource {
-                id: ResourceId::new(0),
-                path: "images/cover one.png".to_owned(),
-                media_type: "image/png".to_owned(),
-                kind: folio_model::ResourceKind::Png,
-                properties: Vec::new(),
-                size: None,
-            }],
-            Arc::new(MemoryResourceLoader::default()),
-            options,
-        )
-        .unwrap();
-        let book = report.book;
-        assert_eq!(book.documents[0].title.as_deref(), Some("Title"));
-        assert_eq!(book.anchors.len(), 1);
-        assert!(matches!(
-            book.documents[0].nodes[2].kind,
-            NodeKind::Image { .. }
-        ));
-        assert_eq!(
-            book.navigation.anchor_graph.edges[0].target,
-            "text/next.xhtml#part"
-        );
-        assert_eq!(
-            book.documents[0].nodes[1].role,
-            folio_model::SemanticRole::Poetry
-        );
-    }
-
-    #[test]
-    fn rejects_malformed_xml_and_document_shape_limits() {
-        let malformed = XhtmlDocumentInput {
-            href: "bad.xhtml".to_owned(),
-            media_type: "application/xhtml+xml".to_owned(),
-            content: "<html><body>".to_owned(),
-        };
-        assert!(import_xhtml_documents(
-            Metadata::default(),
-            &[malformed],
-            Vec::new(),
-            Arc::new(MemoryResourceLoader::default())
-        )
-        .is_err());
-
-        let nested = XhtmlDocumentInput {
-            href: "deep.xhtml".to_owned(),
-            media_type: "application/xhtml+xml".to_owned(),
-            content: "<html><body><section><p>Deep</p></section></body></html>".to_owned(),
-        };
-        let options = XhtmlImportOptions {
-            max_xml_depth: 2,
-            ..XhtmlImportOptions::default()
-        };
-        assert!(matches!(
-            import_xhtml_documents_with_options(
-                Metadata::default(),
-                &[nested],
-                Vec::new(),
-                Arc::new(MemoryResourceLoader::default()),
-                options
-            ),
-            Err(XhtmlError::Limit(_))
-        ));
-    }
-
-    #[test]
-    fn normalizes_legacy_record_image_references() {
-        let paths = BTreeMap::from([(7, "images/0000.png".to_owned())]);
-        let normalized = normalize_legacy_xhtml("<img recindex='7'>", &paths);
-        assert!(normalized.contains("src=\"images/0000.png\""));
-        assert!(normalized.contains("<html"));
-    }
-
-    #[test]
-    fn removes_external_xhtml_doctype_without_touching_body() {
-        let input = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\"><html><body>Body</body></html>";
-        let normalized = normalize_legacy_xhtml(input, &BTreeMap::new());
-        assert!(!normalized.to_ascii_lowercase().contains("<!doctype"));
-        assert!(normalized.contains("<body>Body</body>"));
-    }
-
-    #[test]
-    fn preserves_internal_doctype_for_strict_rejection() {
-        let input = "<!DOCTYPE html [<!ENTITY x \"unsafe\">]><html><body>Body</body></html>";
-        let normalized = normalize_legacy_xhtml(input, &BTreeMap::new());
-        assert!(normalized.contains("<!DOCTYPE html ["));
-    }
-
-    #[test]
-    fn translates_common_html_entities_to_xml_numeric_references() {
-        let normalized =
-            normalize_legacy_xhtml("<p>&ldquo;A&nbsp;B&rdquo;&amp;</p>", &BTreeMap::new());
-        assert!(normalized.contains("&#8220;A&#160;B&#8221;"));
-        assert!(normalized.contains("&amp;"));
-    }
-
-    #[test]
-    fn normalizes_metadata_without_reordering_semantic_content() {
-        let mut book = Book::default();
-        book.metadata.title = Some("  A   title  ".to_owned());
-        book.metadata.language = Some("ZH_cn".to_owned());
-        book.metadata.authors = vec![" Alice ".to_owned(), "Alice".to_owned()];
-        book.resources.push(Resource {
-            id: ResourceId::new(0),
-            path: "cover.png".to_owned(),
-            media_type: "image/png".to_owned(),
-            kind: folio_model::ResourceKind::Png,
-            properties: vec!["cover-image".to_owned(), "cover-image".to_owned()],
-            size: None,
-        });
-        let report = normalize_book(&mut book);
-        assert!(report.changed_fields >= 4);
-        assert_eq!(book.metadata.title.as_deref(), Some("A title"));
-        assert_eq!(book.metadata.language.as_deref(), Some("zh-CN"));
-        assert_eq!(book.metadata.authors, ["Alice"]);
-        assert_eq!(book.resources[0].properties, ["cover-image"]);
-    }
-
-    #[test]
-    fn normalization_is_idempotent_for_metadata_and_resource_properties() {
-        let mut book = Book::default();
-        book.metadata.title = Some("  Canonical   title ".to_owned());
-        book.metadata.language = Some("ZH_cn".to_owned());
-        book.metadata.authors = vec![" Alice ".to_owned(), "Alice".to_owned()];
-        book.resources.push(Resource {
-            id: ResourceId::new(0),
-            path: "cover.png".to_owned(),
-            media_type: "image/png".to_owned(),
-            kind: folio_model::ResourceKind::Png,
-            properties: vec!["cover-image".to_owned(), "cover-image".to_owned()],
-            size: None,
-        });
-        normalize_book(&mut book);
-        let canonical = book.semantic_value();
-        let report = normalize_book(&mut book);
-        assert_eq!(report.changed_fields, 0);
-        assert_eq!(book.semantic_value(), canonical);
-    }
-
-    #[test]
-    fn preserves_resource_identity_and_canonicalizes_internal_link_targets() {
-        let mut loader = MemoryResourceLoader::default();
-        loader.insert("images/shared.png", b"shared image".to_vec());
-        loader.insert("styles/book.css", b"body{}".to_vec());
-        let resources = vec![
-            Resource {
-                id: ResourceId::new(0),
-                path: "images/shared.png".to_owned(),
-                media_type: "image/png".to_owned(),
-                kind: folio_model::ResourceKind::Png,
-                properties: vec!["cover-image".to_owned(), "cover-image".to_owned()],
-                size: Some(12),
-            },
-            Resource {
-                id: ResourceId::new(1),
-                path: "styles/book.css".to_owned(),
-                media_type: "text/css".to_owned(),
-                kind: folio_model::ResourceKind::Stylesheet,
-                properties: Vec::new(),
-                size: Some(7),
-            },
-        ];
-        let documents = [
-            XhtmlDocumentInput {
-                href: "text/chapter.xhtml".to_owned(),
-                media_type: "application/xhtml+xml".to_owned(),
-                content: r##"<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><body><h1 id="chapter">Chapter</h1><p><img src="../images/shared.png" alt="first"/><img src="../images/shared.png" alt="second"/><a href="#chapter">self</a><a href="notes.xhtml#note-1" epub:type="footnote">note</a><a href="https://example.com/book">external</a></p></body></html>"##.to_owned(),
-            },
-            XhtmlDocumentInput {
-                href: "text/notes.xhtml".to_owned(),
-                media_type: "application/xhtml+xml".to_owned(),
-                content: r#"<html xmlns="http://www.w3.org/1999/xhtml"><body><p id="note-1">Note text</p></body></html>"#.to_owned(),
-            },
-        ];
-        let mut report = import_xhtml_documents(
-            Metadata {
-                title: Some("  Canonical   Book ".to_owned()),
-                language: Some("ZH_cn".to_owned()),
-                authors: vec![" Alice ".to_owned(), "Alice".to_owned()],
-                ..Metadata::default()
-            },
-            &documents,
-            resources,
-            Arc::new(loader),
-        )
-        .unwrap();
-        let mut before_images = Vec::new();
-        for document in &report.book.documents {
-            image_resources(&document.nodes, &mut before_images);
-        }
-        let before_resource_identity = report
-            .book
-            .resources
-            .iter()
-            .map(|resource| {
-                (
-                    resource.id,
-                    resource.path.clone(),
-                    resource.media_type.clone(),
-                    resource.size,
-                )
-            })
-            .collect::<Vec<_>>();
-
-        assert_eq!(before_images, [ResourceId::new(0), ResourceId::new(0)]);
-        assert_eq!(report.book.anchors.len(), 2);
-        assert!(report
-            .book
-            .navigation
-            .anchor_graph
-            .edges
-            .iter()
-            .any(|edge| edge.target == "text/chapter.xhtml#chapter"));
-        assert!(report
-            .book
-            .navigation
-            .anchor_graph
-            .edges
-            .iter()
-            .any(|edge| edge.target == "text/notes.xhtml#note-1"
-                && edge.relation == AnchorRelation::Footnote));
-        assert!(report
-            .book
-            .navigation
-            .anchor_graph
-            .edges
-            .iter()
-            .any(|edge| edge.target == "https://example.com/book"
-                && edge.relation == AnchorRelation::Link));
-
-        normalize_book(&mut report.book);
-
-        let after_resource_identity = report
-            .book
-            .resources
-            .iter()
-            .map(|resource| {
-                (
-                    resource.id,
-                    resource.path.clone(),
-                    resource.media_type.clone(),
-                    resource.size,
-                )
-            })
-            .collect::<Vec<_>>();
-        let mut after_images = Vec::new();
-        for document in &report.book.documents {
-            image_resources(&document.nodes, &mut after_images);
-        }
-        assert_eq!(after_resource_identity, before_resource_identity);
-        assert_eq!(after_images, before_images);
-        assert_eq!(report.book.resources[0].properties, ["cover-image"]);
-        assert_eq!(
-            report.book.metadata.title.as_deref(),
-            Some("Canonical Book")
-        );
-        assert_eq!(report.book.metadata.language.as_deref(), Some("zh-CN"));
-        assert_eq!(report.book.metadata.authors, ["Alice"]);
-        assert!(report
-            .book
-            .navigation
-            .anchor_graph
-            .edges
-            .iter()
-            .any(|edge| edge.target == "text/chapter.xhtml#chapter"));
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-normalize/src/lib.rs"]
+mod tests;

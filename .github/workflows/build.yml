@@ -108,6 +108,7 @@ jobs:
             echo "FOLIOFORGE_VALIDATION_ROOT=$validation_root"
             echo "FOLIOFORGE_OUTPUT_ROOT=$RUNNER_TEMP/folioforge-gui-output"
             echo 'FOLIOFORGE_MACOS_TARGET_VERSION=27.0'
+            echo 'FOLIOFORGE_CODESIGN_IDENTITY=none'
           } >> "$GITHUB_ENV"
           mkdir -p "$validation_root" "$RUNNER_TEMP/folioforge-gui-output"
       - name: macOS 27 GUI runner identity

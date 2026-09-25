@@ -12,6 +12,10 @@ path = "src/lib.rs"
 name = "folio-service"
 path = "src/main.rs"
 
+# Local-only test modules resolve from the ignored repository-root tests/ tree.
+[features]
+maintainer-tests = []
+
 [dependencies]
 folio-batch = { path = "../folio-batch" }
 folio-core = { path = "../folio-core" }

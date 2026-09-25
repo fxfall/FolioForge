@@ -61,9 +61,9 @@ enum FolioDegradationMode: String, CaseIterable, Codable, Identifiable, Hashable
 
     var displayName: String {
         switch self {
-        case .strict: "Strict"
-        case .compatible: "Compatible"
-        case .readable: "Readable"
+        case .strict: FolioL10n.string("mode.strict", default: "Strict")
+        case .compatible: FolioL10n.string("mode.compatible", default: "Compatible")
+        case .readable: FolioL10n.string("mode.readable", default: "Readable")
         }
     }
 }
@@ -76,8 +76,8 @@ enum FolioBatchMode: String, CaseIterable, Codable, Identifiable, Hashable, Send
 
     var displayName: String {
         switch self {
-        case .bestEffort: "Best effort"
-        case .strict: "Strict batch"
+        case .bestEffort: FolioL10n.string("batch.best_effort", default: "Best effort")
+        case .strict: FolioL10n.string("batch.strict", default: "Strict batch")
         }
     }
 }
@@ -91,9 +91,9 @@ enum FolioPreviewDevice: String, CaseIterable, Codable, Identifiable, Hashable, 
 
     var title: String {
         switch self {
-        case .eReader: "E-reader"
-        case .phone: "Phone"
-        case .tablet: "Tablet"
+        case .eReader: FolioL10n.string("preview.device.ereader", default: "E-reader")
+        case .phone: FolioL10n.string("preview.device.phone", default: "Phone")
+        case .tablet: FolioL10n.string("preview.device.tablet", default: "Tablet")
         }
     }
 }
@@ -103,7 +103,12 @@ enum FolioPreviewOrientation: String, CaseIterable, Codable, Identifiable, Hasha
     case landscape
 
     var id: String { rawValue }
-    var title: String { rawValue.capitalized }
+    var title: String {
+        switch self {
+        case .portrait: FolioL10n.string("preview.orientation.portrait", default: "Portrait")
+        case .landscape: FolioL10n.string("preview.orientation.landscape", default: "Landscape")
+        }
+    }
 }
 
 struct FolioPreviewSettings: Codable, Hashable, Sendable {
@@ -136,7 +141,14 @@ enum FolioTextImportMode: String, CaseIterable, Codable, Identifiable, Hashable,
     case markdown = "markdown"
     case plain = "plain"
     var id: String { rawValue }
-    var title: String { rawValue.capitalized }
+    var title: String {
+        switch self {
+        case .auto: FolioL10n.string("text.mode.auto", default: "Auto")
+        case .novel: FolioL10n.string("text.mode.novel", default: "Novel")
+        case .markdown: FolioL10n.string("text.mode.markdown", default: "Markdown")
+        case .plain: FolioL10n.string("text.mode.plain", default: "Plain")
+        }
+    }
 }
 
 enum FolioParagraphMode: String, CaseIterable, Codable, Identifiable, Hashable, Sendable {
@@ -148,11 +160,11 @@ enum FolioParagraphMode: String, CaseIterable, Codable, Identifiable, Hashable, 
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .auto: "Automatic"
-        case .blankLine: "Blank lines"
-        case .everyLine: "Every line"
-        case .indented: "Indented paragraphs"
-        case .hardWrap: "Hard-wrapped text"
+        case .auto: FolioL10n.string("ui.automatic", default: "Automatic")
+        case .blankLine: FolioL10n.string("paragraph.blank_line", default: "Blank lines")
+        case .everyLine: FolioL10n.string("paragraph.every_line", default: "Every line")
+        case .indented: FolioL10n.string("paragraph.indented", default: "Indented paragraphs")
+        case .hardWrap: FolioL10n.string("paragraph.hard_wrap", default: "Hard-wrapped text")
         }
     }
 }
@@ -203,7 +215,7 @@ enum FolioCompression: String, CaseIterable, Codable, Identifiable, Sendable {
 
     var displayName: String {
         switch self {
-        case .none: "None"
+        case .none: FolioL10n.string("compression.none", default: "None")
         case .palmDoc: "PalmDOC"
         }
     }
@@ -386,9 +398,9 @@ enum FolioMetadataMergeAction: String, Codable, CaseIterable, Identifiable, Send
 
     var title: String {
         switch self {
-        case .keep: "Keep current"
-        case .replace: "Replace"
-        case .append: "Append"
+        case .keep: FolioL10n.string("merge.keep", default: "Keep current")
+        case .replace: FolioL10n.string("merge.replace", default: "Replace")
+        case .append: FolioL10n.string("merge.append", default: "Append")
         }
     }
 }
@@ -526,20 +538,6 @@ struct FolioBookEditPlan: Encodable, Sendable {
         if let css, !css.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             styles = [FolioStyleEdit(css: css)]
         }
-    }
-}
-
-struct FolioPreviewRequest: Encodable, Sendable {
-    let input: String
-    let target: FolioTarget
-    let mode: FolioDegradationMode
-    let degradation: FolioDegradationOptions
-    let edit: FolioBookEditPlan
-    let settings: FolioPreviewSettings
-    let text: FolioTextImportOptions
-
-    enum CodingKeys: String, CodingKey {
-        case input, target, mode, degradation, edit, settings, text
     }
 }
 

@@ -299,20 +299,7 @@ const SIMPLIFIED_HINTS: &str =
 const TRADITIONAL_HINTS: &str =
     "這們為與漢國門書說來時個後裡發見學會對開關長東萬實點聽寫讀話體當樣從現過無應還進業結號報";
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn detects_bomless_utf16_only_for_clear_lane_pattern() {
-        assert_eq!(
-            infer_utf16_without_bom(&[b'a', 0, b'b', 0, b'c', 0, b'd', 0]),
-            Some(TextEncoding::Utf16Le)
-        );
-        assert_eq!(
-            infer_utf16_without_bom(&[0, b'a', 0, b'b', 0, b'c', 0, b'd']),
-            Some(TextEncoding::Utf16Be)
-        );
-        assert_eq!(infer_utf16_without_bom(b"abcd"), None);
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-text/src/detect.rs"]
+mod tests;

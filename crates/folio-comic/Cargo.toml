@@ -1,0 +1,17 @@
+[package]
+name = "folio-comic"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+blake3.workspace = true
+folio-epub = { path = "../folio-epub" }
+folio-input = { path = "../folio-input" }
+folio-model = { path = "../folio-model" }
+image.workspace = true
+lopdf.workspace = true
+sevenz-rust2.workspace = true
+thiserror.workspace = true
+unicode-normalization = "0.1"
+zip.workspace = true

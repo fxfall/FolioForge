@@ -8,6 +8,10 @@ license.workspace = true
 name = "folio"
 path = "src/main.rs"
 
+# Local-only test modules resolve from the ignored repository-root tests/ tree.
+[features]
+maintainer-tests = []
+
 [dependencies]
 clap.workspace = true
 folio-core = { path = "../folio-core" }

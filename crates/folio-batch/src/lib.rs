@@ -652,69 +652,7 @@ fn resolve_collision(
     Err(BatchError::Collision(planned))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn collision_policy_is_deterministic() {
-        let root = std::env::temp_dir().join(format!("folio-batch-{}", std::process::id()));
-        let _ = fs::remove_dir_all(&root);
-        fs::create_dir_all(&root).unwrap();
-        let path = root.join("book.epub");
-        fs::write(&path, b"not-used").unwrap();
-        let mut used = BTreeSet::new();
-        let output =
-            resolve_collision(root.join("book.kfx"), &mut used, CollisionPolicy::Rename).unwrap();
-        assert_eq!(output.file_name().unwrap(), "book.kfx");
-        used.insert(output);
-        let second =
-            resolve_collision(root.join("book.kfx"), &mut used, CollisionPolicy::Rename).unwrap();
-        assert_eq!(second.file_name().unwrap(), "book-1.kfx");
-        let _ = fs::remove_dir_all(root);
-    }
-
-    #[test]
-    fn parallel_batch_keeps_input_order_and_uses_bounded_workers() {
-        let root =
-            std::env::temp_dir().join(format!("folio-batch-parallel-{}", std::process::id()));
-        let _ = fs::remove_dir_all(&root);
-        fs::create_dir_all(&root).unwrap();
-        let input = root.join("input.txt");
-        fs::write(&input, "Chapter One\n\nShared paragraph.\n").unwrap();
-        let inputs = vec![
-            BatchInput {
-                source: input.clone(),
-                relative_path: Some(PathBuf::from("first.txt")),
-                output_root: None,
-                edit: None,
-            },
-            BatchInput {
-                source: input,
-                relative_path: Some(PathBuf::from("second.txt")),
-                output_root: None,
-                edit: None,
-            },
-        ];
-        let options = BatchOptions {
-            target: Target::EPUB,
-            max_concurrent_jobs: 2,
-            memory_budget_bytes: Some(64 << 20),
-            ..BatchOptions::default()
-        };
-        let report = convert_items_with_cancellation(
-            &inputs,
-            &root,
-            &options,
-            &CancellationToken::new(),
-            |_current, _total, _event| {},
-        )
-        .unwrap();
-        assert_eq!(report.items.len(), 2);
-        assert_eq!(report.items[0].source, inputs[0].source);
-        assert_eq!(report.items[1].source, inputs[1].source);
-        assert_eq!(report.succeeded, 2);
-        assert_eq!(report.failed, 0);
-        fs::remove_dir_all(root).unwrap();
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-batch/src/lib.rs"]
+mod tests;

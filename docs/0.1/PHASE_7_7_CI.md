@@ -12,10 +12,14 @@ create a second conversion pipeline.
   plan → exporter → validator.
 - GUI remains SwiftUI → existing FFI → Core. The GUI artifact is self-contained
   and does not require the separately downloadable CLI.
-- `folio-library` is compiled and tested by source CI but is not packaged and
-  no Library database is allowed in a Core or GUI artifact.
-- Public artifacts are intentionally unsigned. Developer ID signing,
-  notarization and installers remain outside the 0.1 release scope.
+- `folio-library` is compiled by source CI but is not packaged and no Library
+  database is allowed in a Core or GUI artifact. Its regression tests are
+  maintainer-local and are not run by GitHub.
+- Public artifacts are intentionally unsigned. Both GitHub macOS GUI workflows
+  explicitly disable signing, independent of any certificates available on a
+  runner. Local maintainer packaging may use a keychain identity, but this is
+  not Developer ID release signing, notarization or an installer; those remain
+  outside the 0.1 release scope.
 
 ## Workflow split
 
@@ -23,7 +27,7 @@ The public repository has exactly three workflow files:
 
 | Workflow | Trigger | Responsibility |
 | --- | --- | --- |
-| `ci.yml` | push and pull request | Rust format, workspace tests, Clippy and release build; no release artifacts |
+| `ci.yml` | push and pull request | Rust format, production-target Clippy and release build; no tests or release artifacts |
 | `build.yml` | `main` push and manual dispatch | native Linux/macOS Core/GUI builds, packages and uploaded workflow artifacts |
 | `release.yml` | `v*` tags | clean tagged rebuild, validation, four release packages, SHA256SUMS and GitHub Release publication |
 

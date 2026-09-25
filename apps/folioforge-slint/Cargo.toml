@@ -1,0 +1,30 @@
+[package]
+name = "folioforge-slint"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+build = "build.rs"
+
+[[bin]]
+name = "folioforge-slint"
+path = "src/main.rs"
+
+[dependencies]
+base64.workspace = true
+folio-batch = { path = "../../crates/folio-batch" }
+folio-core = { path = "../../crates/folio-core" }
+folio-reader = { path = "../../crates/folio-reader" }
+folio-text = { path = "../../crates/folio-text" }
+image.workspace = true
+rfd = "=0.17.2"
+sys-locale = "=0.3.2"
+slint = { version = "=1.18.1", default-features = false, features = [
+    "accessibility",
+    "backend-winit",
+    "compat-1-2",
+    "renderer-software",
+    "std",
+] }
+
+[build-dependencies]
+slint-build = "=1.18.1"

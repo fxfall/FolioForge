@@ -1642,48 +1642,7 @@ fn escape_attribute(value: &str) -> String {
     escape_html(value).replace('"', "&quot;")
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn fixture(extra_records: Vec<Vec<u8>>) -> Vec<u8> {
-        build_mobi(&MobiInput {
-            title: "KF8 fixture".to_owned(),
-            author: Some("FolioForge".to_owned()),
-            publisher: None,
-            description: None,
-            language: Some("en".to_owned()),
-            html: b"<p>fixture</p>".to_vec(),
-            images: Vec::new(),
-            compression: Compression::None,
-            kf8: true,
-            deterministic: true,
-            extra_exth: vec![(121, b"KF8".to_vec())],
-            extra_records,
-        })
-        .unwrap()
-        .bytes
-    }
-
-    #[test]
-    fn structural_records_are_inspectable_and_validate() {
-        let records = ["FDST", "SKEL", "FRAG", "INDX", "RESC"]
-            .into_iter()
-            .map(|tag| structural_record(tag, b"[]").unwrap())
-            .collect();
-        let bytes = fixture(records);
-        validate_bytes(&bytes).unwrap();
-        let value = semantic_value(&bytes).unwrap();
-        assert_eq!(value["format"], "KF8");
-        assert_eq!(value["record_count"], 7);
-    }
-
-    #[test]
-    fn missing_structural_record_is_rejected() {
-        let bytes = fixture(vec![structural_record("FDST", b"[]").unwrap()]);
-        assert!(matches!(
-            validate_bytes(&bytes),
-            Err(Kf8Error::MissingStructuralRecord(_))
-        ));
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-kf8/src/lib.rs"]
+mod tests;

@@ -29,28 +29,30 @@ export FOLIOFORGE_TEMP_ROOT="$FOLIOFORGE_VALIDATION_ROOT/runtime"
 
 ```bash
 cargo fmt --all -- --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace --locked
+cargo clippy --workspace --lib --bins --locked -- -D warnings
 cargo build --workspace --locked --release
 ```
 
-The extended synthetic/oracle validation bundle is local-only. When present,
-run it from `.folioforge-dev/` and keep all generated files under the external
-`FOLIOFORGE_VALIDATION_ROOT`.
+GitHub and release packaging intentionally do not run or publish tests. The
+maintainer-only Rust unit/integration suite is kept in the ignored repository
+root `tests/` directory. When that directory is present locally, run
+`tests/scripts/run-private-rust-tests.sh`; it runs the local suite and keeps
+build/scratch data under the external `FOLIOFORGE_VALIDATION_ROOT`.
 
 ## Optional maintainer-local Service and CLI smoke
 
 ```bash
-.folioforge-dev/tests/scripts/build_minimal_corpus.sh "$FOLIOFORGE_VALIDATION_ROOT/minimal"
+tests/scripts/build_minimal_corpus.sh "$FOLIOFORGE_VALIDATION_ROOT/minimal"
 FOLIO_BIN="$CARGO_TARGET_DIR/release/folio" \
-  .folioforge-dev/tests/scripts/run_conversion_matrix.sh \
+  tests/scripts/run_conversion_matrix.sh \
   "$FOLIOFORGE_VALIDATION_ROOT/minimal/001-text.epub"
 FOLIO_BIN="$CARGO_TARGET_DIR/release/folio" \
 FOLIO_SERVICE_BIN="$CARGO_TARGET_DIR/release/folio-service" \
-  .folioforge-dev/tests/scripts/run_service_smoke.sh
+  tests/scripts/run_service_smoke.sh
 ```
 
-These scripts are not available in a clean public checkout by design.
+These scripts and the `tests/` tree are not available in a clean public
+checkout by design.
 
 ## SwiftUI debug/release
 
@@ -68,11 +70,17 @@ FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/release/libfolio_ffi.a" \
 ```
 
 The arm64 packaging entry point is `packaging/build_macos_app.sh`. It
-checks Rust format/tests/clippy, builds the macOS 27 arm64 FFI and SwiftUI
-release, creates the checked-in logo icon, validates the intentionally unsigned
-app/ZIP and writes the timestamped product under ignored `dist/`. It does not
-use certificates or perform notarization; it also strips any ad-hoc signature
-automatically emitted by the Apple linker.
+checks Rust formatting/production Clippy, builds the macOS 27 arm64 FFI and SwiftUI
+release, creates the checked-in logo icon, validates the app/ZIP and writes the
+timestamped product under ignored `dist/`. Local packaging defaults to signing
+with one valid Developer ID Application identity, or (if unavailable) one
+Apple Development identity in the local keychain. When multiple eligible
+identities exist, set `FOLIOFORGE_CODESIGN_IDENTITY` to the intended identity
+hash or keychain identity name. Set it to `none` only for an intentionally
+unsigned build. The GitHub build and release workflows explicitly set `none`;
+maintainer certificates and private keys are never CI inputs. Local signing is
+not notarization and does not claim Gatekeeper acceptance for downloaded
+distribution.
 
 For a host-native package on a newer macOS SDK, set
 `FOLIOFORGE_MACOS_TARGET_VERSION` before invoking the same script. For example,
@@ -117,10 +125,11 @@ docker run --rm -p 127.0.0.1:8080:8080 \
 
 Before a commit or push, preview ignored files with `git clean -ndX`. Review
 the list; do not run a blind `git clean -fdx`. The public repository clean
-gate verifies that the maintainer-only `.folioforge-dev/` tree and its
-historical `tests/`, `tools/` and `bench/` paths are not tracked. Full private
-corpus and provenance audits remain in the local development record and are
-never release inputs.
+gate verifies that root `tests/`, `.folioforge-dev/` and `.codex/` are absent
+from tracked files. The local test suite is deliberately under root `tests/`;
+tools, benchmarks and process logs are grouped under `.folioforge-dev/`, while
+project status and decisions are under `.codex/`. Full private corpus and
+provenance audits remain local and are never release inputs.
 
 ## Release sequence
 

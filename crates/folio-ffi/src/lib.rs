@@ -13,9 +13,10 @@ use std::{
     ptr,
 };
 
+use base64::Engine as _;
 use folio_core::{
-    CancellationToken, ConversionRequest, DegradationMode, DegradationOptions, ProgressEvent,
-    Target,
+    CancellationToken, ConversionRequest, CoreError, DegradationMode, DegradationOptions,
+    ProgressEvent, Target,
 };
 
 const VERSION: &[u8] = concat!(env!("CARGO_PKG_VERSION"), "\0").as_bytes();
@@ -294,6 +295,469 @@ pub unsafe extern "C" fn folio_preview(request_json: *const c_char) -> *mut Foli
 }
 
 #[no_mangle]
+/// Render imported, edited, or Core-projected generic IR through Reader.
+/// `target` is required only when `mode` is `target`; compatibility planning
+/// and semantic preparation remain Core responsibilities.
+///
+/// # Safety
+/// `request_json` must be a valid, NUL-terminated UTF-8 C string for the
+/// duration of the call, or null to receive an error result.
+pub unsafe extern "C" fn folio_reader_preview(request_json: *const c_char) -> *mut FolioResult {
+    let result = read_comic_request::<folio_core::CoreReaderPreviewRequest>(request_json)
+        .and_then(|request| folio_core::reader_preview(&request).map_err(reader_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Open a format-neutral Reader session from an importable book or Comic
+/// image source. The viewport and optional direction are validated by Core.
+///
+/// # Safety
+/// `request_json` must be valid NUL-terminated UTF-8 JSON for this call. A
+/// non-null cancellation pointer must be live until the call returns.
+pub unsafe extern "C" fn folio_reader_open(
+    request_json: *const c_char,
+    cancellation: *const FolioCancellation,
+) -> *mut FolioResult {
+    let result =
+        read_comic_request::<folio_core::ReaderOpenRequest>(request_json).and_then(|request| {
+            let local_cancellation = CancellationToken::new();
+            // SAFETY: the public ABI contract requires a live pointer when it
+            // is non-null; the call only borrows its token synchronously.
+            let token = unsafe { cancellation.as_ref() }
+                .map(|handle| &handle.token)
+                .unwrap_or(&local_cancellation);
+            folio_core::reader_open_with_cancellation(&request, token).map_err(reader_core_error)
+        });
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Open a Reader view over the IR already projected by an existing Comic
+/// Core session; this does not re-import or resolve comic pages in Swift.
+///
+/// # Safety
+/// `request_json` must be valid NUL-terminated UTF-8 JSON for this call.
+pub unsafe extern "C" fn folio_reader_open_comic(request_json: *const c_char) -> *mut FolioResult {
+    let result = read_comic_request::<folio_core::ReaderOpenComicRequest>(request_json)
+        .and_then(|request| folio_core::reader_open_comic(&request).map_err(reader_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Close a Reader session. In-flight calls retain their Core-owned entry until
+/// completion; later calls with this ID receive the stable `session_closed`
+/// error.
+///
+/// # Safety
+/// `session_id` must be valid NUL-terminated UTF-8 for the duration of the call.
+pub unsafe extern "C" fn folio_reader_close(session_id: *const c_char) -> *mut FolioResult {
+    let result = unsafe { read_utf8(session_id) }
+        .map_err(|error| ComicFfiError::new("invalid_request", error))
+        .and_then(|session_id| folio_core::reader_close(session_id).map_err(reader_core_error))
+        .map(|closed| serde_json::json!({ "closed": closed }));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Return the current Reader session state without exposing internal Rust
+/// references.
+///
+/// # Safety
+/// `session_id` must be valid NUL-terminated UTF-8 for the duration of the call.
+pub unsafe extern "C" fn folio_reader_summary(session_id: *const c_char) -> *mut FolioResult {
+    let result = unsafe { read_utf8(session_id) }
+        .map_err(|error| ComicFfiError::new("invalid_request", error))
+        .and_then(|session_id| folio_core::reader_summary(session_id).map_err(reader_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Return the current fixed-page model with its encoded image bytes and
+/// Reader-owned geometry.
+///
+/// # Safety
+/// `session_id` must be valid NUL-terminated UTF-8. A non-null cancellation
+/// pointer must be live until this call returns.
+pub unsafe extern "C" fn folio_reader_current_page(
+    session_id: *const c_char,
+    cancellation: *const FolioCancellation,
+) -> *mut FolioResult {
+    let result = unsafe { read_utf8(session_id) }
+        .map_err(|error| ComicFfiError::new("invalid_request", error))
+        .and_then(|session_id| {
+            let local_cancellation = CancellationToken::new();
+            // SAFETY: the public ABI contract requires a live pointer when it
+            // is non-null; the call only borrows its token synchronously.
+            let token = unsafe { cancellation.as_ref() }
+                .map(|handle| &handle.token)
+                .unwrap_or(&local_cancellation);
+            folio_core::reader_current_page_with_cancellation(session_id, token)
+                .map_err(reader_core_error)
+        });
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Return the current generic fixed-layout one/two-page render model.
+///
+/// # Safety
+/// `session_id` must be valid NUL-terminated UTF-8 for the duration of the call.
+pub unsafe extern "C" fn folio_reader_current_spread(
+    session_id: *const c_char,
+) -> *mut FolioResult {
+    let result = unsafe { read_utf8(session_id) }
+        .map_err(|error| ComicFfiError::new("invalid_request", error))
+        .and_then(|session_id| {
+            folio_core::reader_current_spread(session_id).map_err(reader_core_error)
+        });
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Return one encoded Reader resource as base64 JSON data.
+///
+/// # Safety
+/// `request_json` must be valid NUL-terminated UTF-8 JSON for this call.
+pub unsafe extern "C" fn folio_reader_resource(request_json: *const c_char) -> *mut FolioResult {
+    let result = read_comic_request::<folio_core::ReaderResourceRequest>(request_json)
+        .and_then(|request| folio_core::reader_resource(&request).map_err(reader_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Advance according to the Reader's effective LTR/RTL reading order.
+///
+/// # Safety
+/// `session_id` must be valid NUL-terminated UTF-8 for the duration of the call.
+pub unsafe extern "C" fn folio_reader_next(session_id: *const c_char) -> *mut FolioResult {
+    let result = unsafe { read_utf8(session_id) }
+        .map_err(|error| ComicFfiError::new("invalid_request", error))
+        .and_then(|session_id| folio_core::reader_next(session_id).map_err(reader_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Move backward according to the Reader's effective LTR/RTL reading order.
+///
+/// # Safety
+/// `session_id` must be valid NUL-terminated UTF-8 for the duration of the call.
+pub unsafe extern "C" fn folio_reader_previous(session_id: *const c_char) -> *mut FolioResult {
+    let result = unsafe { read_utf8(session_id) }
+        .map_err(|error| ComicFfiError::new("invalid_request", error))
+        .and_then(|session_id| folio_core::reader_previous(session_id).map_err(reader_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Move to the first Reader document in effective reading order.
+///
+/// # Safety
+/// `session_id` must be valid NUL-terminated UTF-8 for the duration of the call.
+pub unsafe extern "C" fn folio_reader_first(session_id: *const c_char) -> *mut FolioResult {
+    let result = unsafe { read_utf8(session_id) }
+        .map_err(|error| ComicFfiError::new("invalid_request", error))
+        .and_then(|session_id| folio_core::reader_first(session_id).map_err(reader_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Move to the last Reader document in effective reading order.
+///
+/// # Safety
+/// `session_id` must be valid NUL-terminated UTF-8 for the duration of the call.
+pub unsafe extern "C" fn folio_reader_last(session_id: *const c_char) -> *mut FolioResult {
+    let result = unsafe { read_utf8(session_id) }
+        .map_err(|error| ComicFfiError::new("invalid_request", error))
+        .and_then(|session_id| folio_core::reader_last(session_id).map_err(reader_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Return the generic Reader navigation tree from the session's immutable IR.
+///
+/// # Safety
+/// `session_id` must be valid NUL-terminated UTF-8 for the duration of the call.
+pub unsafe extern "C" fn folio_reader_navigation(session_id: *const c_char) -> *mut FolioResult {
+    let result = unsafe { read_utf8(session_id) }
+        .map_err(|error| ComicFfiError::new("invalid_request", error))
+        .and_then(|session_id| {
+            folio_core::reader_navigation(session_id).map_err(reader_core_error)
+        });
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Navigate to a validated generic Reader location.
+///
+/// # Safety
+/// `request_json` must be valid NUL-terminated UTF-8 JSON for this call.
+pub unsafe extern "C" fn folio_reader_go_to(request_json: *const c_char) -> *mut FolioResult {
+    let result = read_comic_request::<folio_core::ReaderGoToRequest>(request_json)
+        .and_then(|request| folio_core::reader_go_to(&request).map_err(reader_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Navigate by a zero-based position in the immutable IR document vector.
+/// This selection coordinate is independent of effective LTR/RTL traversal.
+///
+/// # Safety
+/// `request_json` must be valid NUL-terminated UTF-8 JSON for this call.
+pub unsafe extern "C" fn folio_reader_go_to_document_index(
+    request_json: *const c_char,
+) -> *mut FolioResult {
+    let result = read_comic_request::<folio_core::ReaderGoToDocumentIndexRequest>(request_json)
+        .and_then(|request| {
+            folio_core::reader_go_to_document_index(&request).map_err(reader_core_error)
+        });
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Navigate to a page using its immutable IR `DocumentId`.
+///
+/// # Safety
+/// `request_json` must be valid NUL-terminated UTF-8 JSON for this call.
+pub unsafe extern "C" fn folio_reader_go_to_page(request_json: *const c_char) -> *mut FolioResult {
+    let result = read_comic_request::<folio_core::ReaderGoToPageRequest>(request_json)
+        .and_then(|request| folio_core::reader_go_to_page(&request).map_err(reader_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Navigate to a validated entry in the generic IR navigation tree.
+///
+/// # Safety
+/// `request_json` must be valid NUL-terminated UTF-8 JSON for this call.
+pub unsafe extern "C" fn folio_reader_go_to_navigation_target(
+    request_json: *const c_char,
+) -> *mut FolioResult {
+    let result = read_comic_request::<folio_core::ReaderGoToNavigationTargetRequest>(request_json)
+        .and_then(|request| {
+            folio_core::reader_go_to_navigation_target(&request).map_err(reader_core_error)
+        });
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Update only transient Reader viewport state.
+///
+/// # Safety
+/// `request_json` must be valid NUL-terminated UTF-8 JSON for this call.
+pub unsafe extern "C" fn folio_reader_set_viewport(
+    request_json: *const c_char,
+) -> *mut FolioResult {
+    let result = read_comic_request::<folio_core::ReaderSetViewportRequest>(request_json)
+        .and_then(|request| folio_core::reader_set_viewport(&request).map_err(reader_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Set the generic reading direction while preserving the current document.
+///
+/// # Safety
+/// `request_json` must be valid NUL-terminated UTF-8 JSON for this call.
+pub unsafe extern "C" fn folio_reader_set_direction(
+    request_json: *const c_char,
+) -> *mut FolioResult {
+    let result = read_comic_request::<folio_core::ReaderSetDirectionRequest>(request_json)
+        .and_then(|request| folio_core::reader_set_direction(&request).map_err(reader_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Set the transient single-page or synthetic-spread display mode.
+///
+/// # Safety
+/// `request_json` must be valid NUL-terminated UTF-8 JSON for this call.
+pub unsafe extern "C" fn folio_reader_set_spread_mode(
+    request_json: *const c_char,
+) -> *mut FolioResult {
+    let result = read_comic_request::<folio_core::ReaderSetSpreadModeRequest>(request_json)
+        .and_then(|request| {
+            folio_core::reader_set_spread_mode(&request).map_err(reader_core_error)
+        });
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Open a local comic folder or ZIP/CBZ and create a Core-owned session.
+///
+/// # Safety
+/// `path` must be a valid, NUL-terminated UTF-8 C string for the duration of
+/// the call, or null to receive a structured error result.
+pub unsafe extern "C" fn folio_comic_open(path: *const c_char) -> *mut FolioResult {
+    let result = unsafe { read_path(path) }
+        .map_err(|error| ComicFfiError::new("invalid_path", error))
+        .and_then(|path| folio_core::comic_open(path).map_err(comic_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Open a local comic source with cooperative cancellation during ingestion.
+///
+/// # Safety
+/// `path` must be a valid UTF-8 C string. A non-null cancellation pointer
+/// must be live for the duration of this call.
+pub unsafe extern "C" fn folio_comic_open_with_cancellation(
+    path: *const c_char,
+    cancellation: *const FolioCancellation,
+) -> *mut FolioResult {
+    let result = unsafe { read_path(path) }
+        .map_err(|error| ComicFfiError::new("invalid_path", error))
+        .and_then(|path| {
+            let local_cancellation = CancellationToken::new();
+            // SAFETY: the ABI contract requires a live pointer when non-null.
+            let token = unsafe { cancellation.as_ref() }
+                .map(|handle| &handle.token)
+                .unwrap_or(&local_cancellation);
+            folio_core::comic_open_with_cancellation(path, token).map_err(comic_core_error)
+        });
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Close a Comic session. In-flight operations keep their own Core reference.
+///
+/// # Safety
+/// `session_id` must be a valid, NUL-terminated UTF-8 C string, or null to
+/// receive a structured error result.
+pub unsafe extern "C" fn folio_comic_close(session_id: *const c_char) -> *mut FolioResult {
+    let result = unsafe { read_utf8(session_id) }
+        .map_err(|error| ComicFfiError::new("invalid_request", error))
+        .and_then(|session_id| folio_core::comic_close(session_id).map_err(comic_core_error))
+        .map(|closed| serde_json::json!({ "closed": closed }));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Return current metadata and warnings for a Comic session.
+///
+/// # Safety
+/// `session_id` must be a valid, NUL-terminated UTF-8 C string, or null to
+/// receive a structured error result.
+pub unsafe extern "C" fn folio_comic_summary(session_id: *const c_char) -> *mut FolioResult {
+    let result = unsafe { read_utf8(session_id) }
+        .map_err(|error| ComicFfiError::new("invalid_request", error))
+        .and_then(|session_id| folio_core::comic_summary(session_id).map_err(comic_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Enumerate source pages in Core-provided reading order using stable page IDs.
+///
+/// # Safety
+/// `session_id` must be a valid, NUL-terminated UTF-8 C string, or null to
+/// receive a structured error result.
+pub unsafe extern "C" fn folio_comic_pages(session_id: *const c_char) -> *mut FolioResult {
+    let result = unsafe { read_utf8(session_id) }
+        .map_err(|error| ComicFfiError::new("invalid_request", error))
+        .and_then(|session_id| folio_core::comic_pages(session_id).map_err(comic_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Return Core-owned metadata for one stable Comic page ID.
+///
+/// # Safety
+/// `request_json` must be a valid, NUL-terminated UTF-8 JSON string for the
+/// duration of this call, or null to receive a structured error result.
+pub unsafe extern "C" fn folio_comic_page_info(request_json: *const c_char) -> *mut FolioResult {
+    let result = read_comic_request::<folio_core::ComicPageRequest>(request_json)
+        .and_then(|request| folio_core::comic_page_info(&request).map_err(comic_core_error));
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+pub extern "C" fn folio_comic_conversion_options() -> *mut FolioResult {
+    allocate_comic_result(Ok(folio_core::comic_conversion_options()))
+}
+
+#[no_mangle]
+/// Return a Core-rendered, bounded PNG thumbnail as base64 JSON data.
+///
+/// # Safety
+/// `request_json` must be a valid, NUL-terminated UTF-8 JSON string. A
+/// non-null `cancellation` must be a live pointer returned by
+/// `folio_cancellation_new` for the duration of this call.
+pub unsafe extern "C" fn folio_comic_thumbnail(
+    request_json: *const c_char,
+    cancellation: *const FolioCancellation,
+) -> *mut FolioResult {
+    let result =
+        read_comic_request::<folio_core::ComicImageRequest>(request_json).and_then(|request| {
+            let local_cancellation = CancellationToken::new();
+            // SAFETY: the public ABI contract requires a live cancellation
+            // pointer when it is non-null; only an immutable reference is used.
+            let token = unsafe { cancellation.as_ref() }
+                .map(|handle| &handle.token)
+                .unwrap_or(&local_cancellation);
+            folio_core::comic_thumbnail(&request, token)
+                .map(comic_image_response)
+                .map_err(comic_core_error)
+        });
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Return a Core-rendered source preview as base64 PNG JSON data.
+///
+/// # Safety
+/// `request_json` must be a valid, NUL-terminated UTF-8 JSON string. A
+/// non-null `cancellation` must be a live pointer returned by
+/// `folio_cancellation_new` for the duration of this call.
+pub unsafe extern "C" fn folio_comic_preview(
+    request_json: *const c_char,
+    cancellation: *const FolioCancellation,
+) -> *mut FolioResult {
+    let result =
+        read_comic_request::<folio_core::ComicImageRequest>(request_json).and_then(|request| {
+            let local_cancellation = CancellationToken::new();
+            // SAFETY: the public ABI contract requires a live cancellation
+            // pointer when it is non-null; only an immutable reference is used.
+            let token = unsafe { cancellation.as_ref() }
+                .map(|handle| &handle.token)
+                .unwrap_or(&local_cancellation);
+            folio_core::comic_preview(&request, token)
+                .map(comic_image_response)
+                .map_err(comic_core_error)
+        });
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
+/// Convert a Comic session to the Core-supported target with progress and
+/// cancellation. The callback receives borrowed JSON and must copy it.
+///
+/// # Safety
+/// `request_json` must be valid JSON. A non-null `cancellation` must be a
+/// live pointer returned by `folio_cancellation_new`. A non-null callback and
+/// `user_data` must remain valid for the duration of this synchronous call.
+pub unsafe extern "C" fn folio_comic_convert_with_progress(
+    request_json: *const c_char,
+    cancellation: *const FolioCancellation,
+    callback: Option<FolioProgressCallback>,
+    user_data: *mut c_void,
+) -> *mut FolioResult {
+    let result = read_comic_request::<folio_core::ComicConversionRequest>(request_json).and_then(
+        |request| {
+            let local_cancellation = CancellationToken::new();
+            // SAFETY: the public ABI contract requires a live cancellation
+            // pointer when it is non-null; only an immutable reference is used.
+            let token = unsafe { cancellation.as_ref() }
+                .map(|handle| &handle.token)
+                .unwrap_or(&local_cancellation);
+            folio_core::comic_convert_with_progress(&request, token, |event| {
+                emit_progress(callback, user_data, event)
+            })
+            .map_err(comic_core_error)
+        },
+    );
+    allocate_comic_result(result)
+}
+
+#[no_mangle]
 /// Search Open Library through the optional online-resource boundary. The
 /// caller must explicitly opt in by setting `enabled` on this request.
 ///
@@ -489,6 +953,140 @@ fn allocate_result(result: Result<serde_json::Value, String>) -> *mut FolioResul
     }
 }
 
+struct ComicFfiError {
+    code: &'static str,
+    message: String,
+}
+
+impl ComicFfiError {
+    fn new(code: &'static str, message: impl Into<String>) -> Self {
+        Self {
+            code,
+            message: message.into(),
+        }
+    }
+}
+
+fn comic_core_error(error: CoreError) -> ComicFfiError {
+    let code = match &error {
+        CoreError::ComicSessionNotFound(_) => "session_not_found",
+        CoreError::InvalidComicRequest(_) => "invalid_request",
+        CoreError::UnsupportedComicSource(_) => "unsupported_source",
+        CoreError::UnsupportedTarget(_) => "unsupported_target",
+        CoreError::ComicImport(_) => "source_import_failed",
+        CoreError::ComicRender(_) => "preview_failed",
+        CoreError::ComicOutput(_) => "output_failed",
+        CoreError::ValidationFailed(_) => "validation_failed",
+        CoreError::Cancelled => "cancelled",
+        CoreError::ComicSessionRegistryUnavailable => "session_unavailable",
+        CoreError::Io(_) => "io_error",
+        _ => "core_error",
+    };
+    ComicFfiError::new(code, error.to_string())
+}
+
+fn reader_core_error(error: CoreError) -> ComicFfiError {
+    let code = match &error {
+        CoreError::Reader(reader_error) => match reader_error.code {
+            folio_reader::ReaderErrorCode::InvalidLocation => "invalid_location",
+            folio_reader::ReaderErrorCode::InvalidNavigationTarget => "invalid_navigation_target",
+            folio_reader::ReaderErrorCode::MissingResource => "missing_resource",
+            folio_reader::ReaderErrorCode::UnsupportedLayout => "unsupported_layout",
+            folio_reader::ReaderErrorCode::InvalidPageGeometry => "invalid_page_geometry",
+            folio_reader::ReaderErrorCode::DecodeFailed => "decode_failed",
+            folio_reader::ReaderErrorCode::SessionClosed => "session_closed",
+            folio_reader::ReaderErrorCode::ResourceUnavailable => "resource_unavailable",
+            folio_reader::ReaderErrorCode::ResourceTooLarge => "resource_too_large",
+            folio_reader::ReaderErrorCode::ResourceHandleSessionMismatch => {
+                "resource_handle_session_mismatch"
+            }
+            folio_reader::ReaderErrorCode::InvalidViewport => "invalid_viewport",
+            folio_reader::ReaderErrorCode::InvalidPreviewRequest => "invalid_preview_request",
+            folio_reader::ReaderErrorCode::EmptyBook => "empty_book",
+            folio_reader::ReaderErrorCode::Cancelled => "cancelled",
+        },
+        CoreError::ReaderSessionNotFound(_) => "session_closed",
+        CoreError::ReaderSessionRegistryUnavailable => "session_unavailable",
+        CoreError::ReaderSessionIdExhausted => "session_id_exhausted",
+        CoreError::MissingInput(_) => "missing_input",
+        CoreError::UnsupportedInput(_) => "unsupported_input",
+        CoreError::Format(_) | CoreError::Epub(_) => "import_failed",
+        CoreError::ComicImport(_) => "source_import_failed",
+        CoreError::ValidationFailed(_) => "validation_failed",
+        CoreError::Cancelled => "cancelled",
+        CoreError::Io(_) => "io_error",
+        _ => "reader_error",
+    };
+    ComicFfiError::new(code, error.to_string())
+}
+
+fn read_comic_request<T: serde::de::DeserializeOwned>(
+    request_json: *const c_char,
+) -> Result<T, ComicFfiError> {
+    // SAFETY: every caller forwards the JSON-pointer precondition documented
+    // by its exported ABI function.
+    let json = unsafe { read_utf8(request_json) }
+        .map_err(|error| ComicFfiError::new("invalid_request", error))?;
+    serde_json::from_str(json)
+        .map_err(|error| ComicFfiError::new("invalid_request", error.to_string()))
+}
+
+#[derive(serde::Serialize)]
+struct ComicImageFfiDto {
+    data_base64: String,
+    width: u32,
+    height: u32,
+    source_width: u32,
+    source_height: u32,
+    mime_type: String,
+    cache_identity: String,
+}
+
+fn comic_image_response(image: folio_core::ComicImageDto) -> ComicImageFfiDto {
+    ComicImageFfiDto {
+        data_base64: base64::engine::general_purpose::STANDARD.encode(image.bytes),
+        width: image.width,
+        height: image.height,
+        source_width: image.source_width,
+        source_height: image.source_height,
+        mime_type: image.mime_type,
+        cache_identity: image.cache_identity,
+    }
+}
+
+fn allocate_comic_result<T: serde::Serialize>(
+    result: Result<T, ComicFfiError>,
+) -> *mut FolioResult {
+    match result {
+        Ok(value) => match serde_json::to_value(value) {
+            Ok(value) => allocate_comic_value_result(Ok(value)),
+            Err(error) => allocate_comic_value_result(Err(ComicFfiError::new(
+                "serialization_failed",
+                error.to_string(),
+            ))),
+        },
+        Err(error) => allocate_comic_value_result(Err(error)),
+    }
+}
+
+fn allocate_comic_value_result(
+    result: Result<serde_json::Value, ComicFfiError>,
+) -> *mut FolioResult {
+    match result {
+        Ok(value) => Box::into_raw(Box::new(FolioResult {
+            code: 0,
+            json: allocate_json(&value),
+        })),
+        Err(error) => Box::into_raw(Box::new(FolioResult {
+            code: 1,
+            json: allocate_json(&serde_json::json!({
+                "error_code": error.code,
+                "error": error.message,
+            })),
+        })),
+    }
+}
+
 fn allocate_json(value: &serde_json::Value) -> *mut c_char {
     let text = serde_json::to_string(value)
         .unwrap_or_else(|_| "{\"error\":\"serialization failed\"}".to_owned());
@@ -565,468 +1163,7 @@ unsafe fn read_path(value: *const c_char) -> Result<PathBuf, String> {
     Ok(PathBuf::from(unsafe { read_utf8(value)? }))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use folio_core::{ConversionRequest, ProgressEvent, ProgressStage};
-    use std::io::{Seek, Write};
-    use std::path::Path;
-    use zip::{write::SimpleFileOptions, ZipWriter};
-
-    #[test]
-    fn capabilities_are_owned_json_and_advertise_the_stable_surface() {
-        let pointer = folio_capabilities();
-        assert!(!pointer.is_null());
-        let value: serde_json::Value =
-            unsafe { serde_json::from_str(CStr::from_ptr(pointer).to_str().unwrap()).unwrap() };
-        assert_eq!(value["offline"], true);
-        assert_eq!(value["network"], false);
-        assert_eq!(value["progress_callback"], true);
-        assert_eq!(value["cancellation"], true);
-        let docx = value["input_formats"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .find(|item| item["format"] == "DOCX")
-            .expect("DOCX input capability");
-        assert!(docx["extensions"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|extension| extension == "docx"));
-        assert_eq!(docx["support"]["import"], true);
-        assert_eq!(docx["support"]["export"], false);
-        let format_ids = value["formats"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .filter_map(|item| item["id"].as_str())
-            .collect::<std::collections::BTreeSet<_>>();
-        let target_ids = value["targets"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .filter_map(|item| item["id"].as_str())
-            .collect::<std::collections::BTreeSet<_>>();
-        assert!(format_ids.contains("EPUB"));
-        assert!(format_ids.contains("KF7KF8Combo"));
-        assert!(target_ids.contains("KFX"));
-        assert!(target_ids.iter().all(|id| format_ids.contains(id)));
-        unsafe { folio_string_free(pointer) };
-    }
-
-    #[test]
-    fn native_online_search_is_disabled_without_explicit_opt_in() {
-        let request = CString::new(r#"{"request":{"query":"Test title"}}"#).unwrap();
-        let result = unsafe { folio_online_metadata_search(request.as_ptr()) };
-        assert_eq!(unsafe { (*result).code }, 1);
-        let json = unsafe { CStr::from_ptr((*result).json).to_str().unwrap() };
-        assert!(json.contains("disabled"));
-        unsafe { folio_result_free(result) };
-    }
-
-    #[test]
-    fn native_online_merge_requires_confirmation_and_returns_edit_data() {
-        let request_value = serde_json::json!({
-            "current": {"title":"Source title", "authors":["Existing Author"]},
-            "candidate": {
-                "candidate_id":"openlibrary:/works/OL1W",
-                "provider":"openlibrary",
-                "confidence":0.9,
-                "metadata":{"title":"Catalog title", "authors":["Catalog Author"]}
-            },
-            "fields":{"title":"replace", "authors":"append"},
-            "confirmed":false
-        });
-        let request = CString::new(request_value.to_string()).unwrap();
-        let result = unsafe { folio_online_metadata_merge_plan(request.as_ptr()) };
-        assert_eq!(unsafe { (*result).code }, 1);
-        unsafe { folio_result_free(result) };
-
-        let mut request_value = request_value;
-        request_value["confirmed"] = serde_json::Value::Bool(true);
-        let request = CString::new(request_value.to_string()).unwrap();
-        let result = unsafe { folio_online_metadata_merge_plan(request.as_ptr()) };
-        assert_eq!(unsafe { (*result).code }, 0);
-        let edit: serde_json::Value = unsafe {
-            serde_json::from_str(CStr::from_ptr((*result).json).to_str().unwrap()).unwrap()
-        };
-        assert_eq!(edit["title"], "Catalog title");
-        assert_eq!(edit["authors"][0], "Existing Author");
-        assert_eq!(edit["authors"][1], "Catalog Author");
-        unsafe { folio_result_free(result) };
-    }
-
-    #[test]
-    fn invalid_request_returns_owned_error_result() {
-        let request = CString::new("{}").unwrap();
-        let result = unsafe { folio_convert(request.as_ptr()) };
-        assert!(!result.is_null());
-        assert_eq!(unsafe { (*result).code }, 1);
-        let json = unsafe { CStr::from_ptr((*result).json).to_str().unwrap() };
-        assert!(json.contains("error"));
-        unsafe { folio_result_free(result) };
-    }
-
-    #[test]
-    fn analyze_returns_the_compatibility_plan() {
-        let root =
-            std::env::temp_dir().join(format!("folioforge-ffi-analyze-{}", std::process::id()));
-        std::fs::create_dir_all(&root).unwrap();
-        let input = root.join("input.epub");
-        let file = std::fs::File::create(&input).unwrap();
-        let mut zip = ZipWriter::new(file);
-        add_epub_entry(&mut zip, "mimetype", "application/epub+zip");
-        add_epub_entry(
-            &mut zip,
-            "META-INF/container.xml",
-            r#"<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf"/></rootfiles></container>"#,
-        );
-        add_epub_entry(
-            &mut zip,
-            "OEBPS/content.opf",
-            r#"<package xmlns="http://www.idpf.org/2007/opf" version="3.0"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>Analyze Smoke</dc:title><dc:language>en</dc:language></metadata><manifest><item id="c" href="chapter.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="c"/></spine></package>"#,
-        );
-        add_epub_entry(
-            &mut zip,
-            "OEBPS/chapter.xhtml",
-            r#"<html xmlns="http://www.w3.org/1999/xhtml"><body><h1>Analyze</h1></body></html>"#,
-        );
-        zip.finish().unwrap();
-
-        let request = serde_json::json!({
-            "input": input,
-            "target": "KF7",
-            "mode": "Compatible",
-            "degradation": {}
-        });
-        let request = CString::new(request.to_string()).unwrap();
-        let result = unsafe { folio_analyze(request.as_ptr()) };
-        assert_eq!(unsafe { (*result).code }, 0);
-        let value: serde_json::Value = unsafe {
-            serde_json::from_str(CStr::from_ptr((*result).json).to_str().unwrap()).unwrap()
-        };
-        assert_eq!(value["source_format"], "EPUB");
-        assert_eq!(value["target_format"], "KF7");
-        assert_eq!(value["plan"]["mode"], "Compatible");
-        unsafe { folio_result_free(result) };
-        std::fs::remove_dir_all(root).unwrap();
-    }
-
-    unsafe extern "C" fn count_progress(event: *const c_char, user_data: *mut c_void) {
-        if event.is_null() || user_data.is_null() {
-            return;
-        }
-        // SAFETY: the test supplies a valid pointer to a live usize for the
-        // duration of this callback.
-        let count = unsafe { &mut *user_data.cast::<usize>() };
-        // SAFETY: `event` points to the callback-borrowed NUL-terminated JSON
-        // string created by `emit_progress`.
-        let json = unsafe { CStr::from_ptr(event) };
-        if json
-            .to_bytes()
-            .windows(7)
-            .any(|window| window == b"Opening")
-        {
-            *count += 1;
-        }
-    }
-
-    #[test]
-    fn progress_callback_receives_borrowed_json() {
-        let mut count = 0usize;
-        emit_progress(
-            Some(count_progress),
-            (&mut count as *mut usize).cast(),
-            ProgressEvent {
-                stage: ProgressStage::Opening,
-                current: 0,
-                total: None,
-                fraction: None,
-                message: "opening".to_owned(),
-            },
-        );
-        assert_eq!(count, 1);
-    }
-
-    unsafe extern "C" fn collect_progress(event: *const c_char, user_data: *mut c_void) {
-        if event.is_null() || user_data.is_null() {
-            return;
-        }
-        // SAFETY: the test supplies a valid pointer to a live String vector
-        // for the duration of the conversion callback.
-        let events = unsafe { &mut *user_data.cast::<Vec<String>>() };
-        // SAFETY: `event` is the borrowed, NUL-terminated JSON string from
-        // the FFI callback contract.
-        let value = unsafe { CStr::from_ptr(event) };
-        if let Ok(value) = value.to_str() {
-            events.push(value.to_owned());
-        }
-    }
-
-    fn add_epub_entry<W: Write + Seek>(zip: &mut ZipWriter<W>, name: &str, value: &str) {
-        let options =
-            SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
-        zip.start_file(name, options).unwrap();
-        zip.write_all(value.as_bytes()).unwrap();
-    }
-
-    fn unique_test_root(prefix: &str) -> PathBuf {
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_nanos();
-        std::env::temp_dir().join(format!("{prefix}-{}-{nonce}", std::process::id()))
-    }
-
-    fn write_epub_fixture(path: &Path, title: &str) {
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        let file = std::fs::File::create(path).unwrap();
-        let mut zip = ZipWriter::new(file);
-        add_epub_entry(&mut zip, "mimetype", "application/epub+zip");
-        add_epub_entry(
-            &mut zip,
-            "META-INF/container.xml",
-            r#"<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf"/></rootfiles></container>"#,
-        );
-        add_epub_entry(
-            &mut zip,
-            "OEBPS/content.opf",
-            &format!(
-                r#"<package xmlns="http://www.idpf.org/2007/opf" version="3.0"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>{title}</dc:title><dc:language>en</dc:language></metadata><manifest><item id="c" href="chapter.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="c"/></spine></package>"#
-            ),
-        );
-        add_epub_entry(
-            &mut zip,
-            "OEBPS/chapter.xhtml",
-            r#"<html xmlns="http://www.w3.org/1999/xhtml"><body><h1>Fixture</h1><p>Batch bridge.</p></body></html>"#,
-        );
-        zip.finish().unwrap();
-    }
-
-    fn batch_request_value(
-        inputs: Vec<folio_batch::BatchInput>,
-        output_dir: &Path,
-        batch_mode: folio_batch::BatchMode,
-    ) -> serde_json::Value {
-        let options = folio_batch::BatchOptions {
-            target: folio_core::Target::EPUB,
-            batch_mode,
-            ..folio_batch::BatchOptions::default()
-        };
-        serde_json::json!({
-            "inputs": inputs,
-            "output_dir": output_dir,
-            "options": options,
-        })
-    }
-
-    #[test]
-    fn ffi_conversion_matches_direct_core_and_emits_progress() {
-        let root = std::env::temp_dir().join(format!("folioforge-ffi-{}", std::process::id()));
-        std::fs::create_dir_all(&root).unwrap();
-        let input = root.join("input.epub");
-        let output = root.join("ffi.kfx");
-        let direct_output = root.join("direct.kfx");
-        let file = std::fs::File::create(&input).unwrap();
-        let mut zip = ZipWriter::new(file);
-        add_epub_entry(&mut zip, "mimetype", "application/epub+zip");
-        add_epub_entry(
-            &mut zip,
-            "META-INF/container.xml",
-            r#"<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf"/></rootfiles></container>"#,
-        );
-        add_epub_entry(
-            &mut zip,
-            "OEBPS/content.opf",
-            r#"<package xmlns="http://www.idpf.org/2007/opf" version="3.0"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>FFI Smoke</dc:title><dc:creator>FolioForge</dc:creator><dc:language>en</dc:language></metadata><manifest><item id="c" href="chapter.xhtml" media-type="application/xhtml+xml"/></manifest><spine><itemref idref="c"/></spine></package>"#,
-        );
-        add_epub_entry(
-            &mut zip,
-            "OEBPS/chapter.xhtml",
-            r#"<html xmlns="http://www.w3.org/1999/xhtml"><body><h1>FFI</h1><p>Smoke.</p></body></html>"#,
-        );
-        zip.finish().unwrap();
-
-        let request = ConversionRequest {
-            input: input.clone(),
-            output: output.clone(),
-            target: folio_core::Target::KFX,
-            options: folio_core::ConversionOptions::default(),
-            edit: Default::default(),
-        };
-        let request_json = serde_json::to_string(&request).unwrap();
-        let request_c = CString::new(request_json).unwrap();
-        let cancellation = folio_cancellation_new();
-        let mut events: Vec<String> = Vec::new();
-        let result = unsafe {
-            folio_convert_with_progress(
-                request_c.as_ptr(),
-                cancellation,
-                Some(collect_progress),
-                (&mut events as *mut Vec<String>).cast(),
-            )
-        };
-        assert!(!result.is_null());
-        assert_eq!(unsafe { (*result).code }, 0);
-        let ffi_report: serde_json::Value = unsafe {
-            serde_json::from_str(CStr::from_ptr((*result).json).to_str().unwrap()).unwrap()
-        };
-        unsafe {
-            folio_result_free(result);
-            folio_cancellation_free(cancellation);
-        }
-
-        let direct_request = ConversionRequest {
-            output: direct_output.clone(),
-            ..request
-        };
-        folio_core::convert(&direct_request).unwrap();
-        assert_eq!(
-            std::fs::read(&output).unwrap(),
-            std::fs::read(&direct_output).unwrap()
-        );
-        assert_eq!(ffi_report["output_path"], output.to_string_lossy().as_ref());
-        assert!(events
-            .iter()
-            .any(|event| event.contains(r#""stage":"Finished""#)));
-        std::fs::remove_dir_all(root).unwrap();
-    }
-
-    #[test]
-    fn batch_ffi_uses_core_batch_naming_edits_and_progress() {
-        let root = unique_test_root("folioforge-ffi-batch");
-        let first = root.join("inputs/first/book.epub");
-        let second = root.join("inputs/second/book.epub");
-        let output_dir = root.join("output");
-        write_epub_fixture(&first, "Original One");
-        write_epub_fixture(&second, "Original Two");
-
-        let first_edit = folio_edit::BookEditPlan {
-            metadata: folio_edit::MetadataEdit {
-                title: Some("Edited One".to_owned()),
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-        let second_edit = folio_edit::BookEditPlan {
-            metadata: folio_edit::MetadataEdit {
-                title: Some("Edited Two".to_owned()),
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-        let inputs = vec![
-            folio_batch::BatchInput {
-                source: first,
-                relative_path: Some("book.epub".into()),
-                output_root: Some(output_dir.clone()),
-                edit: Some(first_edit),
-            },
-            folio_batch::BatchInput {
-                source: second,
-                relative_path: Some("book.epub".into()),
-                output_root: Some(output_dir.clone()),
-                edit: Some(second_edit),
-            },
-        ];
-        let request_value =
-            batch_request_value(inputs, &output_dir, folio_batch::BatchMode::BestEffort);
-        let request = CString::new(request_value.to_string()).unwrap();
-        let cancellation = folio_cancellation_new();
-        let mut events: Vec<String> = Vec::new();
-        let result = unsafe {
-            folio_batch_convert_with_progress(
-                request.as_ptr(),
-                cancellation,
-                Some(collect_progress),
-                (&mut events as *mut Vec<String>).cast(),
-            )
-        };
-        assert!(!result.is_null());
-        assert_eq!(unsafe { (*result).code }, 0);
-        let report: serde_json::Value = unsafe {
-            serde_json::from_str(CStr::from_ptr((*result).json).to_str().unwrap()).unwrap()
-        };
-        unsafe {
-            folio_result_free(result);
-            folio_cancellation_free(cancellation);
-        }
-
-        assert_eq!(report["succeeded"], 2);
-        assert_eq!(report["failed"], 0);
-        assert_eq!(report["items"][0]["relative_output"], "book.epub");
-        assert_eq!(report["items"][1]["relative_output"], "book-1.epub");
-        assert!(events
-            .iter()
-            .any(|event| event.contains("\"current_item\":1")));
-        assert!(events
-            .iter()
-            .any(|event| event.contains("\"current_item\":2")));
-
-        let first_output = output_dir.join("book.epub");
-        let second_output = output_dir.join("book-1.epub");
-        assert_eq!(
-            folio_core::FormatRegistry
-                .import_path(&first_output)
-                .unwrap()
-                .book
-                .metadata
-                .title
-                .as_deref(),
-            Some("Edited One")
-        );
-        assert_eq!(
-            folio_core::FormatRegistry
-                .import_path(&second_output)
-                .unwrap()
-                .book
-                .metadata
-                .title
-                .as_deref(),
-            Some("Edited Two")
-        );
-        std::fs::remove_dir_all(root).unwrap();
-    }
-
-    #[test]
-    fn strict_batch_ffi_rolls_back_outputs_when_a_later_item_fails() {
-        let root = unique_test_root("folioforge-ffi-strict-batch");
-        let first = root.join("inputs/first.epub");
-        let broken = root.join("inputs/broken.epub");
-        let output_dir = root.join("output");
-        write_epub_fixture(&first, "Valid");
-        std::fs::create_dir_all(broken.parent().unwrap()).unwrap();
-        std::fs::write(&broken, b"not an EPUB").unwrap();
-        let inputs = [first, broken]
-            .into_iter()
-            .map(|source| folio_batch::BatchInput {
-                relative_path: source.file_name().map(PathBuf::from),
-                source,
-                output_root: Some(output_dir.clone()),
-                edit: None,
-            })
-            .collect();
-        let request_value =
-            batch_request_value(inputs, &output_dir, folio_batch::BatchMode::Strict);
-        let request = CString::new(request_value.to_string()).unwrap();
-        let cancellation = folio_cancellation_new();
-        let result = unsafe {
-            folio_batch_convert_with_progress(request.as_ptr(), cancellation, None, ptr::null_mut())
-        };
-        assert!(!result.is_null());
-        assert_eq!(unsafe { (*result).code }, 0);
-        let report: serde_json::Value = unsafe {
-            serde_json::from_str(CStr::from_ptr((*result).json).to_str().unwrap()).unwrap()
-        };
-        unsafe {
-            folio_result_free(result);
-            folio_cancellation_free(cancellation);
-        }
-        assert_eq!(report["aborted"], true);
-        assert_eq!(report["succeeded"], 0);
-        assert_eq!(report["failed"], 2);
-        assert!(std::fs::read_dir(&output_dir).unwrap().next().is_none());
-        std::fs::remove_dir_all(root).unwrap();
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-ffi/src/lib.rs"]
+mod tests;

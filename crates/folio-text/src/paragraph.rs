@@ -145,41 +145,7 @@ fn is_cjk(ch: char) -> bool {
     matches!(ch as u32, 0x2e80..=0x9fff | 0xf900..=0xfaff | 0x20000..=0x3134f)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{analyze_paragraphs, ParagraphMode};
-
-    #[test]
-    fn blank_lines_split_paragraphs_and_soft_lines_join_by_script() {
-        let text = "这是第一行\n这是第二行\n\nThis is one\ncontinued here.";
-        let analysis = analyze_paragraphs(text, ParagraphMode::BlankLine);
-        let parsed = parse_paragraphs(text, &analysis, &BTreeSet::new());
-        assert_eq!(parsed.len(), 2);
-        assert_eq!(parsed[0].text, "这是第一行这是第二行");
-        assert_eq!(parsed[1].text, "This is one continued here.");
-    }
-
-    #[test]
-    fn chapter_lines_are_excluded_without_collapsing_neighbor_paragraphs() {
-        let text = "前言\n\n第一章\n\n正文";
-        let analysis = analyze_paragraphs(text, ParagraphMode::BlankLine);
-        let excluded = BTreeSet::from([2]);
-        let parsed = parse_paragraphs(text, &analysis, &excluded);
-        assert_eq!(
-            parsed.iter().map(|p| p.text.as_str()).collect::<Vec<_>>(),
-            ["前言", "正文"]
-        );
-        assert_eq!(parsed[1].start_line, 4);
-    }
-
-    #[test]
-    fn indented_mode_starts_new_paragraph_at_indented_lines() {
-        let text = "first line\ncontinued\n  next paragraph\nwrapped";
-        let analysis = analyze_paragraphs(text, ParagraphMode::Indented);
-        let parsed = parse_paragraphs(text, &analysis, &BTreeSet::new());
-        assert_eq!(parsed.len(), 2);
-        assert_eq!(parsed[0].text, "first line continued");
-        assert_eq!(parsed[1].text, "next paragraph wrapped");
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-text/src/paragraph.rs"]
+mod tests;

@@ -9,9 +9,9 @@ struct DropZoneView: View {
             Image(folioSymbol: .drop)
                 .font(.system(size: 30))
                 .foregroundStyle(.tint)
-            Text("Drop supported book files or a folder here")
+            Text(FolioL10n.string("ui.drop_supported_book_files_or_a_folder_here", default: "Drop supported book files or a folder here"))
                 .font(.headline)
-            Text("or use Add Files / Add Folder")
+            Text(FolioL10n.string("ui.or_use_add_files_add_folder", default: "or use Add Files / Add Folder"))
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, minHeight: 120)

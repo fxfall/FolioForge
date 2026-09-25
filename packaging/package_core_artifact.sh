@@ -48,7 +48,6 @@ cleanup() {
 trap cleanup EXIT HUP INT TERM
 
 rustup target add "$RUST_TARGET"
-cargo test --locked -p folio-cli -p folio-core
 cargo build --locked --release -p folio-cli --target "$RUST_TARGET"
 
 BINARY="$CARGO_TARGET_DIR/$RUST_TARGET/release/folio"

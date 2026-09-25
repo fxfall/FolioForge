@@ -1,0 +1,528 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgctxt "app.brand"
+msgid "FolioForge"
+msgstr "FolioForge"
+
+msgctxt "status.ready"
+msgid "Ready"
+msgstr "Ready"
+
+msgctxt "status.checking"
+msgid "Checking compatibility…"
+msgstr "Checking compatibility…"
+
+msgctxt "status.converting"
+msgid "Converting…"
+msgstr "Converting…"
+
+msgctxt "status.completed"
+msgid "Completed"
+msgstr "Completed"
+
+msgctxt "status.blocked"
+msgid "Blocked"
+msgstr "Blocked"
+
+msgctxt "status.failed"
+msgid "Failed"
+msgstr "Failed"
+
+msgctxt "status.cancelled"
+msgid "Cancelled"
+msgstr "Cancelled"
+
+msgctxt "status.error"
+msgid "Operation failed"
+msgstr "Operation failed"
+
+msgctxt "queue.empty"
+msgid "No files selected"
+msgstr "No files selected"
+
+msgctxt "reader.empty"
+msgid "Select a book or page to preview"
+msgstr "Select a book or page to preview"
+
+msgctxt "reader.unsupported"
+msgid "This source has no supported fixed-page Reader view"
+msgstr "This source has no supported fixed-page Reader view"
+
+msgctxt "common.select_source"
+msgid "Select a source"
+msgstr "Select a source"
+
+msgctxt "comic.empty"
+msgid "Open a CBZ, ZIP, or image folder to browse pages"
+msgstr "Open a CBZ, ZIP, or image folder to browse pages"
+
+msgctxt "about.title"
+msgid "About FolioForge"
+msgstr "About FolioForge"
+
+msgctxt "about.slint_license"
+msgid "This desktop application uses Slint under its Royalty-free Desktop, Mobile, and Web Applications License."
+msgstr "This desktop application uses Slint under its Royalty-free Desktop, Mobile, and Web Applications License."
+
+msgctxt "navigation.books"
+msgid "Books"
+msgstr "Books"
+
+msgctxt "navigation.reader"
+msgid "Reader"
+msgstr "Reader"
+
+msgctxt "navigation.comics"
+msgid "Comics"
+msgstr "Comics"
+
+msgctxt "navigation.settings"
+msgid "Settings"
+msgstr "Settings"
+
+msgctxt "action.check"
+msgid "Check"
+msgstr "Check"
+
+msgctxt "status.working"
+msgid "Working…"
+msgstr "Working…"
+
+msgctxt "action.convert_approved"
+msgid "Convert approved"
+msgstr "Convert approved"
+
+msgctxt "action.about"
+msgid "About"
+msgstr "About"
+
+msgctxt "queue.heading"
+msgid "Sources"
+msgstr "Sources"
+
+msgctxt "action.add_files"
+msgid "Add files…"
+msgstr "Add files…"
+
+msgctxt "action.add_folder"
+msgid "Add folder…"
+msgstr "Add folder…"
+
+msgctxt "action.open_comic"
+msgid "Open Comic…"
+msgstr "Open Comic…"
+
+msgctxt "action.remove"
+msgid "Remove"
+msgstr "Remove"
+
+msgctxt "comic.page_list"
+msgid "Comic pages"
+msgstr "Comic pages"
+
+msgctxt "queue.book_list"
+msgid "Book queue"
+msgstr "Book queue"
+
+msgctxt "conversion.output_folder"
+msgid "Output folder"
+msgstr "Output folder"
+
+msgctxt "action.choose_folder"
+msgid "Choose…"
+msgstr "Choose…"
+
+msgctxt "action.check_all"
+msgid "Check all"
+msgstr "Check all"
+
+msgctxt "workspace.conversion"
+msgid "Conversion"
+msgstr "Conversion"
+
+msgctxt "workspace.comic"
+msgid "Comic workspace"
+msgstr "Comic workspace"
+
+msgctxt "action.preflight_selected"
+msgid "Preflight selected"
+msgstr "Preflight selected"
+
+msgctxt "action.cancel"
+msgid "Cancel"
+msgstr "Cancel"
+
+msgctxt "conversion.deterministic_output"
+msgid "Deterministic output"
+msgstr "Deterministic output"
+
+msgctxt "reader.previous"
+msgid "Previous"
+msgstr "Previous"
+
+msgctxt "reader.next"
+msgid "Next"
+msgstr "Next"
+
+msgctxt "comic.previous_page"
+msgid "Previous page"
+msgstr "Previous page"
+
+msgctxt "comic.next_page"
+msgid "Next page"
+msgstr "Next page"
+
+msgctxt "comic.export_cbz"
+msgid "Export CBZ"
+msgstr "Export CBZ"
+
+msgctxt "conversion.deterministic_output"
+msgid "Write deterministic files"
+msgstr "Write deterministic files"
+
+msgctxt "settings.core_authority"
+msgid "Format support and conversion behavior come from Folio Core. Interface language is a frontend preference."
+msgstr "Format support and conversion behavior come from Folio Core. Interface language is a frontend preference."
+
+msgctxt "text.import"
+msgid "Text import"
+msgstr "Text import"
+
+msgctxt "text.structure"
+msgid "Structure"
+msgstr "Structure"
+
+msgctxt "text.paragraphs"
+msgid "Paragraphs"
+msgstr "Paragraphs"
+
+msgctxt "text.encoding"
+msgid "Encoding override"
+msgstr "Encoding override"
+
+msgctxt "text.title_override"
+msgid "Title override"
+msgstr "Title override"
+
+msgctxt "text.author_override"
+msgid "Author override"
+msgstr "Author override"
+
+msgctxt "text.auto"
+msgid "Auto"
+msgstr "Auto"
+
+msgctxt "text.novel"
+msgid "Novel"
+msgstr "Novel"
+
+msgctxt "text.markdown"
+msgid "Markdown"
+msgstr "Markdown"
+
+msgctxt "text.plain"
+msgid "Plain"
+msgstr "Plain"
+
+msgctxt "paragraph.auto"
+msgid "Automatic"
+msgstr "Automatic"
+
+msgctxt "paragraph.blank_line"
+msgid "Blank lines"
+msgstr "Blank lines"
+
+msgctxt "paragraph.every_line"
+msgid "Every line"
+msgstr "Every line"
+
+msgctxt "paragraph.indented"
+msgid "Indented paragraphs"
+msgstr "Indented paragraphs"
+
+msgctxt "paragraph.hard_wrap"
+msgid "Hard-wrapped text"
+msgstr "Hard-wrapped text"
+
+msgctxt "text.encoding_auto"
+msgid "Automatic"
+msgstr "Automatic"
+
+msgctxt "text.options_note"
+msgid "These settings apply to TXT inputs. Ambiguous encodings stay unresolved until you select an override."
+msgstr "These settings apply to TXT inputs. Ambiguous encodings stay unresolved until you select an override."
+
+msgctxt "about.slint_attribution"
+msgid "About Slint"
+msgstr "About Slint"
+
+msgctxt "workspace.inspector"
+msgid "Inspector"
+msgstr "Inspector"
+
+msgctxt "action.close"
+msgid "Close"
+msgstr "Close"
+
+msgctxt "language.system"
+msgid "System default"
+msgstr "System default"
+
+msgctxt "language.english"
+msgid "English"
+msgstr "English"
+
+msgctxt "language.simplified_chinese"
+msgid "Simplified Chinese"
+msgstr "Simplified Chinese"
+
+msgctxt "mode.strict"
+msgid "Strict"
+msgstr "Strict"
+
+msgctxt "mode.compatible"
+msgid "Compatible"
+msgstr "Compatible"
+
+msgctxt "mode.readable"
+msgid "Readable"
+msgstr "Readable"
+
+msgctxt "compression.none"
+msgid "None"
+msgstr "None"
+
+msgctxt "compression.palmdoc"
+msgid "PalmDOC"
+msgstr "PalmDOC"
+
+msgctxt "batch.best_effort"
+msgid "Best effort"
+msgstr "Best effort"
+
+msgctxt "batch.strict"
+msgid "Strict batch"
+msgstr "Strict batch"
+
+msgctxt "reader.content.fit"
+msgid "Fit"
+msgstr "Fit"
+
+msgctxt "reader.content.fill"
+msgid "Fill"
+msgstr "Fill"
+
+msgctxt "reader.content.actual_size"
+msgid "Actual size"
+msgstr "Actual size"
+
+msgctxt "reader.direction.ltr"
+msgid "Left to right"
+msgstr "Left to right"
+
+msgctxt "reader.direction.rtl"
+msgid "Right to left"
+msgstr "Right to left"
+
+msgctxt "reader.spread.single"
+msgid "Single page"
+msgstr "Single page"
+
+msgctxt "reader.spread.two_page"
+msgid "Two-page spread"
+msgstr "Two-page spread"
+
+msgctxt "settings.compatibility"
+msgid "Compatibility"
+msgstr "Compatibility"
+
+msgctxt "settings.compression"
+msgid "Compression"
+msgstr "Compression"
+
+msgctxt "settings.batch_mode"
+msgid "Batch behavior"
+msgstr "Batch behavior"
+
+msgctxt "settings.linearize_tables"
+msgid "Linearize complex tables"
+msgstr "Linearize complex tables"
+
+msgctxt "settings.prefer_rasterization"
+msgid "Prefer rasterization"
+msgstr "Prefer rasterization"
+
+msgctxt "settings.strip_fonts"
+msgid "Strip embedded fonts"
+msgstr "Strip embedded fonts"
+
+msgctxt "reader.display_mode"
+msgid "Display"
+msgstr "Display"
+
+msgctxt "reader.direction"
+msgid "Reading direction"
+msgstr "Reading direction"
+
+msgctxt "reader.spread"
+msgid "Spread"
+msgstr "Spread"
+
+msgctxt "settings.language"
+msgid "Language"
+msgstr "Language"
+
+msgctxt "action.open_comic_folder"
+msgid "Open Comic Folder…"
+msgstr "Open Comic Folder…"
+
+msgctxt "reader.page_of"
+msgid "Page {} of {}"
+msgstr "Page {} of {}"
+
+msgctxt "dialog.open_books"
+msgid "Open books"
+msgstr "Open books"
+
+msgctxt "dialog.supported_books"
+msgid "Supported book formats"
+msgstr "Supported book formats"
+
+msgctxt "dialog.select_folder"
+msgid "Select a folder"
+msgstr "Select a folder"
+
+msgctxt "dialog.open_comic"
+msgid "Open a comic source"
+msgstr "Open a comic source"
+
+msgctxt "dialog.save_comic"
+msgid "Export comic"
+msgstr "Export comic"
+
+msgctxt "dialog.comic_output"
+msgid "Comic output"
+msgstr "Comic output"
+
+msgctxt "comic.summary"
+msgid "{} · {} · pages: {}"
+msgstr "{} · {} · pages: {}"
+
+msgctxt "preflight.complete"
+msgid "Preflight complete"
+msgstr "Preflight complete"
+
+msgctxt "preflight.blocked"
+msgid "Some sources are blocked by the selected compatibility policy"
+msgstr "Some sources are blocked by the selected compatibility policy"
+
+msgctxt "conversion.preflight_required"
+msgid "Run preflight and select an approved source before converting."
+msgstr "Run preflight and select an approved source before converting."
+
+msgctxt "conversion.strict_batch_required"
+msgid "Strict batch requires all queued sources to pass preflight."
+msgstr "Strict batch requires all queued sources to pass preflight."
+
+msgctxt "conversion.count_summary"
+msgid "Succeeded: {} · failed: {}"
+msgstr "Succeeded: {} · failed: {}"
+
+msgctxt "comic.export"
+msgid "Export"
+msgstr "Export"
+
+msgctxt "comic.authors"
+msgid "By {}"
+msgstr "By {}"
+
+msgctxt "comic.reading_direction"
+msgid "Reading direction: {}"
+msgstr "Reading direction: {}"
+
+msgctxt "reader.pan_left"
+msgid "Pan left"
+msgstr "Pan left"
+
+msgctxt "reader.pan_up"
+msgid "Pan up"
+msgstr "Pan up"
+
+msgctxt "reader.pan_down"
+msgid "Pan down"
+msgstr "Pan down"
+
+msgctxt "reader.pan_right"
+msgid "Pan right"
+msgstr "Pan right"
+
+msgctxt "action.convert_selected"
+msgid "Convert selected"
+msgstr "Convert selected"
+
+msgctxt "action.convert_all_approved"
+msgid "Convert all approved"
+msgstr "Convert all approved"
+
+msgctxt "progress.opening"
+msgid "Opening"
+msgstr "Opening"
+
+msgctxt "progress.parsing"
+msgid "Parsing"
+msgstr "Parsing"
+
+msgctxt "progress.normalizing"
+msgid "Normalizing"
+msgstr "Normalizing"
+
+msgctxt "progress.resolving_styles"
+msgid "Resolving styles"
+msgstr "Resolving styles"
+
+msgctxt "progress.processing_resources"
+msgid "Processing resources"
+msgstr "Processing resources"
+
+msgctxt "progress.lowering"
+msgid "Preparing target representation"
+msgstr "Preparing target representation"
+
+msgctxt "progress.building_indexes"
+msgid "Building indexes"
+msgstr "Building indexes"
+
+msgctxt "progress.encoding"
+msgid "Encoding"
+msgstr "Encoding"
+
+msgctxt "progress.writing"
+msgid "Writing"
+msgstr "Writing"
+
+msgctxt "progress.validating"
+msgid "Validating"
+msgstr "Validating"
+
+msgctxt "progress.finished"
+msgid "Finished"
+msgstr "Finished"
+
+msgctxt "progress.count"
+msgid "{} / {}"
+msgstr "{} / {}"
+
+msgctxt "reader.zoom_percent"
+msgid "{}%"
+msgstr "{}%"
+
+msgctxt "reader.zoom_in"
+msgid "Zoom in"
+msgstr "Zoom in"
+
+msgctxt "reader.zoom_out"
+msgid "Zoom out"
+msgstr "Zoom out"

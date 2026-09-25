@@ -4,6 +4,10 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+# Local-only test modules resolve from the ignored repository-root tests/ tree.
+[features]
+maintainer-tests = []
+
 [dependencies]
 folio-archive = { path = "../folio-archive" }
 folio-core = { path = "../folio-core" }

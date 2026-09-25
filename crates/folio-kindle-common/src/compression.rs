@@ -456,14 +456,7 @@ pub fn compress_palmdoc(input: &[u8]) -> Vec<u8> {
     output
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn palmdoc_round_trips_unicode_and_back_references() {
-        let input = "hello hello 中文中文".as_bytes();
-        let compressed = compress_palmdoc(input);
-        assert_eq!(decompress_palmdoc(&compressed, 4096).unwrap(), input);
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-kindle-common/src/compression.rs"]
+mod tests;

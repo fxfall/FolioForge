@@ -37,6 +37,31 @@ FolioResult *folio_batch_convert_with_progress(
 
 FolioResult *folio_analyze(const char *request_json);
 FolioResult *folio_preview(const char *request_json);
+FolioResult *folio_reader_preview(const char *request_json);
+
+FolioResult *folio_reader_open(
+    const char *request_json,
+    const FolioCancellation *cancellation);
+FolioResult *folio_reader_open_comic(const char *request_json);
+FolioResult *folio_reader_close(const char *session_id);
+FolioResult *folio_reader_summary(const char *session_id);
+FolioResult *folio_reader_current_page(
+    const char *session_id,
+    const FolioCancellation *cancellation);
+FolioResult *folio_reader_current_spread(const char *session_id);
+FolioResult *folio_reader_resource(const char *request_json);
+FolioResult *folio_reader_next(const char *session_id);
+FolioResult *folio_reader_previous(const char *session_id);
+FolioResult *folio_reader_first(const char *session_id);
+FolioResult *folio_reader_last(const char *session_id);
+FolioResult *folio_reader_navigation(const char *session_id);
+FolioResult *folio_reader_go_to(const char *request_json);
+FolioResult *folio_reader_go_to_document_index(const char *request_json);
+FolioResult *folio_reader_go_to_page(const char *request_json);
+FolioResult *folio_reader_go_to_navigation_target(const char *request_json);
+FolioResult *folio_reader_set_viewport(const char *request_json);
+FolioResult *folio_reader_set_direction(const char *request_json);
+FolioResult *folio_reader_set_spread_mode(const char *request_json);
 
 FolioResult *folio_inspect(const char *path);
 FolioResult *folio_validate(const char *path);

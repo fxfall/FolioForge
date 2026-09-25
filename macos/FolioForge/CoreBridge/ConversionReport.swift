@@ -15,17 +15,17 @@ enum FolioProgressStage: String, Codable, Sendable {
 
     var label: String {
         switch self {
-        case .opening: "Opening"
-        case .parsing: "Parsing"
-        case .normalizing: "Normalizing"
-        case .resolvingStyles: "Resolving styles"
-        case .processingResources: "Processing resources"
-        case .lowering: "Lowering"
-        case .buildingIndexes: "Building indexes"
-        case .encoding: "Encoding"
-        case .writing: "Writing"
-        case .validating: "Validating"
-        case .finished: "Finished"
+        case .opening: FolioL10n.string("stage.opening", default: "Opening")
+        case .parsing: FolioL10n.string("stage.parsing", default: "Parsing")
+        case .normalizing: FolioL10n.string("stage.normalizing", default: "Normalizing")
+        case .resolvingStyles: FolioL10n.string("stage.resolving_styles", default: "Resolving styles")
+        case .processingResources: FolioL10n.string("stage.processing_resources", default: "Processing resources")
+        case .lowering: FolioL10n.string("stage.lowering", default: "Lowering")
+        case .buildingIndexes: FolioL10n.string("stage.building_indexes", default: "Building indexes")
+        case .encoding: FolioL10n.string("ui.encoding", default: "Encoding")
+        case .writing: FolioL10n.string("stage.writing", default: "Writing")
+        case .validating: FolioL10n.string("stage.validating", default: "Validating")
+        case .finished: FolioL10n.string("stage.finished", default: "Finished")
         }
     }
 }
@@ -290,21 +290,21 @@ enum FolioCompatibilityQuality: String, Codable, Equatable, Sendable {
 
     var displayName: String {
         switch self {
-        case .exact: "Exact"
-        case .high: "High fidelity"
-        case .compatible: "Compatible"
-        case .reduced: "Reduced layout"
-        case .severeLoss: "Severe loss"
+        case .exact: FolioL10n.string("quality.exact", default: "Exact")
+        case .high: FolioL10n.string("quality.high", default: "High fidelity")
+        case .compatible: FolioL10n.string("quality.compatible", default: "Compatible")
+        case .reduced: FolioL10n.string("quality.reduced", default: "Reduced layout")
+        case .severeLoss: FolioL10n.string("quality.severe_loss", default: "Severe loss")
         }
     }
 
     var userSummary: String {
         switch self {
-        case .exact: "Excellent"
-        case .high: "High fidelity"
-        case .compatible: "Minor formatting changes"
-        case .reduced: "Structural fallback"
-        case .severeLoss: "Significant content loss"
+        case .exact: FolioL10n.string("quality.excellent", default: "Excellent")
+        case .high: FolioL10n.string("quality.high", default: "High fidelity")
+        case .compatible: FolioL10n.string("quality.minor_changes", default: "Minor formatting changes")
+        case .reduced: FolioL10n.string("quality.structural_fallback", default: "Structural fallback")
+        case .severeLoss: FolioL10n.string("quality.significant_content_loss", default: "Significant content loss")
         }
     }
 }
@@ -553,14 +553,6 @@ struct FolioInspectReport: Codable, Sendable {
     }
 }
 
-struct FolioPreviewDocument: Codable, Identifiable, Sendable {
-    let href: String
-    let title: String?
-    let html: String
-
-    var id: String { href }
-}
-
 struct FolioPreviewTargetProfile: Codable, Sendable {
     let format: String
     let label: String
@@ -576,28 +568,6 @@ struct FolioPreviewTargetProfile: Codable, Sendable {
         case viewportWidth = "viewport_width"
         case viewportHeight = "viewport_height"
         case fontSizePercent = "font_size_percent"
-    }
-}
-
-struct FolioPreviewBundle: Codable, Sendable {
-    let target: FolioPreviewTargetProfile
-    let sourceTitle: String
-    let documents: [FolioPreviewDocument]
-    let html: String
-    let degradation: FolioDegradationReport
-    let inputLoss: [String]
-    let targetLoss: [String]
-    let blocked: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case target
-        case sourceTitle = "source_title"
-        case documents
-        case html
-        case degradation
-        case inputLoss = "input_loss"
-        case targetLoss = "target_loss"
-        case blocked
     }
 }
 

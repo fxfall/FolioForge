@@ -1,0 +1,747 @@
+import { AboutSlint, Button, CheckBox, ComboBox, LineEdit, ScrollView } from "std-widgets.slint";
+
+export struct QueueRow {
+    name: string,
+    state: string,
+    selected: bool,
+}
+
+export struct ComicPageRow {
+    name: string,
+    detail: string,
+    thumbnail: image,
+    has-thumbnail: bool,
+    selected: bool,
+}
+
+export struct ReaderDisplayPage {
+    source: image,
+    clip-x: float,
+    clip-y: float,
+    clip-width: float,
+    clip-height: float,
+    offset-x: float,
+    offset-y: float,
+    image-width: float,
+    image-height: float,
+}
+
+export component MainWindow inherits Window {
+    title: @tr("app.brand" => "FolioForge");
+    width: 1320px;
+    height: 860px;
+    background: #f3f4f6;
+
+    in-out property <[QueueRow]> queue-rows: [];
+    in-out property <[ComicPageRow]> comic-page-rows: [];
+    in-out property <[ReaderDisplayPage]> reader-pages: [];
+    in-out property <[string]> target-options: [];
+    in-out property <[string]> comic-target-options: [];
+    in-out property <[string]> language-options: [];
+    in-out property <[string]> mode-options: [];
+    in-out property <[string]> compression-options: [];
+    in-out property <[string]> batch-mode-options: [];
+    in-out property <[string]> text-mode-options: [];
+    in-out property <[string]> paragraph-mode-options: [];
+    in-out property <[string]> text-encoding-options: [];
+    in-out property <[string]> reader-content-options: [];
+    in-out property <[string]> reader-direction-options: [];
+    in-out property <[string]> reader-spread-options: [];
+    in-out property <int> target-index: 0;
+    in-out property <int> comic-target-index: 0;
+    in-out property <int> language-index: 0;
+    in-out property <int> mode-index: 1;
+    in-out property <int> compression-index: 0;
+    in-out property <int> batch-mode-index: 0;
+    in-out property <int> text-mode-index: 0;
+    in-out property <int> paragraph-mode-index: 0;
+    in-out property <int> text-encoding-index: 0;
+    in-out property <int> reader-content-index: 0;
+    in-out property <int> reader-direction-index: 0;
+    in-out property <int> reader-spread-index: 0;
+    in-out property <int> selected-index: -1;
+    in-out property <int> selected-page-index: -1;
+    in-out property <bool> selected-can-convert: false;
+    in-out property <bool> all-can-convert: false;
+    in-out property <int> reader-current-page: 0;
+    in-out property <int> reader-page-count: 0;
+    in-out property <int> reader-zoom-percent: 100;
+    in-out property <int> progress-current: 0;
+    in-out property <int> progress-total: 0;
+    in-out property <int> active-workspace: 0;
+    in-out property <string> source-summary: "";
+    in-out property <string> output-directory: "";
+    in-out property <string> status-text: "";
+    in-out property <string> diagnostics-text: "";
+    in-out property <string> detail-text: "";
+    in-out property <string> reader-caption: "";
+    in-out property <string> comic-summary: "";
+    in-out property <string> comic-title: "";
+    in-out property <string> comic-source-type: "";
+    in-out property <string> comic-authors: "";
+    in-out property <string> comic-reading-direction: "";
+    in-out property <int> comic-page-count: 0;
+    in-out property <string> comic-output: "";
+    in-out property <string> text-title-override: "";
+    in-out property <string> text-author-override: "";
+    in-out property <image> preview-image;
+    in-out property <float> progress: 0;
+    in-out property <bool> busy: false;
+    in-out property <bool> deterministic: true;
+    in-out property <bool> linearize-tables: false;
+    in-out property <bool> prefer-rasterization: false;
+    in-out property <bool> strip-fonts: false;
+    in-out property <bool> show-about: false;
+
+    out property <string> l10n-ready: @tr("status.ready" => "Ready");
+    out property <string> l10n-checking: @tr("status.checking" => "Checking compatibility…");
+    out property <string> l10n-converting: @tr("status.converting" => "Converting…");
+    out property <string> l10n-completed: @tr("status.completed" => "Completed");
+    out property <string> l10n-blocked: @tr("status.blocked" => "Blocked");
+    out property <string> l10n-failed: @tr("status.failed" => "Failed");
+    out property <string> l10n-cancelled: @tr("status.cancelled" => "Cancelled");
+    out property <string> l10n-error: @tr("status.error" => "Operation failed");
+    out property <string> l10n-no-input: @tr("queue.empty" => "No files selected");
+    out property <string> l10n-no-preview: @tr("reader.empty" => "Select a book or page to preview");
+    out property <string> l10n-reader-unavailable: @tr("reader.unsupported" => "This source has no supported fixed-page Reader view");
+    out property <string> l10n-select-source: @tr("common.select_source" => "Select a source");
+    out property <string> l10n-no-comic: @tr("comic.empty" => "Open a CBZ, ZIP, or image folder to browse pages");
+    out property <string> l10n-about: @tr("about.title" => "About FolioForge");
+    out property <string> l10n-licensed: @tr("about.slint_license" => "This desktop application uses Slint under its Royalty-free Desktop, Mobile, and Web Applications License.");
+    out property <string> l10n-language-system: @tr("language.system" => "System default");
+    out property <string> l10n-language-english: @tr("language.english" => "English");
+    out property <string> l10n-language-chinese: @tr("language.simplified_chinese" => "Simplified Chinese");
+    out property <string> l10n-mode-strict: @tr("mode.strict" => "Strict");
+    out property <string> l10n-mode-compatible: @tr("mode.compatible" => "Compatible");
+    out property <string> l10n-mode-readable: @tr("mode.readable" => "Readable");
+    out property <string> l10n-compression-none: @tr("compression.none" => "None");
+    out property <string> l10n-compression-palmdoc: @tr("compression.palmdoc" => "PalmDOC");
+    out property <string> l10n-batch-best-effort: @tr("batch.best_effort" => "Best effort");
+    out property <string> l10n-batch-strict: @tr("batch.strict" => "Strict batch");
+    out property <string> l10n-reader-fit: @tr("reader.content.fit" => "Fit");
+    out property <string> l10n-reader-fill: @tr("reader.content.fill" => "Fill");
+    out property <string> l10n-reader-actual-size: @tr("reader.content.actual_size" => "Actual size");
+    out property <string> l10n-reader-ltr: @tr("reader.direction.ltr" => "Left to right");
+    out property <string> l10n-reader-rtl: @tr("reader.direction.rtl" => "Right to left");
+    out property <string> l10n-reader-single: @tr("reader.spread.single" => "Single page");
+    out property <string> l10n-reader-two-page: @tr("reader.spread.two_page" => "Two-page spread");
+    out property <string> l10n-settings-mode: @tr("settings.compatibility" => "Compatibility");
+    out property <string> l10n-settings-compression: @tr("settings.compression" => "Compression");
+    out property <string> l10n-settings-batch: @tr("settings.batch_mode" => "Batch behavior");
+    out property <string> l10n-settings-linearize: @tr("settings.linearize_tables" => "Linearize complex tables");
+    out property <string> l10n-settings-rasterize: @tr("settings.prefer_rasterization" => "Prefer rasterization");
+    out property <string> l10n-settings-strip-fonts: @tr("settings.strip_fonts" => "Strip embedded fonts");
+    out property <string> l10n-text-import: @tr("text.import" => "Text import");
+    out property <string> l10n-text-structure: @tr("text.structure" => "Structure");
+    out property <string> l10n-text-paragraphs: @tr("text.paragraphs" => "Paragraphs");
+    out property <string> l10n-text-encoding: @tr("text.encoding" => "Encoding override");
+    out property <string> l10n-text-title: @tr("text.title_override" => "Title override");
+    out property <string> l10n-text-author: @tr("text.author_override" => "Author override");
+    out property <string> l10n-text-auto: @tr("text.auto" => "Auto");
+    out property <string> l10n-text-novel: @tr("text.novel" => "Novel");
+    out property <string> l10n-text-markdown: @tr("text.markdown" => "Markdown");
+    out property <string> l10n-text-plain: @tr("text.plain" => "Plain");
+    out property <string> l10n-paragraph-auto: @tr("paragraph.auto" => "Automatic");
+    out property <string> l10n-paragraph-blank-line: @tr("paragraph.blank_line" => "Blank lines");
+    out property <string> l10n-paragraph-every-line: @tr("paragraph.every_line" => "Every line");
+    out property <string> l10n-paragraph-indented: @tr("paragraph.indented" => "Indented paragraphs");
+    out property <string> l10n-paragraph-hard-wrap: @tr("paragraph.hard_wrap" => "Hard-wrapped text");
+    out property <string> l10n-text-encoding-auto: @tr("text.encoding_auto" => "Automatic");
+    out property <string> l10n-text-options-note: @tr("text.options_note" => "These settings apply to TXT inputs. Ambiguous encodings stay unresolved until you select an override.");
+    out property <string> l10n-settings-core-authority: @tr("settings.core_authority" => "Format support and conversion behavior come from Folio Core. Interface language is a frontend preference.");
+    out property <string> l10n-reader-display: @tr("reader.display_mode" => "Display");
+    out property <string> l10n-reader-direction: @tr("reader.direction" => "Reading direction");
+    out property <string> l10n-reader-spread: @tr("reader.spread" => "Spread");
+    out property <string> l10n-reader-caption: @tr("reader.page_of" => "Page {} of {}", root.reader-current-page + 1, root.reader-page-count);
+    out property <string> l10n-open-books: @tr("dialog.open_books" => "Open books");
+    out property <string> l10n-supported-books: @tr("dialog.supported_books" => "Supported book formats");
+    out property <string> l10n-select-folder: @tr("dialog.select_folder" => "Select a folder");
+    out property <string> l10n-open-comic: @tr("dialog.open_comic" => "Open a comic source");
+    out property <string> l10n-save-comic: @tr("dialog.save_comic" => "Export comic");
+    out property <string> l10n-comic-output: @tr("dialog.comic_output" => "Comic output");
+    out property <string> l10n-comic-export: @tr("comic.export" => "Export");
+    out property <string> l10n-comic-summary: @tr("comic.summary" => "{} · {} · pages: {}", root.comic-title, root.comic-source-type, root.comic-page-count);
+    out property <string> l10n-comic-authors: @tr("comic.authors" => "By {}", root.comic-authors);
+    out property <string> l10n-comic-direction: @tr("comic.reading_direction" => "Reading direction: {}", root.comic-reading-direction);
+    out property <string> l10n-preflight-complete: @tr("preflight.complete" => "Preflight complete");
+    out property <string> l10n-preflight-blocked: @tr("preflight.blocked" => "Some sources are blocked by the selected compatibility policy");
+    out property <string> l10n-preflight-required: @tr("conversion.preflight_required" => "Run preflight and select an approved source before converting.");
+    out property <string> l10n-strict-batch-required: @tr("conversion.strict_batch_required" => "Strict batch requires all queued sources to pass preflight.");
+    out property <string> l10n-conversion-count: @tr("conversion.count_summary" => "Succeeded: {} · failed: {}", root.conversion-succeeded, root.conversion-failed);
+    out property <string> l10n-progress-count: @tr("progress.count" => "{} / {}", root.progress-current, root.progress-total);
+    out property <string> l10n-zoom-percent: @tr("reader.zoom_percent" => "{}%", root.reader-zoom-percent);
+    out property <string> l10n-progress-opening: @tr("progress.opening" => "Opening");
+    out property <string> l10n-progress-parsing: @tr("progress.parsing" => "Parsing");
+    out property <string> l10n-progress-normalizing: @tr("progress.normalizing" => "Normalizing");
+    out property <string> l10n-progress-resolving-styles: @tr("progress.resolving_styles" => "Resolving styles");
+    out property <string> l10n-progress-processing-resources: @tr("progress.processing_resources" => "Processing resources");
+    out property <string> l10n-progress-lowering: @tr("progress.lowering" => "Preparing target representation");
+    out property <string> l10n-progress-building-indexes: @tr("progress.building_indexes" => "Building indexes");
+    out property <string> l10n-progress-encoding: @tr("progress.encoding" => "Encoding");
+    out property <string> l10n-progress-writing: @tr("progress.writing" => "Writing");
+    out property <string> l10n-progress-validating: @tr("progress.validating" => "Validating");
+    out property <string> l10n-progress-finished: @tr("progress.finished" => "Finished");
+    in-out property <int> conversion-succeeded: 0;
+    in-out property <int> conversion-failed: 0;
+
+    callback choose-files();
+    callback choose-folder();
+    callback choose-output();
+    callback choose-comic();
+    callback choose-comic-folder();
+    callback remove-selected();
+    callback queue-item-selected(int, bool);
+    callback preflight-selected();
+    callback preflight-all();
+    callback convert-selected();
+    callback convert-all-approved();
+    callback cancel-operation();
+    callback target-selected(int);
+    callback comic-target-selected(int);
+    callback language-selected(int);
+    callback mode-selected(int);
+    callback compression-selected(int);
+    callback batch-mode-selected(int);
+    callback text-mode-selected(int);
+    callback paragraph-mode-selected(int);
+    callback text-encoding-selected(int);
+    callback text-title-changed(string);
+    callback text-author-changed(string);
+    callback degradation-option-selected(int, bool);
+    callback deterministic-selected(bool);
+    callback reader-content-selected(int);
+    callback reader-direction-selected(int);
+    callback reader-spread-selected(int);
+    callback reader-zoom-delta(float);
+    callback reader-pan-start();
+    callback reader-pan(float, float);
+    callback reader-pan-ended();
+    callback reader-pan-nudge(float, float);
+    callback reader-viewport-changed(float, float);
+    callback select-book(int);
+    callback select-comic-page(int);
+    callback set-workspace(int);
+    callback reader-previous();
+    callback reader-next();
+    callback comic-previous();
+    callback comic-next();
+    callback comic-convert();
+    callback about-dismissed();
+
+    VerticalLayout {
+        spacing: 0;
+
+        Rectangle {
+            height: 58px;
+            background: #ffffff;
+            HorizontalLayout {
+                padding-left: 18px;
+                padding-right: 18px;
+                spacing: 10px;
+                Text {
+                    text: @tr("app.brand" => "FolioForge");
+                    font-size: 21px;
+                    font-weight: 700;
+                    vertical-alignment: center;
+                    color: #252a31;
+                }
+                Rectangle { width: 1px; background: #e3e6eb; }
+                Button { text: @tr("navigation.books" => "Books"); clicked => { root.set-workspace(0); } }
+                Button { text: @tr("navigation.reader" => "Reader"); clicked => { root.set-workspace(1); } }
+                Button { text: @tr("navigation.comics" => "Comics"); clicked => { root.set-workspace(2); } }
+                Button { text: @tr("navigation.settings" => "Settings"); clicked => { root.set-workspace(3); } }
+                Rectangle { horizontal-stretch: 1; }
+                ComboBox {
+                    model: root.target-options;
+                    current-index: root.target-index;
+                    selected(value) => { root.target-selected(root.target-index); }
+                    width: 190px;
+                }
+                Button { text: @tr("action.check" => "Check"); enabled: !root.busy; clicked => { root.preflight-selected(); } }
+                    Button {
+                    text: root.busy ? @tr("status.working" => "Working…") : @tr("action.convert_selected" => "Convert selected");
+                    enabled: !root.busy && root.selected-can-convert;
+                    clicked => { root.convert-selected(); }
+                }
+                Button { text: @tr("action.about" => "About"); clicked => { root.show-about = true; } }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 1px;
+            Rectangle {
+                width: 270px;
+                background: #ffffff;
+                VerticalLayout {
+                    padding: 14px;
+                    spacing: 10px;
+                    Text { text: @tr("queue.heading" => "Sources"); font-size: 15px; font-weight: 700; color: #343a43; }
+                    HorizontalLayout {
+                        Button { text: @tr("action.add_files" => "Add files…"); clicked => { root.choose-files(); } }
+                        Button { text: @tr("action.add_folder" => "Add folder…"); clicked => { root.choose-folder(); } }
+                    }
+                    HorizontalLayout {
+                        Button { text: @tr("action.open_comic" => "Open Comic…"); clicked => { root.choose-comic(); } }
+                        Button { text: @tr("action.open_comic_folder" => "Open Comic Folder…"); clicked => { root.choose-comic-folder(); } }
+                        Button { text: @tr("action.remove" => "Remove"); enabled: root.selected-index >= 0; clicked => { root.remove-selected(); } }
+                    }
+                    Text { text: root.source-summary; color: #707782; font-size: 12px; wrap: word-wrap; }
+                    Rectangle { height: 1px; background: #e7e9ed; }
+
+                    if root.active-workspace == 2: Text { text: @tr("comic.page_list" => "Comic pages"); font-size: 14px; font-weight: 650; color: #343a43; }
+                    if root.active-workspace != 2: Text { text: @tr("queue.book_list" => "Book queue"); font-size: 14px; font-weight: 650; color: #343a43; }
+
+                    ScrollView {
+                        min-height: 100px;
+                        VerticalLayout {
+                            spacing: 4px;
+                            if root.active-workspace == 2: VerticalLayout {
+                                spacing: 4px;
+                                for page[index] in root.comic-page-rows: Rectangle {
+                                    height: 66px;
+                                    border-radius: 5px;
+                                    background: page.selected || index == root.selected-page-index ? #e7efff : #ffffff;
+                                    HorizontalLayout {
+                                        padding: 6px;
+                                        spacing: 7px;
+                                        if page.has-thumbnail: Image {
+                                            source: page.thumbnail;
+                                            image-fit: contain;
+                                            width: 42px;
+                                            height: 52px;
+                                        }
+                                        if !page.has-thumbnail: Rectangle {
+                                            width: 42px;
+                                            height: 52px;
+                                            border-radius: 3px;
+                                            background: #eef0f3;
+                                            Text { text: "▧"; color: #9097a1; horizontal-alignment: center; vertical-alignment: center; }
+                                        }
+                                        VerticalLayout {
+                                            spacing: 2px;
+                                            Button { text: page.name; clicked => { root.select-comic-page(index); } }
+                                            Text { text: page.detail; font-size: 10px; color: #77808b; overflow: elide; }
+                                        }
+                                    }
+                                }
+                            }
+                            if root.active-workspace != 2: VerticalLayout {
+                                spacing: 4px;
+                                for row[index] in root.queue-rows: Rectangle {
+                                    height: 58px;
+                                    border-radius: 5px;
+                                    background: row.selected || index == root.selected-index ? #e7efff : #ffffff;
+                                    TouchArea { clicked => { root.select-book(index); } }
+                                    HorizontalLayout {
+                                        padding: 7px;
+                                        spacing: 6px;
+                                        CheckBox {
+                                            checked: row.selected;
+                                            toggled => { root.queue-item-selected(index, self.checked); }
+                                        }
+                                        VerticalLayout {
+                                            spacing: 2px;
+                                            Text { text: row.name; font-size: 12px; color: #252a31; overflow: elide; }
+                                            Text { text: row.state; font-size: 11px; color: #77808b; overflow: elide; }
+                                        }
+                                    }
+                                }
+                            }
+                            if root.queue-rows.length == 0 && root.active-workspace != 2: Text {
+                                text: root.l10n-no-input;
+                                color: #9097a1;
+                                font-size: 12px;
+                                wrap: word-wrap;
+                            }
+                            if root.comic-page-rows.length == 0 && root.active-workspace == 2: Text {
+                                text: root.l10n-no-comic;
+                                color: #9097a1;
+                                font-size: 12px;
+                                wrap: word-wrap;
+                            }
+                        }
+                    }
+                    Rectangle { height: 1px; background: #e7e9ed; }
+                    Text { text: @tr("conversion.output_folder" => "Output folder"); font-size: 12px; font-weight: 600; color: #555d68; }
+                    HorizontalLayout {
+                        Text { text: root.output-directory; font-size: 11px; color: #7b828c; overflow: elide; vertical-alignment: center; }
+                        Button { text: @tr("action.choose_folder" => "Choose…"); clicked => { root.choose-output(); } }
+                    }
+                    Rectangle { vertical-stretch: 1; }
+                    Button { text: @tr("action.check_all" => "Check all"); enabled: !root.busy; clicked => { root.preflight-all(); } }
+                }
+            }
+
+            Rectangle { width: 1px; background: #dfe3e8; }
+
+            Rectangle {
+                horizontal-stretch: 1;
+                background: #f7f8fa;
+                VerticalLayout {
+                    padding: 18px;
+                    spacing: 12px;
+                    if root.active-workspace == 0: Text { text: @tr("workspace.conversion" => "Conversion"); font-size: 18px; font-weight: 700; color: #252a31; }
+                    if root.active-workspace == 1: Text { text: @tr("navigation.reader" => "Reader"); font-size: 18px; font-weight: 700; color: #252a31; }
+                    if root.active-workspace == 2: Text { text: @tr("workspace.comic" => "Comic workspace"); font-size: 18px; font-weight: 700; color: #252a31; }
+                    if root.active-workspace == 3: Text { text: @tr("navigation.settings" => "Settings"); font-size: 18px; font-weight: 700; color: #252a31; }
+
+                    if root.active-workspace == 0: VerticalLayout {
+                        spacing: 10px;
+                        HorizontalLayout {
+                            Button { text: @tr("action.preflight_selected" => "Preflight selected"); enabled: !root.busy; clicked => { root.preflight-selected(); } }
+                            Button { text: @tr("action.convert_selected" => "Convert selected"); enabled: !root.busy && root.selected-can-convert; clicked => { root.convert-selected(); } }
+                            Button { text: @tr("action.convert_all_approved" => "Convert all approved"); enabled: !root.busy && root.all-can-convert; clicked => { root.convert-all-approved(); } }
+                            Button { text: @tr("action.cancel" => "Cancel"); enabled: root.busy; clicked => { root.cancel-operation(); } }
+                        }
+                        HorizontalLayout {
+                            Text { text: root.l10n-settings-mode; vertical-alignment: center; color: #58616e; }
+                            ComboBox {
+                                model: root.mode-options;
+                                current-index: root.mode-index;
+                                selected(value) => { root.mode-selected(root.mode-index); }
+                                width: 150px;
+                            }
+                            Text { text: root.l10n-settings-compression; vertical-alignment: center; color: #58616e; }
+                            ComboBox {
+                                model: root.compression-options;
+                                current-index: root.compression-index;
+                                selected(value) => { root.compression-selected(root.compression-index); }
+                                width: 140px;
+                            }
+                            Text { text: root.l10n-settings-batch; vertical-alignment: center; color: #58616e; }
+                            ComboBox {
+                                model: root.batch-mode-options;
+                                current-index: root.batch-mode-index;
+                                selected(value) => { root.batch-mode-selected(root.batch-mode-index); }
+                                width: 150px;
+                            }
+                        }
+                        HorizontalLayout {
+                            Text { text: root.l10n-text-import; vertical-alignment: center; color: #58616e; }
+                            Text { text: root.l10n-text-structure; vertical-alignment: center; color: #58616e; }
+                            ComboBox {
+                                model: root.text-mode-options;
+                                current-index: root.text-mode-index;
+                                selected(value) => { root.text-mode-selected(root.text-mode-index); }
+                                accessible-label: root.l10n-text-structure;
+                                width: 140px;
+                            }
+                            Text { text: root.l10n-text-paragraphs; vertical-alignment: center; color: #58616e; }
+                            ComboBox {
+                                model: root.paragraph-mode-options;
+                                current-index: root.paragraph-mode-index;
+                                selected(value) => { root.paragraph-mode-selected(root.paragraph-mode-index); }
+                                accessible-label: root.l10n-text-paragraphs;
+                                width: 155px;
+                            }
+                        }
+                        HorizontalLayout {
+                            Text { text: root.l10n-text-encoding; vertical-alignment: center; color: #58616e; }
+                            ComboBox {
+                                model: root.text-encoding-options;
+                                current-index: root.text-encoding-index;
+                                selected(value) => { root.text-encoding-selected(root.text-encoding-index); }
+                                accessible-label: root.l10n-text-encoding;
+                                width: 160px;
+                            }
+                            Text { text: root.l10n-text-title; vertical-alignment: center; color: #58616e; }
+                            LineEdit {
+                                text <=> root.text-title-override;
+                                edited(value) => { root.text-title-changed(value); }
+                                accessible-label: root.l10n-text-title;
+                                horizontal-stretch: 1;
+                            }
+                        }
+                        HorizontalLayout {
+                            Text { text: root.l10n-text-author; vertical-alignment: center; color: #58616e; }
+                            LineEdit {
+                                text <=> root.text-author-override;
+                                edited(value) => { root.text-author-changed(value); }
+                                accessible-label: root.l10n-text-author;
+                                horizontal-stretch: 1;
+                            }
+                            Rectangle { horizontal-stretch: 1; }
+                        }
+                        Text { text: root.l10n-text-options-note; color: #7b828c; font-size: 11px; wrap: word-wrap; }
+                        HorizontalLayout {
+                            CheckBox { text: @tr("conversion.deterministic_output" => "Deterministic output"); checked <=> root.deterministic; toggled => { root.deterministic-selected(self.checked); } }
+                            CheckBox { text: root.l10n-settings-linearize; checked <=> root.linearize-tables; toggled => { root.degradation-option-selected(0, self.checked); } }
+                            CheckBox { text: root.l10n-settings-rasterize; checked <=> root.prefer-rasterization; toggled => { root.degradation-option-selected(1, self.checked); } }
+                            CheckBox { text: root.l10n-settings-strip-fonts; checked <=> root.strip-fonts; toggled => { root.degradation-option-selected(2, self.checked); } }
+                        }
+                        Text { text: root.status-text; color: #48515e; font-size: 13px; }
+                        Text { text: root.l10n-progress-count; color: #7b828c; font-size: 11px; }
+                        Rectangle {
+                            height: 8px;
+                            border-radius: 4px;
+                            background: #e0e5ec;
+                            Rectangle { width: parent.width * root.progress; height: parent.height; border-radius: 4px; background: #3177e8; }
+                        }
+                        Text { text: root.l10n-select-source; color: #9299a3; horizontal-alignment: center; vertical-alignment: center; }
+                        Rectangle { vertical-stretch: 1; }
+                    }
+
+                    if root.active-workspace == 1: VerticalLayout {
+                        spacing: 10px;
+                        HorizontalLayout {
+                            Button { text: @tr("reader.previous" => "Previous"); clicked => { root.reader-previous(); } }
+                            Text { text: root.l10n-reader-caption; color: #58616e; vertical-alignment: center; horizontal-alignment: center; }
+                            Button { text: @tr("reader.next" => "Next"); clicked => { root.reader-next(); } }
+                    Button { text: "−"; accessible-label: @tr("reader.zoom_out" => "Zoom out"); clicked => { root.reader-zoom-delta(-0.25); } }
+                    Text { text: root.l10n-zoom-percent; color: #58616e; vertical-alignment: center; }
+                    Button { text: "+"; accessible-label: @tr("reader.zoom_in" => "Zoom in"); clicked => { root.reader-zoom-delta(0.25); } }
+                    Button { text: "←"; accessible-label: @tr("reader.pan_left" => "Pan left"); clicked => { root.reader-pan-nudge(-32, 0); } }
+                    Button { text: "↑"; accessible-label: @tr("reader.pan_up" => "Pan up"); clicked => { root.reader-pan-nudge(0, -32); } }
+                    Button { text: "↓"; accessible-label: @tr("reader.pan_down" => "Pan down"); clicked => { root.reader-pan-nudge(0, 32); } }
+                    Button { text: "→"; accessible-label: @tr("reader.pan_right" => "Pan right"); clicked => { root.reader-pan-nudge(32, 0); } }
+                        }
+                        HorizontalLayout {
+                            Text { text: root.l10n-reader-display; vertical-alignment: center; color: #58616e; }
+                            ComboBox {
+                                model: root.reader-content-options;
+                                current-index: root.reader-content-index;
+                                selected(value) => { root.reader-content-selected(root.reader-content-index); }
+                                width: 145px;
+                            }
+                            Text { text: root.l10n-reader-direction; vertical-alignment: center; color: #58616e; }
+                            ComboBox {
+                                model: root.reader-direction-options;
+                                current-index: root.reader-direction-index;
+                                selected(value) => { root.reader-direction-selected(root.reader-direction-index); }
+                                width: 155px;
+                            }
+                            Text { text: root.l10n-reader-spread; vertical-alignment: center; color: #58616e; }
+                            ComboBox {
+                                model: root.reader-spread-options;
+                                current-index: root.reader-spread-index;
+                                selected(value) => { root.reader-spread-selected(root.reader-spread-index); }
+                                width: 155px;
+                            }
+                        }
+                        Rectangle {
+                            vertical-stretch: 1;
+                            horizontal-stretch: 1;
+                            border-radius: 8px;
+                            background: #ffffff;
+                            changed width => { root.reader-viewport-changed(self.width / 1px, self.height / 1px); }
+                            changed height => { root.reader-viewport-changed(self.width / 1px, self.height / 1px); }
+                            clip: true;
+                            for page in root.reader-pages: Rectangle {
+                                x: parent.width * page.clip-x;
+                                y: parent.height * page.clip-y;
+                                width: parent.width * page.clip-width;
+                                height: parent.height * page.clip-height;
+                                clip: true;
+                                Image {
+                                    source: page.source;
+                                    image-fit: fill;
+                                    x: parent.width * page.offset-x;
+                                    y: parent.height * page.offset-y;
+                                    width: parent.width * page.image-width;
+                                    height: parent.height * page.image-height;
+                                }
+                            }
+                            if root.reader-page-count == 0: Text { text: root.l10n-no-preview; color: #8a929d; horizontal-alignment: center; vertical-alignment: center; }
+                            TouchArea {
+                                changed pressed => {
+                                    if self.pressed {
+                                        root.reader-pan-start();
+                                    } else {
+                                        root.reader-pan(self.mouse-x / 1px - self.pressed-x / 1px, self.mouse-y / 1px - self.pressed-y / 1px);
+                                        root.reader-pan-ended();
+                                    }
+                                }
+                                moved => {
+                                    if self.pressed {
+                                        root.reader-pan(self.mouse-x / 1px - self.pressed-x / 1px, self.mouse-y / 1px - self.pressed-y / 1px);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if root.active-workspace == 2: VerticalLayout {
+                        spacing: 10px;
+                        Text { text: root.l10n-comic-summary; color: #66707d; font-size: 12px; wrap: word-wrap; }
+                        if root.comic-authors != "": Text { text: root.l10n-comic-authors; color: #66707d; font-size: 11px; wrap: word-wrap; }
+                        if root.comic-reading-direction != "": Text { text: root.l10n-comic-direction; color: #66707d; font-size: 11px; wrap: word-wrap; }
+                        HorizontalLayout {
+                            Button { text: @tr("comic.previous_page" => "Previous page"); clicked => { root.comic-previous(); } }
+                            Button { text: @tr("comic.next_page" => "Next page"); clicked => { root.comic-next(); } }
+                            Text { text: root.l10n-reader-caption; color: #58616e; vertical-alignment: center; }
+                        }
+                        HorizontalLayout {
+                            Text { text: root.l10n-reader-display; vertical-alignment: center; color: #58616e; }
+                            ComboBox {
+                                model: root.reader-content-options;
+                                current-index: root.reader-content-index;
+                                selected(value) => { root.reader-content-selected(root.reader-content-index); }
+                                width: 150px;
+                            }
+                            Text { text: root.l10n-reader-direction; vertical-alignment: center; color: #58616e; }
+                            ComboBox {
+                                model: root.reader-direction-options;
+                                current-index: root.reader-direction-index;
+                                selected(value) => { root.reader-direction-selected(root.reader-direction-index); }
+                                width: 150px;
+                            }
+                            Text { text: root.l10n-reader-spread; vertical-alignment: center; color: #58616e; }
+                            ComboBox {
+                                model: root.reader-spread-options;
+                                current-index: root.reader-spread-index;
+                                selected(value) => { root.reader-spread-selected(root.reader-spread-index); }
+                                width: 150px;
+                            }
+                        }
+                        HorizontalLayout {
+                            Button { text: "−"; accessible-label: @tr("reader.zoom_out" => "Zoom out"); clicked => { root.reader-zoom-delta(-0.25); } }
+                            Text { text: root.l10n-zoom-percent; color: #58616e; vertical-alignment: center; }
+                            Button { text: "+"; accessible-label: @tr("reader.zoom_in" => "Zoom in"); clicked => { root.reader-zoom-delta(0.25); } }
+                            Button { text: "←"; accessible-label: @tr("reader.pan_left" => "Pan left"); clicked => { root.reader-pan-nudge(-32, 0); } }
+                            Button { text: "↑"; accessible-label: @tr("reader.pan_up" => "Pan up"); clicked => { root.reader-pan-nudge(0, -32); } }
+                            Button { text: "↓"; accessible-label: @tr("reader.pan_down" => "Pan down"); clicked => { root.reader-pan-nudge(0, 32); } }
+                            Button { text: "→"; accessible-label: @tr("reader.pan_right" => "Pan right"); clicked => { root.reader-pan-nudge(32, 0); } }
+                            Rectangle { horizontal-stretch: 1; }
+                            Text { text: root.comic-output; color: #66707d; vertical-alignment: center; }
+                            ComboBox {
+                                model: root.comic-target-options;
+                                current-index: root.comic-target-index;
+                                selected(value) => { root.comic-target-selected(root.comic-target-index); }
+                                width: 180px;
+                            }
+                            Button { text: root.busy ? @tr("status.working" => "Working…") : root.l10n-comic-export; enabled: !root.busy && root.comic-page-count > 0; clicked => { root.comic-convert(); } }
+                            Button { text: @tr("action.cancel" => "Cancel"); enabled: root.busy; clicked => { root.cancel-operation(); } }
+                        }
+                        Text { text: root.status-text; color: #48515e; font-size: 12px; }
+                        Text { text: root.l10n-progress-count; color: #7b828c; font-size: 11px; }
+                        Rectangle {
+                            height: 6px;
+                            border-radius: 3px;
+                            background: #e0e5ec;
+                            Rectangle { width: parent.width * root.progress; height: parent.height; border-radius: 3px; background: #3177e8; }
+                        }
+                        Rectangle {
+                            vertical-stretch: 1;
+                            horizontal-stretch: 1;
+                            border-radius: 8px;
+                            background: #ffffff;
+                            clip: true;
+                            for page in root.reader-pages: Rectangle {
+                                x: parent.width * page.clip-x;
+                                y: parent.height * page.clip-y;
+                                width: parent.width * page.clip-width;
+                                height: parent.height * page.clip-height;
+                                clip: true;
+                                Image {
+                                    source: page.source;
+                                    image-fit: fill;
+                                    x: parent.width * page.offset-x;
+                                    y: parent.height * page.offset-y;
+                                    width: parent.width * page.image-width;
+                                    height: parent.height * page.image-height;
+                                }
+                            }
+                            if root.reader-pages.length == 0: Image { source: root.preview-image; image-fit: contain; width: parent.width; height: parent.height; }
+                            if root.comic-page-rows.length == 0: Text { text: root.l10n-no-comic; color: #8a929d; horizontal-alignment: center; vertical-alignment: center; wrap: word-wrap; }
+                            TouchArea {
+                                changed pressed => {
+                                    if self.pressed {
+                                        root.reader-pan-start();
+                                    } else {
+                                        root.reader-pan(self.mouse-x / 1px - self.pressed-x / 1px, self.mouse-y / 1px - self.pressed-y / 1px);
+                                        root.reader-pan-ended();
+                                    }
+                                }
+                                moved => {
+                                    if self.pressed {
+                                        root.reader-pan(self.mouse-x / 1px - self.pressed-x / 1px, self.mouse-y / 1px - self.pressed-y / 1px);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if root.active-workspace == 3: VerticalLayout {
+                        spacing: 12px;
+                        HorizontalLayout {
+                            Text { text: @tr("settings.language" => "Language"); vertical-alignment: center; color: #58616e; }
+                            ComboBox {
+                                model: root.language-options;
+                                current-index: root.language-index;
+                                selected(value) => { root.language-selected(root.language-index); }
+                                width: 200px;
+                            }
+                        }
+                        if root.busy: HorizontalLayout {
+                            Text { text: root.status-text; color: #48515e; font-size: 12px; }
+                            Text { text: root.l10n-progress-count; color: #7b828c; font-size: 11px; }
+                            Button { text: @tr("action.cancel" => "Cancel"); clicked => { root.cancel-operation(); } }
+                        }
+                        Rectangle {
+                            height: 6px;
+                            border-radius: 3px;
+                            background: #e0e5ec;
+                            Rectangle { width: parent.width * root.progress; height: parent.height; border-radius: 3px; background: #3177e8; }
+                        }
+                        Text { text: root.l10n-settings-core-authority; color: #66707d; wrap: word-wrap; }
+                        Button { text: @tr("about.slint_attribution" => "About Slint"); clicked => { root.show-about = true; } }
+                        Rectangle { vertical-stretch: 1; }
+                    }
+                }
+            }
+
+            Rectangle { width: 1px; background: #dfe3e8; }
+
+            Rectangle {
+                width: 310px;
+                background: #ffffff;
+                VerticalLayout {
+                    padding: 14px;
+                    spacing: 10px;
+                    Text { text: @tr("workspace.inspector" => "Inspector"); font-size: 15px; font-weight: 700; color: #343a43; }
+                    Text { text: root.diagnostics-text; font-size: 13px; font-weight: 650; color: #343a43; wrap: word-wrap; }
+                    Rectangle { height: 1px; background: #e7e9ed; }
+                    ScrollView {
+                        vertical-stretch: 1;
+                        Text { text: root.detail-text; font-size: 11px; color: #66707d; wrap: word-wrap; }
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            height: 40px;
+            background: #ffffff;
+            HorizontalLayout {
+                padding-left: 18px;
+                padding-right: 18px;
+                spacing: 12px;
+                Text { text: root.status-text; font-size: 12px; color: #4c5663; vertical-alignment: center; overflow: elide; }
+                Rectangle { horizontal-stretch: 1; }
+                Text { text: root.busy ? @tr("status.working" => "Working…") : root.l10n-ready; font-size: 11px; color: #7b828c; vertical-alignment: center; }
+            }
+        }
+    }
+
+    if root.show-about: Rectangle {
+        background: #00000080;
+        TouchArea { clicked => { root.show-about = false; root.about-dismissed(); } }
+        Rectangle {
+            x: (parent.width - 430px) / 2;
+            y: (parent.height - 270px) / 2;
+            width: 430px;
+            height: 270px;
+            border-radius: 12px;
+            background: #ffffff;
+            VerticalLayout {
+                padding: 20px;
+                spacing: 12px;
+                Text { text: root.l10n-about; font-size: 19px; font-weight: 700; color: #252a31; }
+                Text { text: root.l10n-licensed; font-size: 12px; color: #626b77; wrap: word-wrap; }
+                AboutSlint { }
+                Rectangle { vertical-stretch: 1; }
+                Button { text: @tr("action.close" => "Close"); clicked => { root.show-about = false; root.about-dismissed(); } }
+            }
+        }
+    }
+}

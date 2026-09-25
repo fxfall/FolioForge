@@ -72,7 +72,9 @@ final class ConversionQueueViewModel: ObservableObject {
 
     var inputFormatSummary: String {
         let names = inputFormatCapabilities.map(\.format)
-        return names.isEmpty ? "Registered input formats" : names.joined(separator: " · ")
+        return names.isEmpty
+            ? FolioL10n.string("ui.registered_input_formats", default: "Registered input formats")
+            : names.joined(separator: " · ")
     }
 
     var availableTargets: [FolioTarget] {
@@ -124,17 +126,24 @@ final class ConversionQueueViewModel: ObservableObject {
     }
 
     var conversionStatus: String {
-        if isBatchCancelling { return "Cancelling batch…" }
+        if isBatchCancelling { return FolioL10n.string("status.cancelling_batch", default: "Cancelling batch…") }
         if isBatchConverting, !plannedBatchIDs.isEmpty {
-            return "Converting \(min(max(currentBatchItemIndex, 1), plannedBatchIDs.count)) of \(plannedBatchIDs.count)"
+            return FolioL10n.format(
+                "status.converting_batch",
+                default: "Converting %@ of %@",
+                String(min(max(currentBatchItemIndex, 1), plannedBatchIDs.count)),
+                String(plannedBatchIDs.count)
+            )
         }
-        return convertingItems.first?.stage?.label ?? "Converting"
+        return convertingItems.first?.stage?.label ?? FolioL10n.string("status.converting", default: "Converting")
     }
 
     var outputDestinationDescription: String {
         if let outputFolder { return outputFolder.path }
-        if items.contains(where: { $0.sourceRoot != nil }) { return "FolioForge-output beside source folder" }
-        return "Same folder as each source"
+        if items.contains(where: { $0.sourceRoot != nil }) {
+            return FolioL10n.string("status.output_folioforge_folder", default: "FolioForge-output beside source folder")
+        }
+        return FolioL10n.string("status.output_same_folder", default: "Same folder as each source")
     }
 
     var degradationOptions: FolioDegradationOptions {
@@ -158,13 +167,18 @@ final class ConversionQueueViewModel: ObservableObject {
     }
 
     var preflightSummary: String {
-        guard !items.isEmpty else { return "No files" }
+        guard !items.isEmpty else { return FolioL10n.string("status.no_files", default: "No files") }
         let analyzed = items.filter(\.hasPreflightResult).count
         let exact = items.filter { $0.analysis?.plan.quality == .exact }.count
         let high = items.filter { $0.analysis?.plan.quality == .high }.count
         let compatible = items.filter { $0.analysis?.plan.quality == .compatible }.count
         let reduced = items.filter { $0.analysis?.plan.quality == .reduced || $0.analysis?.plan.quality == .severeLoss }.count
-        return "\(analyzed)/\(items.count) analyzed · \(exact) excellent · \(high) high fidelity · \(compatible) minor changes · \(reduced) fallback · \(preflightBlockedCount) blocked"
+        return FolioL10n.format(
+            "status.preflight_summary",
+            default: "Analyzed: %@/%@ · Excellent: %@ · High fidelity: %@ · Minor changes: %@ · Fallback: %@ · Blocked: %@",
+            String(analyzed), String(items.count), String(exact), String(high),
+            String(compatible), String(reduced), String(preflightBlockedCount)
+        )
     }
 
     var selectedCanConvert: Bool {
@@ -205,7 +219,7 @@ final class ConversionQueueViewModel: ObservableObject {
 
     func openFiles() {
         guard !supportedExtensions.isEmpty else {
-            lastError = "Folio Core input capabilities are not available yet. Try again in a moment."
+            lastError = FolioL10n.string("error.core_capabilities_unavailable", default: "Core input capabilities are not available yet. Try again in a moment.")
             loadCapabilities()
             return
         }
@@ -359,7 +373,7 @@ final class ConversionQueueViewModel: ObservableObject {
         let selection = items.filter { ids.contains($0.id) }
         guard !selection.isEmpty else { return }
         guard selection.allSatisfy(\.hasPreflightResult) else {
-            lastError = "Run Check for every selected book before starting a batch conversion."
+            lastError = FolioL10n.string("error.preflight_all_selected", default: "Run Check for every selected book before starting a batch conversion.")
             return
         }
 
@@ -370,11 +384,11 @@ final class ConversionQueueViewModel: ObservableObject {
         let blocked = selection.filter { $0.analysis?.plan.blocked != false }
         if batchMode == .strict && !blocked.isEmpty {
             markPreflightBlocked(blocked)
-            lastError = "Strict batch stopped during Preflight. Resolve every blocked item before converting."
+            lastError = FolioL10n.string("error.strict_preflight_blocked", default: "Strict batch stopped during Preflight. Resolve every blocked item before converting.")
             return
         }
         if candidates.isEmpty {
-            lastError = "There are no preflight-approved books ready to convert."
+            lastError = FolioL10n.string("error.no_approved_books", default: "There are no preflight-approved books ready to convert.")
             return
         }
 
@@ -525,7 +539,7 @@ final class ConversionQueueViewModel: ObservableObject {
 
     private func addFolder(_ folder: URL) {
         guard !isScanningFolder else {
-            lastError = "Wait for the current folder scan to finish before adding another folder."
+            lastError = FolioL10n.string("error.wait_folder_scan_add", default: "Wait for the current folder scan to finish before adding another folder.")
             return
         }
         let root = folder.standardizedFileURL
@@ -555,7 +569,7 @@ final class ConversionQueueViewModel: ObservableObject {
                     }
                     if self.selectedID == nil { self.selectedID = self.items.first?.id }
                 case .failure(let error):
-                    self.lastError = "Could not scan folder: \(error.localizedDescription)"
+                    self.lastError = FolioL10n.format("status.scan_folder_failed", default: "Could not scan folder: %@", error.localizedDescription)
                     if startedAccess {
                         self.releaseSourceFolder(root)
                     }
@@ -567,7 +581,7 @@ final class ConversionQueueViewModel: ObservableObject {
     private func preflight(ids: [BookItem.ID]) {
         guard !isPreflighting else { return }
         guard !isScanningFolder else {
-            lastError = "Wait for the current folder scan to finish before checking books."
+            lastError = FolioL10n.string("error.wait_folder_scan_check", default: "Wait for the current folder scan to finish before checking books.")
             return
         }
         let jobs = ids.compactMap { id -> (BookItem.ID, URL, FolioBookEditPlan)? in
@@ -575,7 +589,7 @@ final class ConversionQueueViewModel: ObservableObject {
             return (item.id, item.inputURL, item.editPlan)
         }
         guard !jobs.isEmpty else {
-            lastError = "Add at least one supported book file first."
+            lastError = FolioL10n.string("error.add_supported_book", default: "Add at least one supported book file first.")
             return
         }
 
@@ -659,7 +673,7 @@ final class ConversionQueueViewModel: ObservableObject {
         switch result {
         case .success(let report) where report.aborted && activeBatchMode == .strict:
             let message = report.items.compactMap(\.error).first
-                ?? "Strict batch aborted; successful outputs were rolled back."
+                ?? FolioL10n.string("status.batch_rolled_back", default: "Strict batch aborted; successful outputs were rolled back.")
             for id in itemIDs {
                 update(id) { item in
                     item.status = .failed
@@ -691,18 +705,28 @@ final class ConversionQueueViewModel: ObservableObject {
             for id in itemIDs where !reportedIDs.contains(id) {
                 update(id) { item in
                     item.status = .failed
-                    item.errorMessage = "Batch engine did not return a result for this book."
+                    item.errorMessage = FolioL10n.string("status.batch_missing_result", default: "Batch engine did not return a result for this book.")
                     item.stage = nil
                 }
             }
             if report.failed > 0 {
-                lastError = "\(report.failed) of \(itemIDs.count) books failed. See the queue for details."
+                lastError = FolioL10n.format(
+                    "status.batch_failed_summary",
+                    default: "Failed results / total: %@ / %@. See the queue for details.",
+                    String(report.failed), String(itemIDs.count)
+                )
             } else {
                 lastError = nil
             }
             NotificationService.send(
-                title: report.failed == 0 ? "Batch complete" : "Batch finished with errors",
-                body: "\(report.succeeded) converted · \(report.failed) failed",
+                title: report.failed == 0
+                    ? FolioL10n.string("status.batch_notification_success", default: "Batch complete")
+                    : FolioL10n.string("status.batch_notification_errors", default: "Batch finished with errors"),
+                body: FolioL10n.format(
+                    "status.conversion_notification_body",
+                    default: "Converted: %@ · failed: %@",
+                    String(report.succeeded), String(report.failed)
+                ),
                 identifier: UUID().uuidString
             )
         case .failure(let error):
@@ -729,7 +753,10 @@ final class ConversionQueueViewModel: ObservableObject {
     private func markPreflightBlocked(_ blocked: [BookItem]) {
         for item in blocked {
             let message = item.analysisError
-                ?? "Preflight blocked this item because the selected compatibility mode does not allow its degradation plan."
+                ?? FolioL10n.string(
+                    "status.fallback_blocked",
+                    default: "Preflight blocked this item because the selected compatibility mode does not allow its degradation plan."
+                )
             update(item.id) { current in
                 current.status = .failed
                 current.errorMessage = message
@@ -766,7 +793,10 @@ final class ConversionQueueViewModel: ObservableObject {
     private func userFacingAnalysisError(_ message: String, url: URL) -> String {
         if url.pathExtension.caseInsensitiveCompare("kfx") == .orderedSame
             && message.localizedCaseInsensitiveContains("compatibility container") {
-            return "This Amazon KFX input could not be imported into Folio Semantic IR. DRM-protected content is never decrypted; unsupported KFX structures are reported as input limitations."
+            return FolioL10n.string(
+                "status.kfx_import_limit",
+                default: "This Amazon KFX input could not be imported into Folio Semantic IR. DRM-protected content is never decrypted; unsupported KFX structures are reported as input limitations."
+            )
         }
         return message
     }

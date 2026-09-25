@@ -4,6 +4,10 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+# Local-only test modules resolve from the ignored repository-root tests/ tree.
+[features]
+maintainer-tests = []
+
 [dependencies]
 serde_json.workspace = true
 thiserror.workspace = true

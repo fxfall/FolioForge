@@ -622,61 +622,7 @@ fn allocate(next: &mut u32) -> folio_model::NodeId {
     id
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{ParagraphMode, TextImportMode};
-
-    #[test]
-    fn imports_plain_text_into_ir_with_chapters_and_navigation() {
-        let bytes = "第一章 初遇\n\n这是第一段。\n\n第二章 再会\n\n这是第二段。".as_bytes();
-        let result = import_bytes(
-            bytes,
-            Some("《书名》作者：作者.txt"),
-            &TextImportOptions {
-                mode: TextImportMode::Novel,
-                paragraph_mode: ParagraphMode::Auto,
-                ..TextImportOptions::default()
-            },
-        )
-        .unwrap();
-        assert_eq!(result.book.metadata.title.as_deref(), Some("书名"));
-        assert_eq!(result.book.metadata.author_names(), ["作者"]);
-        assert_eq!(result.book.navigation.toc.len(), 2);
-        assert!(result.book.documents[0]
-            .nodes
-            .iter()
-            .all(|node| matches!(node.kind, folio_model::NodeKind::Section)));
-    }
-
-    #[test]
-    fn ambiguous_encoding_requires_override_and_override_is_reported() {
-        let bytes = [0x81, 0x40, 0x81, 0x41, 0x81, 0x42];
-        let result = import_bytes(&bytes, None, &TextImportOptions::default());
-        assert!(matches!(
-            result,
-            Err(TextImportError::Decode(DecodeError::AmbiguousEncoding))
-        ));
-        let imported = import_bytes(
-            &bytes,
-            None,
-            &TextImportOptions {
-                encoding_override: Some(TextEncoding::Gb18030),
-                ..TextImportOptions::default()
-            },
-        )
-        .unwrap();
-        assert_eq!(
-            imported.report.encoding.evidence,
-            [EncodingEvidence::UserOverride]
-        );
-    }
-
-    #[test]
-    fn markdown_like_text_is_never_misreported_as_semantically_parsed() {
-        let bytes = b"# Title\n\n- one\n- two\n";
-        let result = import_bytes(bytes, Some("book.txt"), &TextImportOptions::default()).unwrap();
-        assert!(result.report.markdown_like);
-        assert!(!result.report.input_loss.is_empty());
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-text/src/import.rs"]
+mod tests;

@@ -71,21 +71,7 @@ fn safe_archive_path(path: &Path) -> String {
         .join("/")
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::io::Cursor;
-
-    #[test]
-    fn archive_always_contains_machine_readable_report() {
-        let mut bytes = Cursor::new(Vec::new());
-        write_archive_to(
-            &mut bytes,
-            &[(PathBuf::from("Series/Book.epub"), b"book".to_vec())],
-            &serde_json::json!({"ok": true}),
-        )
-        .unwrap();
-        let mut archive = zip::ZipArchive::new(Cursor::new(bytes.into_inner())).unwrap();
-        assert!(archive.by_name("FolioForge-report.json").is_ok());
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-archive/src/lib.rs"]
+mod tests;

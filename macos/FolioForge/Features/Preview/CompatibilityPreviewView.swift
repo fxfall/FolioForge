@@ -3,20 +3,22 @@ import SwiftUI
 import WebKit
 
 struct CompatibilityPreviewPane: View {
-    let bundle: FolioPreviewBundle?
+    let bundle: FolioReaderPreviewBundle?
     let isLoading: Bool
     let error: String?
     @Binding var settings: FolioPreviewSettings
     let refresh: () -> Void
+    let imageCache: FolioReaderImageCache
+    let imageSessionID: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                Label("Compatibility Preview", systemImage: FolioAction.preview.symbol.name)
+                Label(FolioL10n.string("ui.compatibility_preview", default: "Compatibility Preview"), systemImage: FolioAction.preview.symbol.name)
                     .font(.headline)
                 Spacer()
                 if let bundle {
-                    Text(bundle.target.label)
+                    Text(bundle.target?.label ?? FolioL10n.string("ui.semantic_ir", default: "Semantic IR"))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(bundle.blocked ? .orange : .secondary)
                         .lineLimit(1)
@@ -27,62 +29,64 @@ struct CompatibilityPreviewPane: View {
             .padding(.bottom, 12)
 
             HStack(spacing: 8) {
-                Picker("Reader", selection: $settings.device) {
+                Picker(FolioL10n.string("ui.reader", default: "Reader"), selection: $settings.device) {
                     ForEach(FolioPreviewDevice.allCases) { device in
                         Text(device.title).tag(device)
                     }
                 }
                 .pickerStyle(.menu)
                 .labelsHidden()
-                .accessibilityLabel("Reader device")
+                .accessibilityLabel(FolioL10n.string("ui.reader_device", default: "Reader device"))
                 .fixedSize()
 
-                Picker("Orientation", selection: $settings.orientation) {
+                Picker(FolioL10n.string("ui.orientation", default: "Orientation"), selection: $settings.orientation) {
                     ForEach(FolioPreviewOrientation.allCases) { orientation in
                         Text(orientation.title).tag(orientation)
                     }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .accessibilityLabel("Preview orientation")
+                .accessibilityLabel(FolioL10n.string("ui.preview_orientation", default: "Preview orientation"))
                 .fixedSize()
 
                 Spacer(minLength: 4)
 
                 Button {
                     settings.fontSizePercent = max(60, settings.fontSizePercent - 5)
-                } label: { Text("A−") }
+                } label: { Text(FolioL10n.string("ui.preview.decrease_text_size", default: "A−")) }
                 .buttonStyle(.borderless)
-                .help("Decrease preview text size")
+                .help(FolioL10n.string("ui.decrease_preview_text_size", default: "Decrease preview text size"))
                 Text("\(settings.fontSizePercent)%")
                     .font(.caption.monospacedDigit())
                     .frame(minWidth: 34)
                 Button {
                     settings.fontSizePercent = min(200, settings.fontSizePercent + 5)
-                } label: { Text("A+") }
+                } label: { Text(FolioL10n.string("ui.preview.increase_text_size", default: "A+")) }
                 .buttonStyle(.borderless)
-                .help("Increase preview text size")
+                .help(FolioL10n.string("ui.increase_preview_text_size", default: "Increase preview text size"))
                 Button(action: refresh) {
                     Image(folioSymbol: FolioAction.refreshPreview.symbol)
                 }
                 .buttonStyle(.borderless)
                 .disabled(isLoading)
-                .help("Refresh compatibility preview")
+                .help(FolioL10n.string("ui.refresh_compatibility_preview", default: "Refresh compatibility preview"))
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
 
             if let bundle {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(bundle.target.disclaimer)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text("\(bundle.target.viewportWidth) × \(bundle.target.viewportHeight) · \(bundle.target.device) · \(bundle.target.orientation)")
-                        .font(.caption2.monospaced())
-                        .foregroundStyle(.tertiary)
+                    if let target = bundle.target {
+                        Text(target.disclaimer)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text("\(target.viewportWidth) × \(target.viewportHeight) · \(target.device) · \(target.orientation)")
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.tertiary)
+                    }
                     if bundle.blocked {
-                        Label("The selected mode blocks this target. The source IR is shown without target projection.", systemImage: FolioSymbol.warning.name)
+                        Label(FolioL10n.string("ui.the_selected_mode_blocks_this_target_the_source_ir", default: "The selected mode blocks this target. The source IR is shown without target projection."), systemImage: FolioSymbol.warning.name)
                             .font(.caption)
                             .foregroundStyle(.orange)
                             .fixedSize(horizontal: false, vertical: true)
@@ -91,34 +95,50 @@ struct CompatibilityPreviewPane: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 11)
 
-                HTMLPreviewView(html: bundle.html)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(paperColor)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 10)
-                            .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
+                Group {
+                    switch bundle.content {
+                    case .reflowable(_, let html):
+                        HTMLPreviewView(html: html)
+                    case .fixedPage(let page):
+                        FolioReaderFixedPagePreview(
+                            page: page,
+                            imageCache: imageCache,
+                            sessionID: imageSessionID
+                        )
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 12)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(paperColor)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
+                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 12)
             } else {
                 VStack(spacing: 12) {
                     if isLoading {
-                        ProgressView("Preparing preview…")
+                        ProgressView(FolioL10n.string("ui.preparing_preview", default: "Preparing preview…"))
                             .controlSize(.regular)
                     } else {
                         Image(folioSymbol: .reader)
                             .font(.system(size: 34, weight: .light))
                             .foregroundStyle(.secondary)
-                        Text(error == nil ? "Preview is ready when you are" : "Preview could not be generated")
+                        Text(error == nil
+                            ? FolioL10n.string("preview.ready", default: "Preview is ready when you are")
+                            : FolioL10n.string("preview.failed", default: "Preview could not be generated"))
                             .font(.headline)
-                        Text(error ?? "This reader view is generated from the source IR, book edits, target profile, and compatibility plan.")
+                        Text(error ?? FolioL10n.string(
+                            "preview.explanation",
+                            default: "This reader view is generated from the source IR, book edits, target profile, and compatibility plan."
+                        ))
                             .font(.caption)
                             .foregroundStyle(error == nil ? Color.secondary : Color.red)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: 360)
-                        Button { refresh() } label: { Label("Generate Preview", systemImage: FolioAction.preview.symbol.name) }
+                        Button { refresh() } label: { Label(FolioL10n.string("ui.generate_preview", default: "Generate Preview"), systemImage: FolioAction.preview.symbol.name) }
                             .disabled(isLoading)
                     }
                 }
@@ -133,6 +153,72 @@ struct CompatibilityPreviewPane: View {
 
     private var paperColor: Color {
         Color(red: 0.975, green: 0.967, blue: 0.936)
+    }
+}
+
+private struct FolioReaderFixedPagePreview: View {
+    let page: FolioReaderPageModel
+    let imageCache: FolioReaderImageCache
+    let sessionID: String
+
+    var body: some View {
+        GeometryReader { proxy in
+            let viewportWidth = CGFloat(page.viewportSize.width)
+            let viewportHeight = CGFloat(page.viewportSize.height)
+            if viewportWidth > 0, viewportHeight > 0,
+               proxy.size.width > 0, proxy.size.height > 0 {
+                let scale = min(proxy.size.width / viewportWidth, proxy.size.height / viewportHeight)
+                ZStack(alignment: .topLeading) {
+                    ForEach(Array(page.placements.enumerated()), id: \.offset) { _, placement in
+                        if let image = imageCache.image(
+                            data: placement.resource.data,
+                            sessionID: sessionID,
+                            resourceID: placement.resource.resourceId
+                        ) {
+                            placedImage(image, placement: placement)
+                        }
+                    }
+                }
+                .frame(width: viewportWidth, height: viewportHeight, alignment: .topLeading)
+                .scaleEffect(scale, anchor: .topLeading)
+                .frame(width: viewportWidth * scale, height: viewportHeight * scale)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ProgressView(FolioL10n.string("ui.preparing_reader_page", default: "Preparing Reader page…"))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func placedImage(
+        _ image: NSImage,
+        placement: FolioReaderPlacement
+    ) -> some View {
+        let destination = placement.destination
+        let clipping = placement.clippingRect
+        let rendered = Image(nsImage: image)
+            .resizable()
+            .interpolation(.high)
+            .frame(width: CGFloat(destination.width), height: CGFloat(destination.height))
+
+        if placement.clipsToViewport {
+            rendered
+                .mask(alignment: .topLeading) {
+                    Rectangle()
+                        .frame(width: CGFloat(clipping.width), height: CGFloat(clipping.height))
+                        .offset(
+                            x: CGFloat(clipping.x - destination.x),
+                            y: CGFloat(clipping.y - destination.y)
+                        )
+                }
+                .offset(x: CGFloat(destination.x), y: CGFloat(destination.y))
+                .accessibilityLabel(placement.altText)
+        } else {
+            rendered
+                .offset(x: CGFloat(destination.x), y: CGFloat(destination.y))
+                .accessibilityLabel(placement.altText)
+        }
     }
 }
 

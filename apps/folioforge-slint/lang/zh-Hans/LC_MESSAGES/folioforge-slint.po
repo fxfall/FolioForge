@@ -1,0 +1,528 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: zh-Hans\n"
+
+msgctxt "app.brand"
+msgid "FolioForge"
+msgstr "FolioForge"
+
+msgctxt "status.ready"
+msgid "Ready"
+msgstr "就绪"
+
+msgctxt "status.checking"
+msgid "Checking compatibility…"
+msgstr "正在检查兼容性…"
+
+msgctxt "status.converting"
+msgid "Converting…"
+msgstr "正在转换…"
+
+msgctxt "status.completed"
+msgid "Completed"
+msgstr "已完成"
+
+msgctxt "status.blocked"
+msgid "Blocked"
+msgstr "受阻"
+
+msgctxt "status.failed"
+msgid "Failed"
+msgstr "失败"
+
+msgctxt "status.cancelled"
+msgid "Cancelled"
+msgstr "已取消"
+
+msgctxt "status.error"
+msgid "Operation failed"
+msgstr "操作失败"
+
+msgctxt "queue.empty"
+msgid "No files selected"
+msgstr "尚未选择文件"
+
+msgctxt "reader.empty"
+msgid "Select a book or page to preview"
+msgstr "选择书籍或页面以预览"
+
+msgctxt "reader.unsupported"
+msgid "This source has no supported fixed-page Reader view"
+msgstr "此来源没有受支持的固定页面阅读视图"
+
+msgctxt "common.select_source"
+msgid "Select a source"
+msgstr "选择一个来源"
+
+msgctxt "comic.empty"
+msgid "Open a CBZ, ZIP, or image folder to browse pages"
+msgstr "打开 CBZ、ZIP 或图片文件夹以浏览页面"
+
+msgctxt "about.title"
+msgid "About FolioForge"
+msgstr "关于 FolioForge"
+
+msgctxt "about.slint_license"
+msgid "This desktop application uses Slint under its Royalty-free Desktop, Mobile, and Web Applications License."
+msgstr "此桌面应用使用 Slint，并遵循其 Desktop、Mobile 与 Web Applications Royalty-free License。"
+
+msgctxt "navigation.books"
+msgid "Books"
+msgstr "书籍"
+
+msgctxt "navigation.reader"
+msgid "Reader"
+msgstr "阅读器"
+
+msgctxt "navigation.comics"
+msgid "Comics"
+msgstr "漫画"
+
+msgctxt "navigation.settings"
+msgid "Settings"
+msgstr "设置"
+
+msgctxt "action.check"
+msgid "Check"
+msgstr "检查"
+
+msgctxt "status.working"
+msgid "Working…"
+msgstr "正在处理…"
+
+msgctxt "action.convert_approved"
+msgid "Convert approved"
+msgstr "转换已通过项目"
+
+msgctxt "action.about"
+msgid "About"
+msgstr "关于"
+
+msgctxt "queue.heading"
+msgid "Sources"
+msgstr "来源"
+
+msgctxt "action.add_files"
+msgid "Add files…"
+msgstr "添加文件…"
+
+msgctxt "action.add_folder"
+msgid "Add folder…"
+msgstr "添加文件夹…"
+
+msgctxt "action.open_comic"
+msgid "Open Comic…"
+msgstr "打开漫画…"
+
+msgctxt "action.remove"
+msgid "Remove"
+msgstr "移除"
+
+msgctxt "comic.page_list"
+msgid "Comic pages"
+msgstr "漫画页面"
+
+msgctxt "queue.book_list"
+msgid "Book queue"
+msgstr "书籍队列"
+
+msgctxt "conversion.output_folder"
+msgid "Output folder"
+msgstr "输出文件夹"
+
+msgctxt "action.choose_folder"
+msgid "Choose…"
+msgstr "选择…"
+
+msgctxt "action.check_all"
+msgid "Check all"
+msgstr "全部检查"
+
+msgctxt "workspace.conversion"
+msgid "Conversion"
+msgstr "转换"
+
+msgctxt "workspace.comic"
+msgid "Comic workspace"
+msgstr "漫画工作区"
+
+msgctxt "action.preflight_selected"
+msgid "Preflight selected"
+msgstr "预检所选项"
+
+msgctxt "action.cancel"
+msgid "Cancel"
+msgstr "取消"
+
+msgctxt "conversion.deterministic_output"
+msgid "Deterministic output"
+msgstr "确定性输出"
+
+msgctxt "reader.previous"
+msgid "Previous"
+msgstr "上一页"
+
+msgctxt "reader.next"
+msgid "Next"
+msgstr "下一页"
+
+msgctxt "comic.previous_page"
+msgid "Previous page"
+msgstr "上一页"
+
+msgctxt "comic.next_page"
+msgid "Next page"
+msgstr "下一页"
+
+msgctxt "comic.export_cbz"
+msgid "Export CBZ"
+msgstr "导出 CBZ"
+
+msgctxt "conversion.deterministic_output"
+msgid "Write deterministic files"
+msgstr "写入确定性文件"
+
+msgctxt "settings.core_authority"
+msgid "Format support and conversion behavior come from Folio Core. Interface language is a frontend preference."
+msgstr "格式支持与转换行为由 Folio Core 提供。界面语言属于前端偏好设置。"
+
+msgctxt "text.import"
+msgid "Text import"
+msgstr "文本导入"
+
+msgctxt "text.structure"
+msgid "Structure"
+msgstr "结构"
+
+msgctxt "text.paragraphs"
+msgid "Paragraphs"
+msgstr "段落"
+
+msgctxt "text.encoding"
+msgid "Encoding override"
+msgstr "编码覆盖"
+
+msgctxt "text.title_override"
+msgid "Title override"
+msgstr "标题覆盖"
+
+msgctxt "text.author_override"
+msgid "Author override"
+msgstr "作者覆盖"
+
+msgctxt "text.auto"
+msgid "Auto"
+msgstr "自动"
+
+msgctxt "text.novel"
+msgid "Novel"
+msgstr "小说"
+
+msgctxt "text.markdown"
+msgid "Markdown"
+msgstr "Markdown"
+
+msgctxt "text.plain"
+msgid "Plain"
+msgstr "纯文本"
+
+msgctxt "paragraph.auto"
+msgid "Automatic"
+msgstr "自动"
+
+msgctxt "paragraph.blank_line"
+msgid "Blank lines"
+msgstr "空行分段"
+
+msgctxt "paragraph.every_line"
+msgid "Every line"
+msgstr "每行成段"
+
+msgctxt "paragraph.indented"
+msgid "Indented paragraphs"
+msgstr "缩进段落"
+
+msgctxt "paragraph.hard_wrap"
+msgid "Hard-wrapped text"
+msgstr "硬换行文本"
+
+msgctxt "text.encoding_auto"
+msgid "Automatic"
+msgstr "自动"
+
+msgctxt "text.options_note"
+msgid "These settings apply to TXT inputs. Ambiguous encodings stay unresolved until you select an override."
+msgstr "这些设置仅适用于 TXT 输入。编码不明确时会保持未解析，直到你选择覆盖编码。"
+
+msgctxt "about.slint_attribution"
+msgid "About Slint"
+msgstr "关于 Slint"
+
+msgctxt "workspace.inspector"
+msgid "Inspector"
+msgstr "检查器"
+
+msgctxt "action.close"
+msgid "Close"
+msgstr "关闭"
+
+msgctxt "language.system"
+msgid "System default"
+msgstr "跟随系统"
+
+msgctxt "language.english"
+msgid "English"
+msgstr "英语"
+
+msgctxt "language.simplified_chinese"
+msgid "Simplified Chinese"
+msgstr "简体中文"
+
+msgctxt "mode.strict"
+msgid "Strict"
+msgstr "严格"
+
+msgctxt "mode.compatible"
+msgid "Compatible"
+msgstr "兼容"
+
+msgctxt "mode.readable"
+msgid "Readable"
+msgstr "可读"
+
+msgctxt "compression.none"
+msgid "None"
+msgstr "无"
+
+msgctxt "compression.palmdoc"
+msgid "PalmDOC"
+msgstr "PalmDOC"
+
+msgctxt "batch.best_effort"
+msgid "Best effort"
+msgstr "尽力处理"
+
+msgctxt "batch.strict"
+msgid "Strict batch"
+msgstr "严格批次"
+
+msgctxt "reader.content.fit"
+msgid "Fit"
+msgstr "适合窗口"
+
+msgctxt "reader.content.fill"
+msgid "Fill"
+msgstr "填满窗口"
+
+msgctxt "reader.content.actual_size"
+msgid "Actual size"
+msgstr "实际大小"
+
+msgctxt "reader.direction.ltr"
+msgid "Left to right"
+msgstr "从左到右"
+
+msgctxt "reader.direction.rtl"
+msgid "Right to left"
+msgstr "从右到左"
+
+msgctxt "reader.spread.single"
+msgid "Single page"
+msgstr "单页"
+
+msgctxt "reader.spread.two_page"
+msgid "Two-page spread"
+msgstr "双页跨页"
+
+msgctxt "settings.compatibility"
+msgid "Compatibility"
+msgstr "兼容模式"
+
+msgctxt "settings.compression"
+msgid "Compression"
+msgstr "压缩"
+
+msgctxt "settings.batch_mode"
+msgid "Batch behavior"
+msgstr "批处理策略"
+
+msgctxt "settings.linearize_tables"
+msgid "Linearize complex tables"
+msgstr "将复杂表格线性化"
+
+msgctxt "settings.prefer_rasterization"
+msgid "Prefer rasterization"
+msgstr "优先栅格化"
+
+msgctxt "settings.strip_fonts"
+msgid "Strip embedded fonts"
+msgstr "移除嵌入字体"
+
+msgctxt "reader.display_mode"
+msgid "Display"
+msgstr "显示方式"
+
+msgctxt "reader.direction"
+msgid "Reading direction"
+msgstr "阅读方向"
+
+msgctxt "reader.spread"
+msgid "Spread"
+msgstr "跨页"
+
+msgctxt "settings.language"
+msgid "Language"
+msgstr "界面语言"
+
+msgctxt "action.open_comic_folder"
+msgid "Open Comic Folder…"
+msgstr "打开漫画文件夹…"
+
+msgctxt "reader.page_of"
+msgid "Page {} of {}"
+msgstr "第 {} 页，共 {} 页"
+
+msgctxt "dialog.open_books"
+msgid "Open books"
+msgstr "打开图书"
+
+msgctxt "dialog.supported_books"
+msgid "Supported book formats"
+msgstr "支持的图书格式"
+
+msgctxt "dialog.select_folder"
+msgid "Select a folder"
+msgstr "选择文件夹"
+
+msgctxt "dialog.open_comic"
+msgid "Open a comic source"
+msgstr "打开漫画源"
+
+msgctxt "dialog.save_comic"
+msgid "Export comic"
+msgstr "导出漫画"
+
+msgctxt "dialog.comic_output"
+msgid "Comic output"
+msgstr "漫画输出"
+
+msgctxt "comic.summary"
+msgid "{} · {} · pages: {}"
+msgstr "{} · {} · 页数：{}"
+
+msgctxt "preflight.complete"
+msgid "Preflight complete"
+msgstr "预检完成"
+
+msgctxt "preflight.blocked"
+msgid "Some sources are blocked by the selected compatibility policy"
+msgstr "所选兼容策略阻止了部分来源"
+
+msgctxt "conversion.preflight_required"
+msgid "Run preflight and select an approved source before converting."
+msgstr "请先运行预检并选择通过预检的来源，再进行转换。"
+
+msgctxt "conversion.strict_batch_required"
+msgid "Strict batch requires all queued sources to pass preflight."
+msgstr "严格批处理要求队列中的所有来源均通过预检。"
+
+msgctxt "conversion.count_summary"
+msgid "Succeeded: {} · failed: {}"
+msgstr "成功：{} · 失败：{}"
+
+msgctxt "comic.export"
+msgid "Export"
+msgstr "导出"
+
+msgctxt "comic.authors"
+msgid "By {}"
+msgstr "作者：{}"
+
+msgctxt "comic.reading_direction"
+msgid "Reading direction: {}"
+msgstr "阅读方向：{}"
+
+msgctxt "reader.pan_left"
+msgid "Pan left"
+msgstr "向左平移"
+
+msgctxt "reader.pan_up"
+msgid "Pan up"
+msgstr "向上平移"
+
+msgctxt "reader.pan_down"
+msgid "Pan down"
+msgstr "向下平移"
+
+msgctxt "reader.pan_right"
+msgid "Pan right"
+msgstr "向右平移"
+
+msgctxt "action.convert_selected"
+msgid "Convert selected"
+msgstr "转换所选项目"
+
+msgctxt "action.convert_all_approved"
+msgid "Convert all approved"
+msgstr "转换所有已通过项目"
+
+msgctxt "progress.opening"
+msgid "Opening"
+msgstr "正在打开"
+
+msgctxt "progress.parsing"
+msgid "Parsing"
+msgstr "正在解析"
+
+msgctxt "progress.normalizing"
+msgid "Normalizing"
+msgstr "正在规范化"
+
+msgctxt "progress.resolving_styles"
+msgid "Resolving styles"
+msgstr "正在解析样式"
+
+msgctxt "progress.processing_resources"
+msgid "Processing resources"
+msgstr "正在处理资源"
+
+msgctxt "progress.lowering"
+msgid "Preparing target representation"
+msgstr "正在准备目标表示"
+
+msgctxt "progress.building_indexes"
+msgid "Building indexes"
+msgstr "正在构建索引"
+
+msgctxt "progress.encoding"
+msgid "Encoding"
+msgstr "正在编码"
+
+msgctxt "progress.writing"
+msgid "Writing"
+msgstr "正在写入"
+
+msgctxt "progress.validating"
+msgid "Validating"
+msgstr "正在验证"
+
+msgctxt "progress.finished"
+msgid "Finished"
+msgstr "已完成"
+
+msgctxt "progress.count"
+msgid "{} / {}"
+msgstr "{} / {}"
+
+msgctxt "reader.zoom_percent"
+msgid "{}%"
+msgstr "{}%"
+
+msgctxt "reader.zoom_in"
+msgid "Zoom in"
+msgstr "放大"
+
+msgctxt "reader.zoom_out"
+msgid "Zoom out"
+msgstr "缩小"

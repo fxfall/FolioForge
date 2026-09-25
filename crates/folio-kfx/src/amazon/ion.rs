@@ -447,41 +447,7 @@ fn read_integer(bytes: &[u8], negative: bool, offset: usize) -> Result<i64, IonE
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn parses_binary_ion_values_with_nested_structures() {
-        // Version marker, a two-field struct, then an annotated string.
-        let bytes = [
-            0xe0, 0x01, 0x00, 0xea, 0xde, 0x87, 0x83, 0x21, 0x2a, 0x84, 0x82, b'o', b'k', 0xe0,
-            0x01, 0x00, 0xea, 0xee, 0x84, 0x81, 0x8a, 0x81, b'x',
-        ];
-        let values = decode_datagram(&bytes).expect("valid Ion datagram");
-        assert_eq!(values.len(), 2);
-        assert_eq!(struct_get(&values[0], 3), Some(&IonValue::Int(42)));
-        assert_eq!(
-            struct_get(&values[0], 4),
-            Some(&IonValue::String("ok".to_owned()))
-        );
-        assert!(matches!(values[1], IonValue::Annotation { .. }));
-    }
-
-    #[test]
-    fn rejects_truncated_and_out_of_range_values_without_panicking() {
-        for bytes in [
-            &[0xde, 0x82, 0x81][..],
-            &[0x8e, 0x83, b'a'][..],
-            &[0x2e, 0x81, 0x00][..],
-        ] {
-            assert!(decode_datagram(bytes).is_err());
-        }
-    }
-
-    #[test]
-    fn accepts_empty_lists_and_zero_width_integers() {
-        let values = decode_datagram(&[0xb0, 0x20]).expect("valid Ion values");
-        assert_eq!(values, vec![IonValue::List(Vec::new()), IonValue::Int(0)]);
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../../tests/unit/crates/folio-kfx/src/amazon/ion.rs"]
+mod tests;

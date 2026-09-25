@@ -129,12 +129,14 @@ struct SemanticBookSnapshot {
             let byteCount = string(resource["size"]).flatMap(UInt64.init)
             return SemanticFontRow(
                 id: id,
-                family: family.isEmpty ? "Unknown family" : family,
-                style: "Not declared",
-                mediaType: mediaType.isEmpty ? "Unknown format" : mediaType,
+                family: family.isEmpty ? FolioL10n.string("inspector.unknown_family", default: "Unknown family") : family,
+                style: FolioL10n.string("inspector.not_declared", default: "Not declared"),
+                mediaType: mediaType.isEmpty ? FolioL10n.string("inspector.unknown_format", default: "Unknown format") : mediaType,
                 path: path,
                 byteCount: byteCount,
-                usedBy: face == nil ? "Not mapped in source IR" : "Referenced by source font face"
+                usedBy: face == nil
+                    ? FolioL10n.string("inspector.not_mapped_in_source_ir", default: "Not mapped in source IR")
+                    : FolioL10n.string("inspector.referenced_by_source_font_face", default: "Referenced by source font face")
             )
         }
     }

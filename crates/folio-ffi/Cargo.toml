@@ -7,12 +7,18 @@ license.workspace = true
 [lib]
 crate-type = ["cdylib", "staticlib", "rlib"]
 
+# Local-only test modules resolve from the ignored repository-root tests/ tree.
+[features]
+maintainer-tests = []
+
 [dependencies]
+base64.workspace = true
 folio-batch = { path = "../folio-batch" }
 folio-core = { path = "../folio-core" }
 folio-edit = { path = "../folio-edit" }
 folio-model = { path = "../folio-model" }
 folio-online = { path = "../folio-online" }
+folio-reader = { path = "../folio-reader" }
 folio-text = { path = "../folio-text" }
 serde.workspace = true
 serde_json.workspace = true

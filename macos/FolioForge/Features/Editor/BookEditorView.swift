@@ -9,7 +9,14 @@ enum EditorSection: String, CaseIterable, Identifiable, Hashable {
     case structure
 
     var id: String { rawValue }
-    var title: String { rawValue.capitalized }
+    var title: String {
+        switch self {
+        case .summary: FolioL10n.string("editor.section.summary", default: "Summary")
+        case .metadata: FolioL10n.string("ui.metadata", default: "Metadata")
+        case .appearance: FolioL10n.string("editor.section.appearance", default: "Appearance")
+        case .structure: FolioL10n.string("ui.structure", default: "Structure")
+        }
+    }
     var symbol: FolioSymbol {
         switch self {
         case .summary: .summary
@@ -27,7 +34,14 @@ enum AppearancePage: String, CaseIterable, Identifiable, Hashable {
     case styles
 
     var id: String { rawValue }
-    var title: String { rawValue.capitalized }
+    var title: String {
+        switch self {
+        case .cover: FolioL10n.string("ui.cover", default: "Cover")
+        case .typography: FolioL10n.string("ui.typography", default: "Typography")
+        case .fonts: FolioL10n.string("ui.fonts", default: "Fonts")
+        case .styles: FolioL10n.string("ui.styles", default: "Styles")
+        }
+    }
     var symbol: FolioSymbol {
         switch self {
         case .cover: .cover
@@ -45,7 +59,14 @@ enum BulkEditSection: String, CaseIterable, Identifiable, Hashable {
     case styles
 
     var id: String { rawValue }
-    var title: String { rawValue.capitalized }
+    var title: String {
+        switch self {
+        case .output: FolioL10n.string("ui.output", default: "Output")
+        case .typography: FolioL10n.string("ui.typography", default: "Typography")
+        case .fonts: FolioL10n.string("ui.fonts", default: "Fonts")
+        case .styles: FolioL10n.string("ui.styles", default: "Styles")
+        }
+    }
 }
 
 @MainActor
@@ -142,7 +163,7 @@ struct BookEditorPane: View {
                 .padding(.top, 14)
                 .padding(.bottom, 12)
 
-            Picker("Editor Section", selection: $section) {
+            Picker(FolioL10n.string("ui.editor_section", default: "Editor Section"), selection: $section) {
                 ForEach(EditorSection.allCases) { value in
                     Text(value.title).tag(value)
                 }
@@ -293,7 +314,7 @@ struct BookEditorPane: View {
     @ViewBuilder
     private var appearanceEditor: some View {
         VStack(spacing: 0) {
-            Picker("Appearance Page", selection: $appearancePage) {
+            Picker(FolioL10n.string("ui.appearance_page", default: "Appearance Page"), selection: $appearancePage) {
                 ForEach(AppearancePage.allCases) { value in
                     Text(value.title).tag(value)
                 }
@@ -461,9 +482,9 @@ private enum CoverMode: String, CaseIterable, Identifiable, Hashable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .preserve: "Preserve Source"
-        case .fit: "Fit"
-        case .fill: "Fill / Crop"
+        case .preserve: FolioL10n.string("ui.preserve_source", default: "Preserve Source")
+        case .fit: FolioL10n.string("cover.fit", default: "Fit")
+        case .fill: FolioL10n.string("cover.fill_crop", default: "Fill / Crop")
         }
     }
 }
@@ -507,31 +528,38 @@ private struct SummaryEditorPage: View {
 
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text("Compatibility")
+                        Text(FolioL10n.string("ui.compatibility", default: "Compatibility"))
                             .font(.headline)
                         Spacer()
                         StatusBadge(
-                            title: analysis?.plan.quality.displayName ?? "Not checked",
+                            title: analysis?.plan.quality.displayName ?? FolioL10n.string("status.target_not_checked", default: "Not checked"),
                             color: analysis.map { $0.plan.blocked ? .orange : qualityColor($0.plan.quality) } ?? .secondary
                         )
                     }
                     if let analysis {
                         Text(analysis.plan.blocked
-                            ? "This target is blocked in \(mode.displayName) mode. Review the plan in Inspector or change the mode."
+                            ? FolioL10n.format(
+                                "status.target_blocked",
+                                default: "This target is blocked in %@ mode. Review the plan in Inspector or change the mode.",
+                                mode.displayName
+                            )
                             : analysis.plan.quality.userSummary)
                             .font(.callout)
                             .foregroundStyle(analysis.plan.blocked ? .orange : .secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     } else {
-                        Text(isLoading ? "Reading and validating the source…" : "Check compatibility to see the target-specific plan.")
+                        Text(FolioL10n.string(
+                            isLoading ? "editor.reading_validating_source" : "editor.check_compatibility_prompt",
+                            default: isLoading ? "Reading and validating the source…" : "Check compatibility to see the target-specific plan."
+                        ))
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
                     HStack(spacing: 14) {
-                        PipelineStatus(title: "Parser", isReady: report != nil, isLoading: isLoading)
-                        PipelineStatus(title: "Semantic IR", isReady: report?.semanticReport.valid == true, isLoading: isLoading)
+                        PipelineStatus(title: FolioL10n.string("inspector.parser", default: "Parser"), isReady: report != nil, isLoading: isLoading)
+                        PipelineStatus(title: FolioL10n.string("ui.semantic_ir", default: "Semantic IR"), isReady: report?.semanticReport.valid == true, isLoading: isLoading)
                         if let analysis, !analysis.plan.items.isEmpty {
-                            Label("\(analysis.plan.items.count) adjustments", systemImage: FolioSymbol.warning.name)
+                        Label(FolioL10n.format("error.adjustment_count", default: "Adjustments: %@", String(analysis.plan.items.count)), systemImage: FolioSymbol.warning.name)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -540,18 +568,18 @@ private struct SummaryEditorPage: View {
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Output")
+                    Text(FolioL10n.string("ui.output", default: "Output"))
                         .font(.headline)
-                    SettingsRow(label: "Format") { Text(target.displayName) }
-                    SettingsRow(label: "Mode") { Text(mode.displayName) }
-                    SettingsRow(label: "Destination") {
+                    SettingsRow(label: FolioL10n.string("inspector.format", default: "Format")) { Text(target.displayName) }
+                    SettingsRow(label: FolioL10n.string("ui.mode", default: "Mode")) { Text(mode.displayName) }
+                    SettingsRow(label: FolioL10n.string("inspector.destination", default: "Destination")) {
                         Text(outputPath)
                             .lineLimit(1)
                             .truncationMode(.middle)
                             .foregroundStyle(.secondary)
                     }
                     if let output = item.report?.outputReport {
-                        SettingsRow(label: "Last output") {
+                        SettingsRow(label: FolioL10n.string("inspector.last_output", default: "Last output")) {
                             Text("\(output.format) · \(ByteCountFormatter.string(fromByteCount: Int64(clamping: output.size), countStyle: .file))")
                                 .foregroundStyle(.secondary)
                         }
@@ -565,7 +593,7 @@ private struct SummaryEditorPage: View {
                     HStack {
                         Spacer()
                         Button(action: convert) {
-                            Label("Convert", systemImage: FolioAction.convert.symbol.name)
+                            Label(FolioL10n.string("ui.convert", default: "Convert"), systemImage: FolioAction.convert.symbol.name)
                         }
                         .buttonStyle(.borderedProminent)
                         .disabled(!canConvert)
@@ -626,63 +654,63 @@ private struct MetadataEditorPage: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                Text("Metadata")
+                Text(FolioL10n.string("ui.metadata", default: "Metadata"))
                     .font(.title2.weight(.semibold))
-                EditorSectionBlock(title: "General") {
-                    SettingsRow(label: "Title") {
+                EditorSectionBlock(title: FolioL10n.string("editor.general", default: "General")) {
+                    SettingsRow(label: FolioL10n.string("ui.title", default: "Title")) {
                         TextField("", text: scalarBinding(\.title, source: snapshot.title, field: "title"))
-                            .accessibilityLabel("Title")
+                            .accessibilityLabel(FolioL10n.string("ui.title", default: "Title"))
                     }
-                    SettingsRow(label: "Subtitle") {
+                    SettingsRow(label: FolioL10n.string("ui.subtitle", default: "Subtitle")) {
                         TextField("", text: scalarBinding(\.subtitle, source: snapshot.subtitle, field: "subtitle"))
-                            .accessibilityLabel("Subtitle")
+                            .accessibilityLabel(FolioL10n.string("ui.subtitle", default: "Subtitle"))
                     }
-                    SettingsRow(label: "Authors") {
-                        TokenChipEditor(tokens: listBinding(\.authors, source: snapshot.authors, field: "authors"), placeholder: "Add author")
+                    SettingsRow(label: FolioL10n.string("online.field.authors", default: "Authors")) {
+                        TokenChipEditor(tokens: listBinding(\.authors, source: snapshot.authors, field: "authors"), placeholder: FolioL10n.string("editor.add_author", default: "Add author"))
                     }
-                    SettingsRow(label: "Language") {
+                    SettingsRow(label: FolioL10n.string("ui.language", default: "Language")) {
                         TextField("", text: scalarBinding(\.language, source: snapshot.language, field: "language"))
-                            .accessibilityLabel("Language")
+                            .accessibilityLabel(FolioL10n.string("ui.language", default: "Language"))
                     }
                 }
 
-                EditorSectionBlock(title: "Publishing") {
-                    SettingsRow(label: "Publisher") {
+                EditorSectionBlock(title: FolioL10n.string("editor.publishing", default: "Publishing")) {
+                    SettingsRow(label: FolioL10n.string("ui.publisher", default: "Publisher")) {
                         TextField("", text: scalarBinding(\.publisher, source: snapshot.publisher, field: "publisher"))
-                            .accessibilityLabel("Publisher")
+                            .accessibilityLabel(FolioL10n.string("ui.publisher", default: "Publisher"))
                     }
-                    SettingsRow(label: "Published") {
+                    SettingsRow(label: FolioL10n.string("ui.published", default: "Published")) {
                         TextField("", text: scalarBinding(\.date, source: snapshot.date, field: "date"))
-                            .accessibilityLabel("Published")
+                            .accessibilityLabel(FolioL10n.string("ui.published", default: "Published"))
                     }
-                    SettingsRow(label: "Series") {
+                    SettingsRow(label: FolioL10n.string("ui.series", default: "Series")) {
                         TextField("", text: scalarBinding(\.series, source: snapshot.series, field: "series"))
-                            .accessibilityLabel("Series")
+                            .accessibilityLabel(FolioL10n.string("ui.series", default: "Series"))
                     }
-                    SettingsRow(label: "Series number") {
+                    SettingsRow(label: FolioL10n.string("ui.series_number", default: "Series number")) {
                         TextField("", text: seriesIndexBinding)
-                            .accessibilityLabel("Series number")
+                            .accessibilityLabel(FolioL10n.string("ui.series_number", default: "Series number"))
                             .frame(maxWidth: 120)
                     }
-                    SettingsRow(label: "Rights") {
+                    SettingsRow(label: FolioL10n.string("ui.rights", default: "Rights")) {
                         TextField("", text: scalarBinding(\.rights, source: snapshot.rights, field: "rights"))
-                            .accessibilityLabel("Rights")
+                            .accessibilityLabel(FolioL10n.string("ui.rights", default: "Rights"))
                     }
-                    SettingsRow(label: "Contributors") {
-                        TokenChipEditor(tokens: listBinding(\.contributors, source: snapshot.contributors, field: "contributors"), placeholder: "Add contributor")
-                    }
-                }
-
-                EditorSectionBlock(title: "Identifiers & Subjects") {
-                    SettingsRow(label: "Subjects") {
-                        TokenChipEditor(tokens: listBinding(\.subjects, source: snapshot.subjects, field: "subjects"), placeholder: "Add subject")
-                    }
-                    SettingsRow(label: "Identifiers") {
-                        TokenChipEditor(tokens: listBinding(\.identifiers, source: snapshot.identifiers, field: "identifiers"), placeholder: "Add ISBN or identifier")
+                    SettingsRow(label: FolioL10n.string("online.field.contributors", default: "Contributors")) {
+                        TokenChipEditor(tokens: listBinding(\.contributors, source: snapshot.contributors, field: "contributors"), placeholder: FolioL10n.string("editor.add_contributor", default: "Add contributor"))
                     }
                 }
 
-                EditorSectionBlock(title: "Description") {
+                EditorSectionBlock(title: FolioL10n.string("editor.identifiers_subjects", default: "Identifiers & Subjects")) {
+                    SettingsRow(label: FolioL10n.string("online.field.subjects", default: "Subjects")) {
+                        TokenChipEditor(tokens: listBinding(\.subjects, source: snapshot.subjects, field: "subjects"), placeholder: FolioL10n.string("editor.add_subject", default: "Add subject"))
+                    }
+                    SettingsRow(label: FolioL10n.string("online.field.identifiers", default: "Identifiers")) {
+                        TokenChipEditor(tokens: listBinding(\.identifiers, source: snapshot.identifiers, field: "identifiers"), placeholder: FolioL10n.string("editor.add_identifier", default: "Add ISBN or identifier"))
+                    }
+                }
+
+                EditorSectionBlock(title: FolioL10n.string("online.field.description", default: "Description")) {
                     TextEditor(text: scalarBinding(\.description, source: snapshot.description, field: "description"))
                         .font(.body)
                         .frame(minHeight: 112)
@@ -694,18 +722,18 @@ private struct MetadataEditorPage: View {
                 HStack {
                     Spacer()
                     Button(action: searchOnline) {
-                        Label("Find Metadata Online", systemImage: FolioAction.findMetadata.symbol.name)
+                        Label(FolioL10n.string("ui.find_metadata_online", default: "Find Metadata Online"), systemImage: FolioAction.findMetadata.symbol.name)
                     }
                     .disabled(snapshot.title.isEmpty && snapshot.authors.isEmpty && snapshot.identifiers.isEmpty)
                 }
-                Text("Search Open Library in FolioForge. Only the search terms are sent; book files are never uploaded.")
+                Text(FolioL10n.string("ui.search_open_library_in_folioforge_only_the_search_terms", default: "Search Open Library in FolioForge. Only the search terms are sent; book files are never uploaded."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                DisclosureGroup("Advanced metadata") {
-                    TokenChipEditor(tokens: clearFieldsBinding, placeholder: "Add a source field to clear")
+                DisclosureGroup(FolioL10n.string("ui.advanced_metadata", default: "Advanced metadata")) {
+                    TokenChipEditor(tokens: clearFieldsBinding, placeholder: FolioL10n.string("editor.add_source_field_to_clear", default: "Add a source field to clear"))
                         .padding(.top, 8)
-                    Text("Use field names such as title, authors, description, or rights to remove source values.")
+                    Text(FolioL10n.string("ui.use_field_names_such_as_title_authors_description_or", default: "Use field names such as title, authors, description, or rights to remove source values."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .padding(.top, 4)
@@ -784,7 +812,7 @@ private struct CoverEditorPage: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Text("Cover")
+                Text(FolioL10n.string("ui.cover", default: "Cover"))
                     .font(.title2.weight(.semibold))
                 HStack(alignment: .center, spacing: 20) {
                     previewImage
@@ -795,8 +823,8 @@ private struct CoverEditorPage: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         HStack(spacing: 8) {
-                            Button { chooseCover() } label: { Label("Replace…", systemImage: FolioAction.replaceCover.symbol.name) }
-                            Button { searchOnline() } label: { Label("Find Online", systemImage: FolioAction.findCover.symbol.name) }
+                            Button { chooseCover() } label: { Label(FolioL10n.string("ui.replace", default: "Replace…"), systemImage: FolioAction.replaceCover.symbol.name) }
+                            Button { searchOnline() } label: { Label(FolioL10n.string("ui.find_online", default: "Find Online"), systemImage: FolioAction.findCover.symbol.name) }
                         }
                         .buttonStyle(.bordered)
                     }
@@ -804,14 +832,14 @@ private struct CoverEditorPage: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                EditorSectionBlock(title: "Image Fitting") {
-                    Picker("Image fitting", selection: $mode) {
+                EditorSectionBlock(title: FolioL10n.string("ui.image_fitting", default: "Image fitting")) {
+                    Picker(FolioL10n.string("ui.image_fitting", default: "Image fitting"), selection: $mode) {
                         ForEach(CoverMode.allCases) { value in
                             Text(value.title).tag(value)
                         }
                     }
                     .pickerStyle(.segmented)
-                    Text("Fit and Fill/Crop apply to a replacement image. Preserve Source keeps the original cover unchanged.")
+                    Text(FolioL10n.string("ui.fit_and_fill_crop_apply_to_a_replacement_image", default: "Fit and Fill/Crop apply to a replacement image. Preserve Source keeps the original cover unchanged."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -827,10 +855,10 @@ private struct CoverEditorPage: View {
                     Button(role: .destructive) {
                         edits.cover = .remove
                     } label: {
-                        Label("Remove Cover", systemImage: FolioAction.removeCover.symbol.name)
+                        Label(FolioL10n.string("ui.remove_cover", default: "Remove Cover"), systemImage: FolioAction.removeCover.symbol.name)
                     }
                 }
-                Text("Online cover search opens image results in your browser. Review usage rights before importing a cover.")
+                Text(FolioL10n.string("ui.online_cover_search_opens_image_results_in_your_browser", default: "Online cover search opens image results in your browser. Review usage rights before importing a cover."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -868,16 +896,16 @@ private struct CoverEditorPage: View {
 
     private var coverTitle: String {
         switch edits.cover {
-        case .keep: "Source cover"
-        case .remove: "No cover"
+        case .keep: FolioL10n.string("cover.source", default: "Source cover")
+        case .remove: FolioL10n.string("cover.none", default: "No cover")
         case .replace(let name, _, _, _): name
         }
     }
 
     private var coverDetail: String {
         switch edits.cover {
-        case .keep: return "Original cover preserved"
-        case .remove: return "Cover will be removed from the output"
+        case .keep: return FolioL10n.string("cover.preserved", default: "Original cover preserved")
+        case .remove: return FolioL10n.string("cover.removed", default: "Cover will be removed from the output")
         case .replace(let name, let mediaType, let bytes, _):
             let dimensions = NSImage(data: Data(bytes))?.size
             let resolution = dimensions.map { "\(Int($0.width)) × \(Int($0.height))" } ?? "Image"
@@ -894,37 +922,37 @@ private struct TypographyEditorPage: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
-                Text("Typography")
+                Text(FolioL10n.string("ui.typography", default: "Typography"))
                     .font(.title2.weight(.semibold))
-                Text("Source typography is preserved by default. Choose Auto or Custom only when you want to override it.")
+                Text(FolioL10n.string("ui.source_typography_is_preserved_by_default_choose_auto_or", default: "Source typography is preserved by default. Choose Auto or Custom only when you want to override it."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
-                EditorSectionBlock(title: "Body Text") {
+                EditorSectionBlock(title: FolioL10n.string("editor.body_text", default: "Body Text")) {
                     TypographyValueRow(
-                        title: "Font family",
+                        title: FolioL10n.string("editor.font_family", default: "Font family"),
                         value: $edits.typography.fontFamily,
                         autoLabel: nil
                     )
                     TypographyValueRow(
-                        title: "Body size",
+                        title: FolioL10n.string("editor.body_size", default: "Body size"),
                         value: $edits.typography.bodyFontSize,
                         autoLabel: "Auto"
                     )
                     TypographyValueRow(
-                        title: "Line height",
+                        title: FolioL10n.string("editor.line_height", default: "Line height"),
                         value: $edits.typography.lineHeight,
                         autoLabel: "Auto"
                     )
                     TypographyValueRow(
-                        title: "Letter spacing",
+                        title: FolioL10n.string("editor.letter_spacing", default: "Letter spacing"),
                         value: $edits.typography.letterSpacing,
                         autoLabel: "Auto"
                     )
                 }
 
                 if !canEdit {
-                    Label("Typography controls are unavailable during conversion or compatibility checking.", systemImage: FolioSymbol.lock.name)
+                    Label(FolioL10n.string("ui.typography_controls_are_unavailable_during_conversion_or_compatibility_c", default: "Typography controls are unavailable during conversion or compatibility checking."), systemImage: FolioSymbol.lock.name)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -978,9 +1006,9 @@ private struct TypographyValueRow: View {
         VStack(alignment: .leading, spacing: 6) {
             SettingsRow(label: title) {
                 Picker(title, selection: choice) {
-                    Text("Preserve Source").tag("preserve")
+                    Text(FolioL10n.string("ui.preserve_source", default: "Preserve Source")).tag("preserve")
                     if autoLabel != nil { Text(autoLabel!).tag("auto") }
-                    Text("Custom").tag("custom")
+                    Text(FolioL10n.string("ui.custom", default: "Custom")).tag("custom")
                 }
                 .labelsHidden()
                 .pickerStyle(.menu)
@@ -1010,13 +1038,13 @@ private struct FontsEditorPage: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Text("Fonts")
+                Text(FolioL10n.string("ui.fonts", default: "Fonts"))
                     .font(.title2.weight(.semibold))
                 if fonts.isEmpty {
                     VStack(spacing: 8) {
                         Image(folioSymbol: .onlineFont).font(.title2).foregroundStyle(.secondary)
-                        Text("No Embedded Fonts").font(.headline)
-                        Text("This source does not declare any embedded font resources.")
+                        Text(FolioL10n.string("ui.no_embedded_fonts", default: "No Embedded Fonts")).font(.headline)
+                        Text(FolioL10n.string("ui.this_source_does_not_declare_any_embedded_font_resources", default: "This source does not declare any embedded font resources."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -1024,31 +1052,31 @@ private struct FontsEditorPage: View {
                     .frame(maxWidth: .infinity, minHeight: 170)
                 } else {
                     Table(fonts, selection: $selection) {
-                        TableColumn("Family") { font in Text(font.family).lineLimit(1) }
-                        TableColumn("Style") { font in Text(font.style).foregroundStyle(.secondary) }
-                        TableColumn("Size") { font in Text(font.sizeDescription).monospacedDigit() }
+                        TableColumn(FolioL10n.string("ui.family", default: "Family")) { font in Text(font.family).lineLimit(1) }
+                        TableColumn(FolioL10n.string("ui.style", default: "Style")) { font in Text(font.style).foregroundStyle(.secondary) }
+                        TableColumn(FolioL10n.string("ui.size", default: "Size")) { font in Text(font.sizeDescription).monospacedDigit() }
                     }
                     .frame(minHeight: min(CGFloat(fonts.count) * 30 + 36, 250))
                 }
 
                 HStack(spacing: 8) {
-                    Button { chooseFont() } label: { Label("Add Local Font…", systemImage: FolioAction.addFont.symbol.name) }
-                    Button { searchOnline() } label: { Label("Find Font Online", systemImage: FolioAction.findFont.symbol.name) }
+                    Button { chooseFont() } label: { Label(FolioL10n.string("ui.add_local_font", default: "Add Local Font…"), systemImage: FolioAction.addFont.symbol.name) }
+                    Button { searchOnline() } label: { Label(FolioL10n.string("ui.find_font_online", default: "Find Font Online"), systemImage: FolioAction.findFont.symbol.name) }
                 }
                 .buttonStyle(.bordered)
 
-                EditorSectionBlock(title: "Font Policy") {
-                    SettingsRow(label: "Preferred family") {
-                        TextField("Reader font family", text: optionalBinding(\.preferredFamily, in: $edits.fonts))
+                EditorSectionBlock(title: FolioL10n.string("editor.font_policy", default: "Font Policy")) {
+                    SettingsRow(label: FolioL10n.string("editor.preferred_family", default: "Preferred family")) {
+                        TextField(FolioL10n.string("ui.reader_font_family", default: "Reader font family"), text: optionalBinding(\.preferredFamily, in: $edits.fonts))
                     }
-                    Toggle("Strip embedded fonts", isOn: $edits.fonts.stripEmbeddedFonts)
+                    Toggle(FolioL10n.string("ui.strip_embedded_fonts", default: "Strip embedded fonts"), isOn: $edits.fonts.stripEmbeddedFonts)
                     if let replacement = edits.fonts.replacement {
                         HStack {
                             Label(replacement.fileName, systemImage: FolioSymbol.onlineFont.name)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
                             Spacer()
-                            Button { edits.fonts.replacement = nil } label: { Label("Remove Replacement", systemImage: FolioAction.removeReplacement.symbol.name) }
+                            Button { edits.fonts.replacement = nil } label: { Label(FolioL10n.string("ui.remove_replacement", default: "Remove Replacement"), systemImage: FolioAction.removeReplacement.symbol.name) }
                                 .buttonStyle(.borderless)
                         }
                     }
@@ -1059,7 +1087,7 @@ private struct FontsEditorPage: View {
                         .font(.caption)
                         .foregroundStyle(.red)
                 }
-                Text("Online font search opens Google Fonts in your browser. Review its license before use. Source font details are shown in Inspector when a row is selected.")
+                Text(FolioL10n.string("ui.online_font_search_opens_google_fonts_in_your_browser", default: "Online font search opens Google Fonts in your browser. Review its license before use. Source font details are shown in Inspector when a row is selected."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1087,15 +1115,15 @@ private struct StylesEditorPage: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text("Styles")
+                Text(FolioL10n.string("ui.styles", default: "Styles"))
                     .font(.title2.weight(.semibold))
-                Label("Source styles are preserved unless you add an override.", systemImage: FolioSymbol.check.name)
+                Label(FolioL10n.string("ui.source_styles_are_preserved_unless_you_add_an_override", default: "Source styles are preserved unless you add an override."), systemImage: FolioSymbol.check.name)
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
-                EditorSectionBlock(title: "Style Rules") {
+                EditorSectionBlock(title: FolioL10n.string("ui.styles", default: "Styles")) {
                     if edits.styles.filter({ $0.css == nil }).isEmpty {
-                        Text("No style overrides added.")
+                        Text(FolioL10n.string("ui.no_style_overrides_added", default: "No style overrides added."))
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     } else {
@@ -1112,36 +1140,36 @@ private struct StylesEditorPage: View {
                                     Button {
                                         edits.styles.remove(at: index)
                                     } label: {
-                                        Label("Remove", systemImage: FolioAction.removeItem.symbol.name)
+                                        Label(FolioL10n.string("ui.remove", default: "Remove"), systemImage: FolioAction.removeItem.symbol.name)
                                     }
                                     .labelStyle(.iconOnly)
                                     .buttonStyle(.borderless)
-                                    .help("Remove this style rule")
+                                    .help(FolioL10n.string("ui.remove_this_style_rule", default: "Remove this style rule"))
                                 }
                                 .padding(.vertical, 3)
                             }
                         }
                     }
 
-                    Button { ruleOpen.toggle() } label: { Label("Add Rule", systemImage: FolioAction.addStyleRule.symbol.name) }
+                    Button { ruleOpen.toggle() } label: { Label(FolioL10n.string("ui.add_rule", default: "Add Rule"), systemImage: FolioAction.addStyleRule.symbol.name) }
                         .buttonStyle(.bordered)
 
                     if ruleOpen {
                         VStack(alignment: .leading, spacing: 10) {
-                            Picker("Apply to", selection: $role) {
-                                Text("Heading").tag("Heading")
-                                Text("Paragraph").tag("Paragraph")
-                                Text("Chapter").tag("Chapter")
-                                Text("Quote").tag("Quote")
+                            Picker(FolioL10n.string("ui.apply_to", default: "Apply to"), selection: $role) {
+                                Text(FolioL10n.string("ui.heading", default: "Heading")).tag("Heading")
+                                Text(FolioL10n.string("ui.paragraph", default: "Paragraph")).tag("Paragraph")
+                                Text(FolioL10n.string("ui.chapter", default: "Chapter")).tag("Chapter")
+                                Text(FolioL10n.string("ui.quote", default: "Quote")).tag("Quote")
                             }
                             .frame(maxWidth: 220)
-                            Picker("Rule", selection: $kind) {
+                            Picker(FolioL10n.string("ui.rule", default: "Rule"), selection: $kind) {
                                 ForEach(StyleRuleKind.allCases) { value in Text(value.title).tag(value) }
                             }
                             .frame(maxWidth: 260)
                             HStack {
                                 Spacer()
-                                Button("Add Style Rule") {
+                                Button(FolioL10n.string("ui.add_style_rule", default: "Add Style Rule")) {
                                     edits.styles.append(FolioStyleEdit(role: role, properties: [kind.property: kind.value]))
                                     ruleOpen = false
                                 }
@@ -1153,7 +1181,7 @@ private struct StylesEditorPage: View {
                     }
                 }
 
-                DisclosureGroup("Advanced CSS") {
+                DisclosureGroup(FolioL10n.string("ui.advanced_css", default: "Advanced CSS")) {
                     TextEditor(text: cssBinding)
                         .font(.system(.body, design: .monospaced))
                         .frame(minHeight: 130)
@@ -1163,7 +1191,7 @@ private struct StylesEditorPage: View {
                         .padding(.top, 8)
                 }
                 .font(.subheadline.weight(.medium))
-                Text("Custom CSS is applied as an explicit style override during the IR edit pass.")
+                Text(FolioL10n.string("ui.custom_css_is_applied_as_an_explicit_style_override", default: "Custom CSS is applied as an explicit style override during the IR edit pass."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1193,9 +1221,9 @@ private enum StyleRuleKind: String, CaseIterable, Identifiable, Hashable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .center: "Center text"
-        case .bold: "Bold"
-        case .indent: "First-line indent"
+        case .center: FolioL10n.string("editor.style.center", default: "Center text")
+        case .bold: FolioL10n.string("editor.style.bold", default: "Bold")
+        case .indent: FolioL10n.string("editor.style.indent", default: "First-line indent")
         }
     }
     var property: String {
@@ -1223,37 +1251,37 @@ private struct StructureEditorPage: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text("Structure")
+                Text(FolioL10n.string("ui.structure", default: "Structure"))
                     .font(.title2.weight(.semibold))
-                Text("Review the reading order, document titles, and navigation labels before export.")
+                Text(FolioL10n.string("ui.review_the_reading_order_document_titles_and_navigation_labels", default: "Review the reading order, document titles, and navigation labels before export."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
-                EditorSectionBlock(title: "Reading Order") {
+                EditorSectionBlock(title: FolioL10n.string("editor.reading_order", default: "Reading Order")) {
                     if snapshot.documents.isEmpty {
-                        Text("No document structure is available in the source report.")
+                        Text(FolioL10n.string("ui.no_document_structure_is_available_in_the_source_report", default: "No document structure is available in the source report."))
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     } else {
                         Table(orderedDocuments, selection: $localState.selectedDocumentID) {
-                            TableColumn("Document") { document in
+                            TableColumn(FolioL10n.string("ui.document", default: "Document")) { document in
                                 TextField(document.title, text: documentTitleBinding(document))
                                     .textFieldStyle(.plain)
                             }
-                            TableColumn("Source") { document in
+                            TableColumn(FolioL10n.string("ui.source", default: "Source")) { document in
                                 Text(document.href).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                             }
-                            TableColumn("Order") { document in
+                            TableColumn(FolioL10n.string("ui.order", default: "Order")) { document in
                                 HStack(spacing: 4) {
                                     Button { moveDocument(document.id, by: -1) } label: {
                                         Image(folioSymbol: .moveUp)
                                     }
-                                    .help("Move earlier")
+                                    .help(FolioL10n.string("ui.move_earlier", default: "Move earlier"))
                                     .disabled(orderIndex(for: document.id) == 0)
                                     Button { moveDocument(document.id, by: 1) } label: {
                                         Image(folioSymbol: .moveDown)
                                     }
-                                    .help("Move later")
+                                    .help(FolioL10n.string("ui.move_later", default: "Move later"))
                                     .disabled(orderIndex(for: document.id) == snapshot.documents.count - 1)
                                 }
                                 .buttonStyle(.borderless)
@@ -1263,22 +1291,22 @@ private struct StructureEditorPage: View {
                     }
                 }
 
-                EditorSectionBlock(title: "Table of Contents") {
+                EditorSectionBlock(title: FolioL10n.string("editor.table_of_contents", default: "Table of Contents")) {
                     if snapshot.navigation.isEmpty {
-                        Text("No table of contents was detected.")
+                        Text(FolioL10n.string("ui.no_table_of_contents_was_detected", default: "No table of contents was detected."))
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     } else {
                         ForEach(snapshot.navigation) { entry in
                             SettingsRow(label: String(repeating: "  ", count: entry.depth) + entry.label) {
-                                TextField("Navigation label", text: navigationBinding(entry))
+                                TextField(FolioL10n.string("ui.navigation_label", default: "Navigation label"), text: navigationBinding(entry))
                             }
                         }
                     }
                 }
 
-                Toggle("Remove navigation from output", isOn: $edits.structure.removeNavigation)
-                Text("Structure changes are applied to the semantic IR before target compatibility planning.")
+                Toggle(FolioL10n.string("ui.remove_navigation_from_output", default: "Remove navigation from output"), isOn: $edits.structure.removeNavigation)
+                Text(FolioL10n.string("ui.structure_changes_are_applied_to_the_semantic_ir_before", default: "Structure changes are applied to the semantic IR before target compatibility planning."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1344,13 +1372,13 @@ struct BulkEditPane: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 14) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("Bulk Edit")
+                    Text(FolioL10n.string("ui.bulk_edit", default: "Bulk Edit"))
                         .font(.title2.weight(.semibold))
-                    Text("\(count) Books Selected")
+                    Text(FolioL10n.format("error.books_selected", default: "Selected books: %@", String(count)))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
-                Picker("Bulk Edit Section", selection: $draft.section) {
+                Picker(FolioL10n.string("ui.bulk_edit_section", default: "Bulk Edit Section"), selection: $draft.section) {
                     ForEach(BulkEditSection.allCases) { section in
                         Text(section.title).tag(section)
                     }
@@ -1368,57 +1396,57 @@ struct BulkEditPane: View {
                 Group {
                     switch draft.section {
                     case .output:
-                        EditorSectionBlock(title: "Output") {
-                            SettingsRow(label: "Format") { Text(target.displayName) }
-                            SettingsRow(label: "Mode") { Text(mode.displayName) }
-                            SettingsRow(label: "Destination") { Text(queue.outputDestinationDescription).lineLimit(2) }
-                            Text("Target and compatibility settings apply to the whole batch from the toolbar.")
+                        EditorSectionBlock(title: FolioL10n.string("ui.output", default: "Output")) {
+                            SettingsRow(label: FolioL10n.string("inspector.format", default: "Format")) { Text(target.displayName) }
+                            SettingsRow(label: FolioL10n.string("ui.mode", default: "Mode")) { Text(mode.displayName) }
+                            SettingsRow(label: FolioL10n.string("inspector.destination", default: "Destination")) { Text(queue.outputDestinationDescription).lineLimit(2) }
+                            Text(FolioL10n.string("ui.target_and_compatibility_settings_apply_to_the_whole_batch", default: "Target and compatibility settings apply to the whole batch from the toolbar."))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     case .typography:
-                        EditorSectionBlock(title: "Typography") {
-                            Toggle("Apply font family", isOn: $draft.applyFontFamily)
+                        EditorSectionBlock(title: FolioL10n.string("ui.typography", default: "Typography")) {
+                            Toggle(FolioL10n.string("ui.apply_font_family", default: "Apply font family"), isOn: $draft.applyFontFamily)
                             if draft.applyFontFamily {
-                                LabeledContent("Font family") {
-                                    TextField("", text: $draft.fontFamily)
+                            LabeledContent(FolioL10n.string("editor.font_family", default: "Font family")) {
+                                TextField("", text: $draft.fontFamily)
                                         .frame(maxWidth: 240)
                                 }
                             }
-                            Toggle("Apply body size", isOn: $draft.applyBodySize)
+                            Toggle(FolioL10n.string("ui.apply_body_size", default: "Apply body size"), isOn: $draft.applyBodySize)
                             if draft.applyBodySize {
-                                LabeledContent("Body size") {
+                            LabeledContent(FolioL10n.string("editor.body_size", default: "Body size")) {
                                     TextField("", text: $draft.bodySize)
                                         .frame(maxWidth: 160)
                                 }
                             }
-                            Toggle("Apply line height", isOn: $draft.applyLineHeight)
+                            Toggle(FolioL10n.string("ui.apply_line_height", default: "Apply line height"), isOn: $draft.applyLineHeight)
                             if draft.applyLineHeight {
-                                LabeledContent("Line height") {
+                            LabeledContent(FolioL10n.string("editor.line_height", default: "Line height")) {
                                     TextField("", text: $draft.lineHeight)
                                         .frame(maxWidth: 160)
                                 }
                             }
                         }
                     case .fonts:
-                        EditorSectionBlock(title: "Fonts") {
-                            Toggle("Set embedded-font policy", isOn: $draft.applyFontPolicy)
+                        EditorSectionBlock(title: FolioL10n.string("ui.fonts", default: "Fonts")) {
+                            Toggle(FolioL10n.string("ui.set_embedded_font_policy", default: "Set embedded-font policy"), isOn: $draft.applyFontPolicy)
                             if draft.applyFontPolicy {
-                                Picker("Policy", selection: $draft.stripEmbeddedFonts) {
-                                    Text("Keep embedded fonts").tag(false)
-                                    Text("Remove embedded fonts").tag(true)
+                                Picker(FolioL10n.string("ui.policy", default: "Policy"), selection: $draft.stripEmbeddedFonts) {
+                                    Text(FolioL10n.string("ui.keep_embedded_fonts", default: "Keep embedded fonts")).tag(false)
+                                    Text(FolioL10n.string("ui.remove_embedded_fonts", default: "Remove embedded fonts")).tag(true)
                                 }
                                 .pickerStyle(.segmented)
                             }
                         }
                     case .styles:
-                        EditorSectionBlock(title: "Styles") {
-                            Toggle("Apply a heading rule", isOn: $draft.applyHeadingStyle)
+                        EditorSectionBlock(title: FolioL10n.string("ui.styles", default: "Styles")) {
+                            Toggle(FolioL10n.string("ui.apply_a_heading_rule", default: "Apply a heading rule"), isOn: $draft.applyHeadingStyle)
                             if draft.applyHeadingStyle {
-                                Picker("Heading alignment", selection: $draft.headingStyle) {
-                                    Text("Center").tag("center")
-                                    Text("Left").tag("left")
-                                    Text("Right").tag("right")
+                                Picker(FolioL10n.string("ui.heading_alignment", default: "Heading alignment"), selection: $draft.headingStyle) {
+                                    Text(FolioL10n.string("ui.center", default: "Center")).tag("center")
+                                    Text(FolioL10n.string("ui.left", default: "Left")).tag("left")
+                                    Text(FolioL10n.string("ui.right", default: "Right")).tag("right")
                                 }
                                 .frame(maxWidth: 240)
                             }
@@ -1439,13 +1467,15 @@ struct BulkEditPane: View {
                         .foregroundStyle(.green)
                         .lineLimit(2)
                 } else {
-                    Text("Only enabled changes are applied. Each updated book must be checked again.")
+                    Text(FolioL10n.string("ui.only_enabled_changes_are_applied_each_updated_book_must", default: "Only enabled changes are applied. Each updated book must be checked again."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
                 Spacer(minLength: 8)
-                Button { apply() } label: { Label("Apply to \(count) Books", systemImage: FolioAction.applyBulkEdit.symbol.name) }
+                Button { apply() } label: {
+                    Label(FolioL10n.format("error.apply_to_books", default: "Apply to %@ books", String(count)), systemImage: FolioAction.applyBulkEdit.symbol.name)
+                }
                     .buttonStyle(.borderedProminent)
                     .disabled(!draft.hasChanges || queue.isPreflighting || queue.isBatchConverting || queue.hasActiveConversions)
             }
@@ -1517,7 +1547,7 @@ private struct TokenChipEditor: View {
                                     .foregroundStyle(.tertiary)
                             }
                             .buttonStyle(.plain)
-                            .help("Remove \(tokens[index])")
+                            .help(FolioL10n.format("error.remove_token", default: "Remove %@", tokens[index]))
                         }
                         .font(.caption)
                         .padding(.horizontal, 9)
@@ -1531,12 +1561,12 @@ private struct TokenChipEditor: View {
                     .textFieldStyle(.plain)
                     .onSubmit(addToken)
                 Button(action: addToken) {
-                    Label("Add", systemImage: FolioAction.addToken.symbol.name)
+                    Label(FolioL10n.string("ui.add", default: "Add"), systemImage: FolioAction.addToken.symbol.name)
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
                 .disabled(localState.entry.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .help("Add value")
+                .help(FolioL10n.string("ui.add_value", default: "Add value"))
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 7)

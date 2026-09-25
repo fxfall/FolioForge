@@ -14,6 +14,41 @@ use folio_model::{
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+/// Comic archive target IDs exposed by the single compatibility authority.
+/// This remains separate from ebook `Format`: a comic target is not a
+/// reflowable-book capability profile.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ComicOutputTarget {
+    Cbz,
+}
+
+impl ComicOutputTarget {
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::Cbz => "CBZ",
+        }
+    }
+
+    pub const fn extension(self) -> &'static str {
+        match self {
+            Self::Cbz => "cbz",
+        }
+    }
+
+    pub const fn display_name(self) -> &'static str {
+        match self {
+            Self::Cbz => "Comic Book ZIP",
+        }
+    }
+}
+
+/// Comic targets whose output semantics have an implemented Core path.
+/// Device-specific variants must be added only with a Core-owned profile.
+pub const fn comic_output_targets() -> [ComicOutputTarget; 1] {
+    [ComicOutputTarget::Cbz]
+}
+
 #[derive(Clone, Copy, Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum DegradationMode {
     Strict,
@@ -979,87 +1014,7 @@ fn find_node(book: &Book, id: NodeId) -> Option<&Node> {
     None
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use folio_model::{ComputedStyle, Document, DocumentId, Metadata, Node, NodeKind};
-
-    fn book_with(kind: NodeKind) -> Book {
-        let mut book = Book::new();
-        book.metadata = Metadata {
-            title: Some("compat".to_owned()),
-            ..Metadata::default()
-        };
-        let style = book.styles.intern(ComputedStyle::default());
-        book.documents.push(Document {
-            id: DocumentId::new(0),
-            href: "chapter.xhtml".to_owned(),
-            media_type: "application/xhtml+xml".to_owned(),
-            title: None,
-            nodes: vec![Node::new(NodeId::new(0), kind, style, Vec::new())],
-        });
-        book
-    }
-
-    #[test]
-    fn kf7_ruby_has_a_reported_approximation_and_is_projected() {
-        let book = book_with(NodeKind::Ruby);
-        let plan = plan(
-            &book,
-            Format::Kf7,
-            DegradationMode::Compatible,
-            &Default::default(),
-        );
-        assert!(plan.items.iter().any(|item| item.feature == Feature::Ruby));
-        let projected = project(&book, &plan).unwrap();
-        assert!(matches!(
-            projected.documents[0].nodes[0].kind,
-            NodeKind::Inline
-        ));
-    }
-
-    #[test]
-    fn strict_rejects_a_structural_fallback() {
-        let mut book = book_with(NodeKind::Table);
-        book.presentation.layout = LayoutMode::Fixed;
-        let plan = plan(
-            &book,
-            Format::Kf7,
-            DegradationMode::Strict,
-            &Default::default(),
-        );
-        assert!(plan.blocked);
-        assert!(project(&book, &plan).is_err());
-    }
-
-    #[test]
-    fn fallback_chain_is_ordered_and_svg_report_matches_projection() {
-        let chain = fallback_chain(Feature::Ruby);
-        assert!(chain
-            .windows(2)
-            .all(|steps| steps[0].quality.rank() < steps[1].quality.rank()));
-
-        let book = book_with(NodeKind::Svg {
-            resource: None,
-            alt: "accessible vector".to_owned(),
-        });
-        let plan = plan(
-            &book,
-            Format::Kf7,
-            DegradationMode::Compatible,
-            &Default::default(),
-        );
-        let svg = plan
-            .items
-            .iter()
-            .find(|item| item.feature == Feature::Svg)
-            .unwrap();
-        assert_eq!(svg.quality, QualityLevel::CompatibleApproximation);
-        assert!(svg.selected_fallback.contains("alt text"));
-        let projected = project(&book, &plan).unwrap();
-        assert!(matches!(
-            projected.documents[0].nodes[0].kind,
-            NodeKind::Text { .. }
-        ));
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-compat/src/lib.rs"]
+mod tests;

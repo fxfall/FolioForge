@@ -42,6 +42,50 @@ case "$BUNDLE_BUILD_VERSION" in
         exit 2
         ;;
 esac
+
+# Local packaging signs with an available keychain identity by default.
+# Hosted public workflows must explicitly set this to "none" so a runner
+# can never sign or publish with an imported maintainer certificate.
+CODESIGN_REQUEST=${FOLIOFORGE_CODESIGN_IDENTITY:-auto}
+SIGNING_IDENTITY=
+case "$CODESIGN_REQUEST" in
+    auto)
+        DEVELOPER_ID_IDENTITIES=$(security find-identity -v -p codesigning 2>/dev/null \
+            | awk '/^[[:space:]]*[0-9]+\)/ && /Developer ID Application:/ { print $2 }')
+        APPLE_DEV_IDENTITIES=$(security find-identity -v -p codesigning 2>/dev/null \
+            | awk '/^[[:space:]]*[0-9]+\)/ && /Apple Development:/ { print $2 }')
+        DEVELOPER_ID_COUNT=$(printf '%s\n' "$DEVELOPER_ID_IDENTITIES" | awk 'NF { n++ } END { print n + 0 }')
+        APPLE_DEV_COUNT=$(printf '%s\n' "$APPLE_DEV_IDENTITIES" | awk 'NF { n++ } END { print n + 0 }')
+        if [ "$DEVELOPER_ID_COUNT" -eq 1 ]; then
+            SIGNING_IDENTITY=$DEVELOPER_ID_IDENTITIES
+        elif [ "$DEVELOPER_ID_COUNT" -gt 1 ]; then
+            printf '%s\n' "Multiple Developer ID identities found; set FOLIOFORGE_CODESIGN_IDENTITY explicitly" >&2
+            exit 2
+        elif [ "$APPLE_DEV_COUNT" -eq 1 ]; then
+            SIGNING_IDENTITY=$APPLE_DEV_IDENTITIES
+        elif [ "$APPLE_DEV_COUNT" -gt 1 ]; then
+            printf '%s\n' "Multiple Apple Development identities found; set FOLIOFORGE_CODESIGN_IDENTITY explicitly" >&2
+            exit 2
+        else
+            printf '%s\n' "No valid local signing identity found; set FOLIOFORGE_CODESIGN_IDENTITY=none only for an intentionally unsigned build" >&2
+            exit 2
+        fi
+        ;;
+    none|unsigned)
+        ;;
+    -)
+        printf '%s\n' "Ad-hoc signing is not supported; select a keychain identity or use none for an unsigned build" >&2
+        exit 2
+        ;;
+    *)
+        SIGNING_IDENTITY=$CODESIGN_REQUEST
+        ;;
+esac
+if [ -n "$SIGNING_IDENTITY" ]; then
+    SIGNING_MODE=signed
+else
+    SIGNING_MODE=unsigned
+fi
 if [ "$BUNDLE_BUILD_VERSION" -lt 1 ]; then
     printf '%s\n' "CFBundleVersion must be positive, found $BUNDLE_BUILD_VERSION" >&2
     exit 2
@@ -72,10 +116,8 @@ mkdir -p "$CARGO_TARGET_DIR" "$TMPDIR" "$FOLIOFORGE_TEMP_ROOT"
 
 PHASE=rust-format
 cargo fmt --all -- --check
-PHASE=rust-tests
-cargo test --workspace --locked
 PHASE=rust-clippy
-cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo clippy --workspace --lib --bins --locked -- -D warnings
 
 # The release artifact is always Apple Silicon. Use the native arm64 build
 # path on Apple Silicon runners (the same path exercised by the macOS CI job).
@@ -161,12 +203,6 @@ cp packaging/FolioForge-Info.plist "$CONTENTS/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :LSMinimumSystemVersion $MACOS_TARGET_VERSION" \
     "$CONTENTS/Info.plist"
 
-# The Apple linker may add an ad-hoc signature to a freshly linked executable.
-# This project ships source/unsigned development artifacts only, so remove
-# that linker metadata without ever invoking certificate-based signing.
-PHASE=app-signature-removal
-codesign --remove-signature "$CONTENTS/MacOS/FolioForge" 2>/dev/null || true
-
 ICONSET="$STAGING/FolioForge.iconset"
 PHASE=icon-generation
 mkdir -p "$ICONSET"
@@ -192,10 +228,18 @@ PHASE=app-deployment-version-check
 test "$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$CONTENTS/Info.plist")" = "$MACOS_TARGET_VERSION"
 PHASE=app-content-executable
 test -x "$CONTENTS/MacOS/FolioForge"
-PHASE=app-content-signature
-if codesign -dv "$CONTENTS/MacOS/FolioForge" >/dev/null 2>&1; then
-    printf '%s\n' "Unexpected code signature in unsigned app executable" >&2
-    exit 2
+PHASE=app-signing
+if [ "$SIGNING_MODE" = signed ]; then
+    codesign --force --sign "$SIGNING_IDENTITY" --timestamp=none "$APP"
+    codesign --verify --deep --strict "$APP"
+else
+    # The Apple linker may add an ad-hoc signature to a freshly linked
+    # executable. Public GitHub artifacts are explicitly unsigned.
+    codesign --remove-signature "$CONTENTS/MacOS/FolioForge" 2>/dev/null || true
+    if codesign -dv "$CONTENTS/MacOS/FolioForge" >/dev/null 2>&1; then
+        printf '%s\n' "Unexpected code signature in unsigned app executable" >&2
+        exit 2
+    fi
 fi
 PHASE=app-content-bundle-logo
 test -f "$RESOURCE_BUNDLE/Contents/Resources/folioforge-logo.png"
@@ -227,3 +271,4 @@ cp "$STAGING/README.md" "$FINAL_DIR/README.md"
 cp "$STAGING/FolioForge-macOS-arm64-0.1.0.zip" "$FINAL_ZIP"
 
 printf '%s\n' "Built and validated: $FINAL_APP" "$FINAL_ZIP"
+printf '%s\n' "Code-signing mode: $SIGNING_MODE"

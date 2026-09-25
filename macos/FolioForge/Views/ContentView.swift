@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 @MainActor
 final class ContentViewState: ObservableObject {
     @Published var inspectReport: FolioInspectReport?
-    @Published var previewBundle: FolioPreviewBundle?
+    @Published var previewBundle: FolioReaderPreviewBundle?
     @Published var detailError: String?
     @Published var previewError: String?
     @Published var isLoadingDetails = false
@@ -19,6 +19,7 @@ final class ContentViewState: ObservableObject {
     @Published var selectedFontID: String?
     @Published var inspectorSection: InspectorTab = .output
     @Published var bulkEditMessage: String?
+    let previewImageCache = FolioReaderImageCache()
 
     var lastSelectionKey: String?
     var previewTask: Task<Void, Never>?
@@ -54,13 +55,13 @@ struct ContentView: View {
             .sheet(isPresented: $queue.showingCapabilities) {
                 CapabilityMatrixView().environmentObject(queue)
             }
-            .alert("FolioForge", isPresented: Binding(
+            .alert(FolioL10n.string("ui.folioforge", default: "FolioForge"), isPresented: Binding(
                 get: { queue.lastError != nil },
                 set: { if !$0 { queue.lastError = nil } }
             )) {
-                Button("OK") { queue.lastError = nil }
+                Button(FolioL10n.string("ui.ok", default: "OK")) { queue.lastError = nil }
             } message: {
-                Text(queue.lastError ?? "Unknown error")
+                Text(queue.lastError ?? FolioL10n.string("error.unknown", default: "Unknown error"))
             }
     }
 
@@ -130,7 +131,9 @@ struct ContentView: View {
                             isLoading: state.isLoadingPreview,
                             error: state.previewError,
                             settings: $state.previewSettings,
-                            refresh: requestPreview
+                            refresh: requestPreview,
+                            imageCache: state.previewImageCache,
+                            imageSessionID: state.previewRequestID.uuidString
                         )
                         .frame(minWidth: 420, idealWidth: 610)
                         .layoutPriority(1)
@@ -157,14 +160,18 @@ struct ContentView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .navigation) {
             Button { queue.openFiles() } label: {
-                Label("Files", systemImage: FolioAction.addFiles.symbol.name)
+                Label(FolioL10n.string("ui.files", default: "Files"), systemImage: FolioAction.addFiles.symbol.name)
             }
             .labelStyle(.titleAndIcon)
             .keyboardShortcut("o", modifiers: [.command])
-            .help("Add (queue.inputFormatSummary) files")
+            .help(FolioL10n.format(
+                "queue.add_files_supported_formats",
+                default: "Add files. Supported formats: %@",
+                queue.inputFormatSummary
+            ))
 
             Button { queue.openFolder() } label: {
-                Label("Folder", systemImage: FolioAction.addFolder.symbol.name)
+                Label(FolioL10n.string("ui.folder", default: "Folder"), systemImage: FolioAction.addFolder.symbol.name)
             }
             .labelStyle(.titleAndIcon)
             .keyboardShortcut("o", modifiers: [.command, .shift])
@@ -173,30 +180,30 @@ struct ContentView: View {
         ToolbarItem(placement: .principal) {
             if !queue.items.isEmpty {
                 HStack(spacing: 8) {
-                    Text("Target")
+                    Text(FolioL10n.string("ui.target", default: "Target"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Picker("Target", selection: $queue.target) {
+                    Picker(FolioL10n.string("ui.target", default: "Target"), selection: $queue.target) {
                         ForEach(queue.availableTargets) { target in
                             Text(target.displayName).tag(target)
                         }
                     }
                     .pickerStyle(.menu)
                     .labelsHidden()
-                    .accessibilityLabel("Target format")
+                    .accessibilityLabel(FolioL10n.string("ui.target_format", default: "Target format"))
                     .frame(width: 150)
 
-                    Text("Mode")
+                    Text(FolioL10n.string("ui.mode", default: "Mode"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Picker("Mode", selection: $queue.degradationMode) {
+                    Picker(FolioL10n.string("ui.mode", default: "Mode"), selection: $queue.degradationMode) {
                         ForEach(FolioDegradationMode.allCases) { mode in
                             Text(mode.displayName).tag(mode)
                         }
                     }
                     .pickerStyle(.menu)
                     .labelsHidden()
-                    .accessibilityLabel("Compatibility mode")
+                    .accessibilityLabel(FolioL10n.string("ui.compatibility_mode", default: "Compatibility mode"))
                     .frame(width: 126)
                 }
             }
@@ -205,35 +212,35 @@ struct ContentView: View {
         ToolbarItemGroup(placement: .primaryAction) {
             if !queue.items.isEmpty {
                 Button { queue.preflightSelected() } label: {
-                    Label("Check", systemImage: FolioAction.check.symbol.name)
+                    Label(FolioL10n.string("ui.check", default: "Check"), systemImage: FolioAction.check.symbol.name)
                 }
                 .labelStyle(.titleAndIcon)
                 .disabled(queue.isPreflighting || queue.isBatchConverting || queue.isScanningFolder || queue.hasActiveConversions)
 
                 Button { queue.convertSelected() } label: {
-                    Label("Convert", systemImage: FolioAction.convert.symbol.name)
+                    Label(FolioL10n.string("ui.convert", default: "Convert"), systemImage: FolioAction.convert.symbol.name)
                 }
                 .labelStyle(.titleAndIcon)
                 .buttonStyle(.borderedProminent)
                 .disabled(!queue.selectedCanConvert)
 
                 Button { state.showInspector.toggle() } label: {
-                    Label("Inspector", systemImage: FolioAction.inspect.symbol.name)
+                    Label(FolioL10n.string("ui.inspector", default: "Inspector"), systemImage: FolioAction.inspect.symbol.name)
                 }
                 .labelStyle(.titleAndIcon)
             }
 
             Menu {
                 if !queue.items.isEmpty {
-                    Button { queue.preflightAll() } label: { Label("Check All Books", systemImage: FolioAction.checkAll.symbol.name) }
+                    Button { queue.preflightAll() } label: { Label(FolioL10n.string("ui.check_all_books", default: "Check All Books"), systemImage: FolioAction.checkAll.symbol.name) }
                         .disabled(queue.isPreflighting || queue.isBatchConverting || queue.isScanningFolder)
-                    Button { queue.convertAll() } label: { Label("Convert All Approved", systemImage: FolioAction.convertAll.symbol.name) }
+                    Button { queue.convertAll() } label: { Label(FolioL10n.string("ui.convert_all_approved", default: "Convert All Approved"), systemImage: FolioAction.convertAll.symbol.name) }
                         .disabled(queue.isPreflighting || queue.isBatchConverting || queue.isScanningFolder || !queue.hasPreflightForAll)
                     Divider()
                 }
-                Button { queue.showingCapabilities = true } label: { Label("Capabilities…", systemImage: FolioAction.capabilities.symbol.name) }
+                Button { queue.showingCapabilities = true } label: { Label(FolioL10n.string("ui.capabilities", default: "Capabilities…"), systemImage: FolioAction.capabilities.symbol.name) }
             } label: {
-                Label("More", systemImage: FolioAction.more.symbol.name)
+                Label(FolioL10n.string("ui.more", default: "More"), systemImage: FolioAction.more.symbol.name)
             }
             .labelStyle(.titleAndIcon)
         }
@@ -333,6 +340,7 @@ struct ContentView: View {
 
     private func requestPreview(for item: BookItem) {
         state.previewRequestID = UUID()
+        state.previewImageCache.removeAll()
         let requestID = state.previewRequestID
         let edit = item.editPlan
         let target = queue.target
@@ -404,8 +412,8 @@ private struct BatchSidebarView: View {
                     .frame(width: 34, height: 34)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("FolioForge").font(.headline)
-                    Text("Batch").font(.caption).foregroundStyle(.secondary)
+                    Text(FolioL10n.string("ui.folioforge", default: "FolioForge")).font(.headline)
+                    Text(FolioL10n.string("ui.batch", default: "Batch")).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Text("\(queue.items.count)")
@@ -424,19 +432,19 @@ private struct BatchSidebarView: View {
                 Divider().padding(.horizontal, 12)
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(queue.preflightReadyCount) checked")
+                        Text(FolioL10n.format("status.count_checked", default: "Checked: %@", String(queue.preflightReadyCount)))
                             .font(.caption.weight(.medium))
-                        Text("\(queue.preflightBlockedCount) blocked")
+                        Text(FolioL10n.format("status.count_blocked", default: "Blocked: %@", String(queue.preflightBlockedCount)))
                             .font(.caption2)
                             .foregroundStyle(queue.preflightBlockedCount > 0 ? .orange : .secondary)
                     }
                     Spacer(minLength: 4)
                     if queue.selectedCount > 1 {
-                        Button { queue.removeSelected() } label: { Label("Remove Selected", systemImage: FolioAction.removeSelected.symbol.name) }
+                        Button { queue.removeSelected() } label: { Label(FolioL10n.string("ui.remove_selected", default: "Remove Selected"), systemImage: FolioAction.removeSelected.symbol.name) }
                             .disabled(queue.isBatchConverting || queue.hasActiveConversions)
-                            .help("Remove selected books from the batch")
+                            .help(FolioL10n.string("ui.remove_selected_books_from_the_batch", default: "Remove selected books from the batch"))
                     }
-                    Button("Clear") { queue.removeAll() }
+                    Button(FolioL10n.string("ui.clear", default: "Clear")) { queue.removeAll() }
                         .disabled(queue.isBatchConverting || queue.hasActiveConversions)
                 }
                 .padding(.horizontal, 14)
@@ -458,17 +466,20 @@ private struct QueueListView: View {
                 }
                 .tag(item.id)
                 .contextMenu {
-                    Button("Check") {
+                    Button(FolioL10n.string("ui.check", default: "Check")) {
                         queue.selectedID = item.id
                         queue.preflightSelected()
                     }
                     if item.status == .converting {
-                        Button(queue.isBatchConverting ? "Cancel Batch" : "Cancel") { queue.cancel(item.id) }
+                        Button(FolioL10n.string(
+                            queue.isBatchConverting ? "status.cancel_batch" : "ui.cancel",
+                            default: queue.isBatchConverting ? "Cancel the batch" : "Cancel"
+                        )) { queue.cancel(item.id) }
                     } else if item.status == .completed {
-                        Button("Reveal in Finder") { queue.revealOutput(item) }
+                        Button(FolioL10n.string("ui.reveal_in_finder", default: "Reveal in Finder")) { queue.revealOutput(item) }
                     }
                     Divider()
-                    Button("Remove", role: .destructive) { queue.remove(item.id) }
+                    Button(FolioL10n.string("ui.remove", default: "Remove"), role: .destructive) { queue.remove(item.id) }
                 }
             }
         }
@@ -479,8 +490,8 @@ private struct QueueListView: View {
                     Image(folioSymbol: .books)
                         .font(.title2)
                         .foregroundStyle(.tertiary)
-                    Text("No books yet").font(.subheadline.weight(.medium))
-                    Text("Use Files or Folder to add a batch.")
+                    Text(FolioL10n.string("ui.no_books_yet", default: "No books yet")).font(.subheadline.weight(.medium))
+                    Text(FolioL10n.string("ui.use_files_or_folder_to_add_a_batch", default: "Use Files or Folder to add a batch."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -522,7 +533,9 @@ private struct QueueRow: View {
                     Image(folioSymbol: .stop)
                 }
                 .buttonStyle(.borderless)
-                .help(isBatchConverting ? "Cancel the batch" : "Cancel conversion")
+                .help(isBatchConverting
+                    ? FolioL10n.string("status.cancel_batch", default: "Cancel the batch")
+                    : FolioL10n.string("status.cancel_conversion", default: "Cancel conversion"))
             }
         }
         .padding(.vertical, 5)
@@ -533,7 +546,9 @@ private struct QueueRow: View {
         if let analysis = item.analysis {
             return "\(analysis.sourceFormat) → \(analysis.targetFormat) · \(analysis.plan.quality.userSummary)"
         }
-        if let error = item.analysisError { return "Check failed · \(error)" }
+        if let error = item.analysisError {
+            return FolioL10n.format("status.check_failed", default: "Check failed · %@", error)
+        }
         if let stage = item.stage, item.status == .converting { return stage.label }
         return "\(item.inputURL.pathExtension.uppercased()) · \(item.status.label)"
     }
@@ -579,7 +594,7 @@ private struct EmptyWorkspaceView: View {
                 .font(.system(size: 48, weight: .light))
                 .foregroundStyle(.tint)
             VStack(spacing: 7) {
-                Text("Add books to FolioForge")
+                Text(FolioL10n.string("ui.add_books_to_folioforge", default: "Add books to FolioForge"))
                     .font(.system(size: 25, weight: .semibold, design: .rounded))
                 Text(queue.inputFormatSummary)
                     .font(.subheadline.weight(.medium))
@@ -587,15 +602,15 @@ private struct EmptyWorkspaceView: View {
             }
             HStack(spacing: 12) {
                 Button { queue.openFiles() } label: {
-                    Label("Add Files", systemImage: FolioAction.addFiles.symbol.name)
+                    Label(FolioL10n.string("ui.add_files", default: "Add Files"), systemImage: FolioAction.addFiles.symbol.name)
                 }
                 .buttonStyle(.borderedProminent)
                 Button { queue.openFolder() } label: {
-                    Label("Add Folder", systemImage: FolioAction.addFolder.symbol.name)
+                    Label(FolioL10n.string("ui.add_folder", default: "Add Folder"), systemImage: FolioAction.addFolder.symbol.name)
                 }
                 .buttonStyle(.bordered)
             }
-            Text("or drop books anywhere in this window")
+            Text(FolioL10n.string("ui.or_drop_books_anywhere_in_this_window", default: "or drop books anywhere in this window"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Spacer(minLength: 20)
@@ -625,9 +640,9 @@ private struct NoSelectionWorkspaceView: View {
                     Image(folioSymbol: .sidebarLeft)
                 .font(.system(size: 34))
                 .foregroundStyle(.secondary)
-            Text("Select books in the batch")
+            Text(FolioL10n.string("ui.select_books_in_the_batch", default: "Select books in the batch"))
                 .font(.title3.weight(.semibold))
-            Text("Select one book to edit and preview it, or select several to apply bulk changes.")
+            Text(FolioL10n.string("ui.select_one_book_to_edit_and_preview_it_or", default: "Select one book to edit and preview it, or select several to apply bulk changes."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -643,10 +658,10 @@ private struct BulkSelectionSummaryPane: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Label("Selection Summary", systemImage: FolioSymbol.books.name)
+                Label(FolioL10n.string("ui.selection_summary", default: "Selection Summary"), systemImage: FolioSymbol.books.name)
                     .font(.headline)
                 Spacer()
-                Text("\(items.count) selected")
+                Text(FolioL10n.format("status.count_selected", default: "Selected: %@", String(items.count)))
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
             }
@@ -666,7 +681,9 @@ private struct BulkSelectionSummaryPane: View {
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                 if let analysis = item.analysis {
-                                    Text(analysis.plan.quality.userSummary + (analysis.plan.blocked ? " · Blocked" : ""))
+                                    Text(analysis.plan.blocked
+                                        ? FolioL10n.format("status.quality_summary", default: "%@ · Blocked", analysis.plan.quality.userSummary)
+                                        : analysis.plan.quality.userSummary)
                                         .font(.caption)
                                         .foregroundStyle(analysis.plan.blocked ? .orange : .secondary)
                                 } else if let error = item.analysisError {
@@ -707,17 +724,21 @@ private struct WorkspaceStatusBar: View {
                 ProgressView(value: queue.conversionProgress)
                     .frame(maxWidth: 150)
                 Spacer(minLength: 8)
-                Button(queue.isBatchCancelling ? "Cancelling…" : "Cancel") { queue.cancelConversions() }
+                Button(queue.isBatchCancelling
+                    ? FolioL10n.string("status.cancelling_batch", default: "Cancelling batch…")
+                    : FolioL10n.string("ui.cancel", default: "Cancel")) { queue.cancelConversions() }
                     .disabled(!queue.hasActiveConversions || queue.isBatchCancelling)
             } else {
                 Image(folioSymbol: queue.preflightBlockedCount > 0 ? .diagnostics : .check)
                     .foregroundStyle(queue.preflightBlockedCount > 0 ? .orange : .secondary)
-                Text(queue.items.isEmpty ? "Ready for books" : "\(queue.items.count) books · \(queue.preflightReadyCount) checked")
+                Text(queue.items.isEmpty
+                    ? FolioL10n.string("status.ready_for_books", default: "Ready for books")
+                    : FolioL10n.format("status.batch_summary", default: "Books: %@ · Checked: %@", String(queue.items.count), String(queue.preflightReadyCount)))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
                 if queue.preflightBlockedCount > 0 {
-                    Text("\(queue.preflightBlockedCount) need attention")
+                    Text(FolioL10n.format("status.count_attention", default: "Needs attention: %@", String(queue.preflightBlockedCount)))
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }

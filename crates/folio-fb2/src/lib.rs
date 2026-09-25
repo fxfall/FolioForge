@@ -1005,43 +1005,7 @@ fn resource_kind(media_type: &str, id: &str) -> ResourceKind {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn source() -> BookSource {
-        let path = std::env::temp_dir().join(format!("folioforge-fb2-{}.fb2", std::process::id()));
-        let value = r##"<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0" xmlns:l="http://www.w3.org/1999/xlink"><description><title-info><book-title>Example</book-title><author><first-name>Alice</first-name><last-name>Smith</last-name></author><lang>en</lang><sequence name="Series" number="2"/></title-info></description><body><section id="one"><title><p>Chapter One</p></title><p>Hello <emphasis>world</emphasis><a l:href="#n1" type="note">[1]</a>.</p><poem><stanza><v>Line one</v><v>Line two</v></stanza></poem></section></body><body name="notes"><section id="n1"><title><p>Note</p></title><p>Note text</p></section></body><binary id="cover.jpg" content-type="image/jpeg">aGVsbG8=</binary></FictionBook>"##;
-        fs::write(&path, value).unwrap();
-        BookSource::single_file(&path).unwrap()
-    }
-
-    #[test]
-    fn imports_fb2_metadata_sections_poetry_and_binary() {
-        let source = source();
-        let imported = Fb2Adapter
-            .import(&source, &ImportContext::default())
-            .unwrap();
-        assert_eq!(imported.book.metadata.title.as_deref(), Some("Example"));
-        assert_eq!(imported.book.metadata.author_names(), ["Alice Smith"]);
-        assert_eq!(imported.book.metadata.series.as_deref(), Some("Series"));
-        assert_eq!(imported.book.resources.len(), 1);
-        assert!(imported.book.documents[0]
-            .nodes
-            .iter()
-            .any(|node| matches!(node.role, SemanticRole::Section)));
-        assert_eq!(imported.book.documents.len(), 2);
-        assert!(imported
-            .book
-            .anchors
-            .iter()
-            .any(|anchor| anchor.name == "n1"));
-        fn contains_footnote(nodes: &[Node]) -> bool {
-            nodes.iter().any(|node| {
-                matches!(node.kind, NodeKind::Footnote { .. }) || contains_footnote(&node.children)
-            })
-        }
-        assert!(contains_footnote(&imported.book.documents[0].nodes));
-        let _ = fs::remove_file(source.files()[0].path.clone());
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-fb2/src/lib.rs"]
+mod tests;

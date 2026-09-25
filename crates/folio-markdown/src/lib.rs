@@ -1314,46 +1314,7 @@ fn allocate(next_node: &mut u32) -> NodeId {
     id
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn parses_front_matter_and_commonmark_blocks() {
-        let document = parse(Some("book.md"), "---\ntitle: Example\nauthor: Alice, Bob\nlanguage: zh-CN\n---\n# Title\n\n**strong** and [link](next.html)\n\n- one\n- two\n\n```rust\nlet x = 1;\n```\n");
-        assert_eq!(document.metadata.title.as_deref(), Some("Example"));
-        assert_eq!(document.metadata.author_names(), ["Alice", "Bob"]);
-        assert!(matches!(
-            document.blocks[0],
-            MarkdownBlock::Heading { level: 1, .. }
-        ));
-        assert!(document
-            .blocks
-            .iter()
-            .any(|block| matches!(block, MarkdownBlock::UnorderedList(_))));
-        assert!(document
-            .blocks
-            .iter()
-            .any(|block| matches!(block, MarkdownBlock::CodeBlock { .. })));
-    }
-
-    #[test]
-    fn parses_inline_semantics_without_treating_tokens_as_plain_text() {
-        let inlines = parse_inlines("**bold** *em* ~~strike~~ [go](#x) ![cover](cover.png)");
-        assert!(inlines
-            .iter()
-            .any(|item| matches!(item, MarkdownInline::Strong(_))));
-        assert!(inlines
-            .iter()
-            .any(|item| matches!(item, MarkdownInline::Emphasis(_))));
-        assert!(inlines
-            .iter()
-            .any(|item| matches!(item, MarkdownInline::Strike(_))));
-        assert!(inlines
-            .iter()
-            .any(|item| matches!(item, MarkdownInline::Link { .. })));
-        assert!(inlines
-            .iter()
-            .any(|item| matches!(item, MarkdownInline::Image { .. })));
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-markdown/src/lib.rs"]
+mod tests;

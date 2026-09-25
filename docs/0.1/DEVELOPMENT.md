@@ -73,9 +73,9 @@ consume these contracts rather than reimplementing them.
   become a second capability registry or metadata authority.
 
 The public architecture boundary is enforced by the Rust workspace layout and
-crate-level tests. The extended static architecture script is maintainer-only
-and lives in the ignored `.folioforge-dev/tests/architecture/` directory; it
-is never a runtime dependency or a public release input.
+is checked locally by maintainer-only Rust regressions and a static
+architecture script under the ignored repository-root `tests/` directory.
+Neither is a runtime dependency or a public release input.
 
 ## 4. Semantic IR
 
@@ -206,11 +206,13 @@ Service endpoint.
 
 ## 13. Validation contract
 
-The public validation set includes Rust unit/integration tests, formatting,
-Clippy and release builds. The extended degradation golden fixtures,
-semantic-equivalence fixtures, deterministic conversion matrix, KFX semantic
-probes, Service smoke tests and Calibre/Bōkō/KP3 comparisons are maintainer
-local evidence kept in `.folioforge-dev/`; they are not public release inputs.
+The public validation workflow runs formatting, production-target Clippy and
+release builds; it intentionally does not execute or publish regression tests.
+Local Rust unit/integration tests and synthetic fixtures live under the
+ignored repository-root `tests/` directory. Extended degradation goldens,
+semantic-equivalence fixtures, KFX semantic probes, Service smoke tests and
+Calibre/Bōkō/KP3 comparisons remain local-only under `tests/` and
+`.folioforge-dev/`.
 
 Release validation must use a fresh external artifact root selected by
 `FOLIOFORGE_VALIDATION_ROOT`; the repository must contain no generated output.
@@ -229,9 +231,9 @@ never make a clean build fail.
 Before an accepted maintenance change:
 
 1. update the relevant current contract;
-2. run the architecture gate and targeted tests;
-3. run format, workspace tests, clippy and the applicable A/B or round-trip
-   checks;
+2. run the local architecture gate and targeted private tests;
+3. run format, production-target Clippy, release builds and the applicable
+   local A/B or round-trip checks;
 4. update the final audit if release behavior changed;
 5. leave no local paths, private data or generated artifacts in the public tree.
 

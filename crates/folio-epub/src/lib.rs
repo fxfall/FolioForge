@@ -12,8 +12,8 @@ use std::{
 
 use folio_model::{
     AnchorEdge, AnchorGraph, AnchorRelation, Book, Diagnostic, Document, Metadata, NavPoint,
-    Navigation, Node, NodeKind, Presentation, Resource, ResourceId, ResourceKind,
-    ResourceLoadError, ResourceLoader, SemanticRole, VariantTarget,
+    Navigation, Node, NodeKind, PageSide, Presentation, Resource, ResourceId, ResourceKind,
+    ResourceLoadError, ResourceLoader, SemanticRole, SpreadHint, VariantTarget,
 };
 use folio_style::{StyleResolver, TargetProfile};
 use roxmltree::{Document as XmlDocument, Node as XmlNode};
@@ -195,6 +195,7 @@ impl EpubReader {
         let spine_items = package.spine_items;
         let ncx_path = package.ncx_path;
         let layout = package.layout;
+        let page_progression_direction = package.page_progression_direction;
         let opf_dir = parent_path(&opf_path);
         let mut resources = Vec::with_capacity(manifest.len());
         let mut manifest_by_id = BTreeMap::new();
@@ -257,10 +258,11 @@ impl EpubReader {
             ),
         ];
         let mut xhtml_documents = Vec::with_capacity(spine_items.len());
-        for item_id in &spine_items {
-            let Some(item) = manifest_by_id.get(item_id) else {
+        for spine_item in &spine_items {
+            let Some(item) = manifest_by_id.get(&spine_item.idref) else {
                 return Err(EpubError::Invalid(format!(
-                    "spine references missing manifest item {item_id}"
+                    "spine references missing manifest item {}",
+                    spine_item.idref
                 )));
             };
             let href = resolve_epub_href(&opf_dir, &item.href)?;
@@ -292,10 +294,53 @@ impl EpubReader {
         )?;
         let mut book = imported.book;
         diagnostics.extend(imported.diagnostics);
+        let direction = match page_progression_direction.as_deref() {
+            None | Some("default") => None,
+            Some("ltr") => Some("ltr".to_owned()),
+            Some("rtl") => Some("rtl".to_owned()),
+            Some(value) => {
+                diagnostics.push(Diagnostic::warning(
+                    "epub_invalid_page_progression_direction",
+                    format!("Unsupported spine page-progression-direction value {value:?}; direction remains unspecified."),
+                ));
+                None
+            }
+        };
+        let mut page_sides = BTreeMap::new();
+        let mut spread_hints = BTreeMap::new();
+        if book.documents.len() != spine_items.len() {
+            diagnostics.push(Diagnostic::warning(
+                "epub_spine_presentation_mapping_incomplete",
+                format!(
+                    "Imported {} documents from {} selected spine items; fixed-layout spread metadata was not mapped.",
+                    book.documents.len(),
+                    spine_items.len()
+                ),
+            ));
+        } else {
+            for (document, spine_item) in book.documents.iter().zip(&spine_items) {
+                match parse_page_spread_properties(&spine_item.properties) {
+                    Ok(Some((side, hint))) => {
+                        page_sides.insert(document.id, side);
+                        spread_hints.insert(document.id, hint);
+                    }
+                    Ok(None) => {}
+                    Err(reason) => diagnostics.push(Diagnostic::warning(
+                        "epub_conflicting_page_spread_properties",
+                        format!(
+                            "Spine item {:?} has {reason}; page side and spread intent remain unspecified.",
+                            spine_item.idref
+                        ),
+                    )),
+                }
+            }
+        }
         book.presentation = Presentation {
             layout,
-            direction: None,
+            direction,
             writing_mode: None,
+            page_sides,
+            spread_hints,
         };
 
         let navigation = parse_navigation(
@@ -1230,9 +1275,15 @@ struct ManifestItem {
 struct PackageData {
     metadata: Metadata,
     manifest: Vec<ManifestItem>,
-    spine_items: Vec<String>,
+    spine_items: Vec<SpineItem>,
     ncx_path: Option<String>,
     layout: folio_model::LayoutMode,
+    page_progression_direction: Option<String>,
+}
+
+struct SpineItem {
+    idref: String,
+    properties: Vec<String>,
 }
 
 fn parse_package(opf: &XmlDocument<'_>, opf_path: &str) -> Result<PackageData, EpubError> {
@@ -1275,6 +1326,9 @@ fn parse_package(opf: &XmlDocument<'_>, opf_path: &str) -> Result<PackageData, E
         .children()
         .find(|node| node.is_element() && local_name(*node) == "spine")
         .ok_or_else(|| EpubError::Invalid(format!("{opf_path} has no spine element")))?;
+    let page_progression_direction = spine_node
+        .attribute("page-progression-direction")
+        .map(ToOwned::to_owned);
     let mut spine = Vec::new();
     for itemref in spine_node
         .children()
@@ -1289,7 +1343,14 @@ fn parse_package(opf: &XmlDocument<'_>, opf_path: &str) -> Result<PackageData, E
         let idref = itemref
             .attribute("idref")
             .ok_or_else(|| EpubError::Invalid("spine itemref without idref".to_owned()))?;
-        spine.push(idref.to_owned());
+        let properties = itemref
+            .attribute("properties")
+            .map(|value| value.split_whitespace().map(ToOwned::to_owned).collect())
+            .unwrap_or_default();
+        spine.push(SpineItem {
+            idref: idref.to_owned(),
+            properties,
+        });
     }
     if spine.is_empty() {
         spine.extend(
@@ -1298,7 +1359,10 @@ fn parse_package(opf: &XmlDocument<'_>, opf_path: &str) -> Result<PackageData, E
                 .filter(|item| {
                     item.media_type == "application/xhtml+xml" || item.media_type == "text/html"
                 })
-                .map(|item| item.id.clone()),
+                .map(|item| SpineItem {
+                    idref: item.id.clone(),
+                    properties: Vec::new(),
+                }),
         );
     }
     let ncx_id = spine_node.attribute("toc").map(ToOwned::to_owned);
@@ -1324,7 +1388,37 @@ fn parse_package(opf: &XmlDocument<'_>, opf_path: &str) -> Result<PackageData, E
             .map(|href| resolve_epub_href(&parent_path(opf_path), &href))
             .transpose()?,
         layout,
+        page_progression_direction,
     })
+}
+
+fn parse_page_spread_properties(
+    properties: &[String],
+) -> Result<Option<(PageSide, SpreadHint)>, &'static str> {
+    let mut side = None;
+    for property in properties {
+        let candidate = match property.as_str() {
+            "page-spread-left" | "rendition:page-spread-left" => Some(PageSide::Left),
+            "page-spread-right" | "rendition:page-spread-right" => Some(PageSide::Right),
+            "rendition:page-spread-center" => Some(PageSide::Center),
+            _ => None,
+        };
+        let Some(candidate) = candidate else {
+            continue;
+        };
+        if side.is_some_and(|current| current != candidate) {
+            return Err("conflicting side declarations");
+        }
+        side = Some(candidate);
+    }
+    Ok(side.map(|side| {
+        let hint = if side == PageSide::Center {
+            SpreadHint::SinglePage
+        } else {
+            SpreadHint::Pair
+        };
+        (side, hint)
+    }))
 }
 
 fn parse_metadata(metadata: XmlNode<'_, '_>) -> Metadata {
@@ -1422,7 +1516,10 @@ fn parse_navigation(
 
     if let Some(ncx_path) = ncx_path {
         let bytes = read_zip_entry(path, ncx_path, limits.max_xhtml_size)?;
-        let xml = parse_xml(ncx_path, &bytes)?;
+        let ncx = std::str::from_utf8(&bytes)
+            .map_err(|error| EpubError::Invalid(format!("{ncx_path} is not UTF-8: {error}")))?;
+        let ncx = folio_normalize::normalize_ncx_for_xml(ncx);
+        let xml = parse_xml_without_dtd(ncx_path, ncx.as_bytes())?;
         let mut navigation = Navigation::default();
         if let Some(nav_map) = xml
             .descendants()
@@ -1592,8 +1689,22 @@ fn parse_xml<'a>(path: &str, bytes: &'a [u8]) -> Result<XmlDocument<'a>, EpubErr
     // external XHTML 1.1 DTD.  Permit that declaration without enabling
     // arbitrary/internal DTDs; roxmltree does not fetch the external URL.
     let allows_external_xhtml_doctype = folio_normalize::strip_external_xhtml_doctype(text) != text;
+    parse_xml_text(path, text, allows_external_xhtml_doctype)
+}
+
+fn parse_xml_without_dtd<'a>(path: &str, bytes: &'a [u8]) -> Result<XmlDocument<'a>, EpubError> {
+    let text = std::str::from_utf8(bytes)
+        .map_err(|error| EpubError::Invalid(format!("{path} is not UTF-8: {error}")))?;
+    parse_xml_text(path, text, false)
+}
+
+fn parse_xml_text<'a>(
+    path: &str,
+    text: &'a str,
+    allow_dtd: bool,
+) -> Result<XmlDocument<'a>, EpubError> {
     let options = roxmltree::ParsingOptions {
-        allow_dtd: allows_external_xhtml_doctype,
+        allow_dtd,
         ..roxmltree::ParsingOptions::default()
     };
     XmlDocument::parse_with_options(text, options).map_err(|source| EpubError::Xml {
@@ -1870,204 +1981,7 @@ impl ResourceLoader for ZipResourceLoader {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use folio_model::{
-        Book, ComputedStyle, Document, DocumentId, FontFace, MemoryResourceLoader, Node, NodeId,
-        NodeKind, Resource, ResourceId,
-    };
-    use std::{
-        io::{Seek, Write},
-        path::Path,
-        sync::Arc,
-    };
-    use zip::{write::SimpleFileOptions, ZipWriter};
-
-    #[test]
-    fn paths_are_normalized_and_fragments_removed() {
-        assert_eq!(
-            normalize_epub_path("OEBPS/../Text/ch%31.xhtml#part").unwrap(),
-            "Text/ch1.xhtml"
-        );
-        assert_eq!(
-            resolve_epub_link_href("OEBPS/text", "../chapter.xhtml#part").unwrap(),
-            "OEBPS/chapter.xhtml#part"
-        );
-        assert!(normalize_epub_path("../../escape").is_err());
-    }
-
-    #[test]
-    fn resource_kinds_use_media_type_first() {
-        assert_eq!(resource_kind("image/jpeg", "cover.bin"), ResourceKind::Jpeg);
-        assert_eq!(
-            resource_kind("text/css", "style.dat"),
-            ResourceKind::Stylesheet
-        );
-    }
-
-    #[test]
-    fn exporter_embeds_replacement_font_and_emits_linked_font_face_css() {
-        let font_bytes = vec![0, 1, 0, 0, 1, 2, 3, 4];
-        let mut loader = MemoryResourceLoader::default();
-        loader.insert("fonts/BookFont.ttf".to_owned(), font_bytes.clone());
-        let mut book = Book::new().with_resource_loader(Arc::new(loader));
-        book.resources.push(Resource {
-            id: ResourceId::new(0),
-            path: "fonts/BookFont.ttf".to_owned(),
-            media_type: "font/ttf".to_owned(),
-            kind: ResourceKind::Font,
-            properties: Vec::new(),
-            size: Some(font_bytes.len() as u64),
-        });
-        book.font_faces.push(FontFace {
-            resource: ResourceId::new(0),
-            family: "Book Serif".to_owned(),
-        });
-        book.documents.push(Document {
-            id: DocumentId::new(0),
-            href: "chapter.xhtml".to_owned(),
-            media_type: "application/xhtml+xml".to_owned(),
-            title: Some("Chapter".to_owned()),
-            nodes: Vec::new(),
-        });
-
-        let artifact = export(&book, &EpubOptions::default()).unwrap();
-        let mut archive = ZipArchive::new(std::io::Cursor::new(artifact.bytes)).unwrap();
-        let mut css = String::new();
-        archive
-            .by_name("OEBPS/styles.css")
-            .unwrap()
-            .read_to_string(&mut css)
-            .unwrap();
-        let mut embedded = Vec::new();
-        archive
-            .by_name("OEBPS/assets/0000-BookFont.ttf")
-            .unwrap()
-            .read_to_end(&mut embedded)
-            .unwrap();
-        let mut xhtml = String::new();
-        archive
-            .by_name("OEBPS/text/0001.xhtml")
-            .unwrap()
-            .read_to_string(&mut xhtml)
-            .unwrap();
-
-        assert!(css.contains("font-family:\"Book Serif\""));
-        assert!(css.contains("url(\"assets/0000-BookFont.ttf\") format(\"truetype\")"));
-        assert!(xhtml.contains("href=\"../styles.css\""));
-        assert_eq!(embedded, font_bytes);
-    }
-
-    #[test]
-    fn export_preserves_document_order_when_hrefs_sort_lexically_differently() {
-        let mut book = Book::new();
-        let style = book.styles.intern(ComputedStyle::default());
-        let hrefs = [
-            "document-0.xhtml",
-            "document-1.xhtml",
-            "document-2.xhtml",
-            "document-10.xhtml",
-        ];
-        let expected = hrefs
-            .iter()
-            .enumerate()
-            .map(|(index, href)| {
-                let text = format!("document-{index}");
-                book.documents.push(Document {
-                    id: DocumentId::new(index as u32),
-                    href: (*href).to_owned(),
-                    media_type: "application/xhtml+xml".to_owned(),
-                    title: None,
-                    nodes: vec![Node::new(
-                        NodeId::new(index as u32),
-                        NodeKind::Text {
-                            value: text.clone(),
-                        },
-                        style,
-                        Vec::new(),
-                    )],
-                });
-                text
-            })
-            .collect::<Vec<_>>();
-
-        let artifact = export(&book, &EpubOptions::default()).unwrap();
-        let path = std::env::temp_dir().join(format!(
-            "folioforge-epub-spine-order-{}.epub",
-            std::process::id()
-        ));
-        std::fs::write(&path, artifact.bytes).unwrap();
-        let imported = EpubReader::default().read(&path);
-        std::fs::remove_file(path).unwrap();
-        let imported = imported.unwrap();
-        let actual = imported
-            .book
-            .documents
-            .iter()
-            .map(|document| {
-                document
-                    .nodes
-                    .iter()
-                    .map(Node::text_content)
-                    .collect::<Vec<_>>()
-                    .join("")
-            })
-            .collect::<Vec<_>>();
-
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
-    fn reader_builds_canonical_ir_from_a_small_epub() {
-        let path =
-            std::env::temp_dir().join(format!("folioforge-epub-{}.epub", std::process::id()));
-        let file = File::create(&path).unwrap();
-        let mut zip = ZipWriter::new(file);
-        let options =
-            SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
-        add_test_entry(&mut zip, "mimetype", "application/epub+zip", options);
-        add_test_entry(
-            &mut zip,
-            "META-INF/container.xml",
-            r#"<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf"/></rootfiles></container>"#,
-            options,
-        );
-        add_test_entry(
-            &mut zip,
-            "OEBPS/content.opf",
-            r#"<package xmlns="http://www.idpf.org/2007/opf" version="3.0"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>Smoke</dc:title><dc:language>zh</dc:language></metadata><manifest><item id="c" href="chapter.xhtml" media-type="application/xhtml+xml"/><item id="n" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/></manifest><spine><itemref idref="c"/></spine></package>"#,
-            options,
-        );
-        add_test_entry(
-            &mut zip,
-            "OEBPS/chapter.xhtml",
-            r#"<?xml version="1.0" encoding="utf-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><body><h1 id="one">第一章</h1><p>Hello，世界。</p></body></html>"#,
-            options,
-        );
-        add_test_entry(
-            &mut zip,
-            "OEBPS/nav.xhtml",
-            r#"<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><body><nav epub:type="toc"><ol><li><a href="chapter.xhtml#one">第一章</a></li></ol></nav></body></html>"#,
-            options,
-        );
-        zip.finish().unwrap();
-        let report = EpubReader::default().read(&path).unwrap();
-        assert_eq!(report.book.metadata.title.as_deref(), Some("Smoke"));
-        assert_eq!(report.book.documents.len(), 1);
-        assert_eq!(report.book.navigation.toc.len(), 1);
-        assert!(report.book.feature_summary().contains_key("heading"));
-        assert!(Path::new(&path).exists());
-        std::fs::remove_file(path).unwrap();
-    }
-
-    fn add_test_entry<W: Write + Seek>(
-        zip: &mut ZipWriter<W>,
-        name: &str,
-        value: &str,
-        options: SimpleFileOptions,
-    ) {
-        zip.start_file(name, options).unwrap();
-        zip.write_all(value.as_bytes()).unwrap();
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-epub/src/lib.rs"]
+mod tests;

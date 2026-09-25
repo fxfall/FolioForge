@@ -560,31 +560,7 @@ fn inspect_summary(report: &folio_core::InspectReport) -> serde_json::Value {
     })
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use folio_core::{InputReport, SemanticReport};
-
-    #[test]
-    fn default_inspect_is_a_summary_and_does_not_dump_book_text() {
-        let report = folio_core::InspectReport {
-            format: "KFX".to_owned(),
-            semantic: serde_json::json!({"private_book_text": "not part of summary"}),
-            diagnostics: Vec::new(),
-            input_report: InputReport {
-                detected_format: "Amazon KFX CONT".to_owned(),
-                ..InputReport::default()
-            },
-            semantic_report: SemanticReport {
-                valid: true,
-                ..SemanticReport::default()
-            },
-        };
-
-        let output = inspect_summary(&report);
-        assert_eq!(output["format"], "KFX");
-        assert_eq!(output["input_report"]["detected_format"], "Amazon KFX CONT");
-        assert!(output.get("semantic").is_none());
-        assert!(!output.to_string().contains("not part of summary"));
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-cli/src/main.rs"]
+mod tests;

@@ -1226,33 +1226,7 @@ fn kind_for_path(path: &str) -> ResourceKind {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::io::Write;
-    use zip::{write::SimpleFileOptions, ZipWriter};
-
-    #[test]
-    fn prepares_common_html_void_tags_for_shared_xhtml_normalizer() {
-        let value = prepare_markup(
-            "<!doctype html><html><body><p>Hello<img src=\"cover.png\"></body></html>",
-        );
-        assert!(value.contains("<img src=\"cover.png\"/>"));
-        assert!(value.contains("<body>"));
-    }
-
-    #[test]
-    fn rejects_htmlz_traversal_and_accepts_index_entrypoint() {
-        let mut cursor = Cursor::new(Vec::new());
-        let mut zip = ZipWriter::new(&mut cursor);
-        zip.start_file("index.html", SimpleFileOptions::default())
-            .unwrap();
-        zip.write_all(b"<html><body><h1>Title</h1></body></html>")
-            .unwrap();
-        zip.start_file("../escape.png", SimpleFileOptions::default())
-            .unwrap();
-        zip.write_all(b"bad").unwrap();
-        zip.finish().unwrap();
-        assert!(import_htmlz(&cursor.into_inner(), false).is_err());
-    }
-}
+#[cfg(all(test, feature = "maintainer-tests"))]
+#[rustfmt::skip]
+#[path = "../../../tests/unit/crates/folio-html/src/lib.rs"]
+mod tests;

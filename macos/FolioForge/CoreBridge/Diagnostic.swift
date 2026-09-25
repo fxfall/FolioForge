@@ -5,7 +5,13 @@ enum FolioSeverity: String, Codable, Sendable {
     case warning = "Warning"
     case error = "Error"
 
-    var label: String { rawValue }
+    var label: String {
+        switch self {
+        case .info: FolioL10n.string("diagnostic.severity.info", default: "Info")
+        case .warning: FolioL10n.string("diagnostic.severity.warning", default: "Warning")
+        case .error: FolioL10n.string("diagnostic.severity.error", default: "Error")
+        }
+    }
 }
 
 struct FolioDiagnosticSource: Codable, Sendable {
