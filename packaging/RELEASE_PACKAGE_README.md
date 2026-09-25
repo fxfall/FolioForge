@@ -1,7 +1,8 @@
-# FolioForge 0.3.0 desktop packages
+# FolioForge desktop packages
 
 Each archive contains the FolioForge desktop app for the architecture in its
-filename, a `VERSION` file, and the project `LICENSE`.
+filename, a `VERSION` file matching the Rust Core release, and the project
+`LICENSE`.
 
 ## Run the included app
 

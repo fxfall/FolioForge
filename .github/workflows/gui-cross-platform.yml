@@ -85,3 +85,20 @@ jobs:
         run: cargo clippy -p folioforge-slint --all-targets --locked -- -D warnings
       - name: Native Slint release build
         run: cargo build -p folioforge-slint --locked --release
+      - name: Verify Windows GUI subsystem
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $executable = Join-Path $env:CARGO_TARGET_DIR 'release/folioforge-slint.exe'
+          $bytes = [System.IO.File]::ReadAllBytes($executable)
+          $peOffset = [BitConverter]::ToInt32($bytes, 0x3c)
+          if ($peOffset -lt 0 -or $peOffset + 24 + 70 -gt $bytes.Length) {
+            throw 'Invalid or truncated PE executable.'
+          }
+          $signature = [System.Text.Encoding]::ASCII.GetString($bytes, $peOffset, 4)
+          if ($signature -ne "PE`0`0") { throw 'Invalid PE signature.' }
+          $optionalHeader = $peOffset + 24
+          $subsystem = [BitConverter]::ToUInt16($bytes, $optionalHeader + 68)
+          if ($subsystem -ne 2) {
+            throw "Expected Windows GUI subsystem (2), found $subsystem."
+          }

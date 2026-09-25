@@ -1608,7 +1608,7 @@ checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
 
 [[package]]
 name = "folio-archive"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "serde_json",
  "thiserror 2.0.20",
@@ -1617,7 +1617,7 @@ dependencies = [
 
 [[package]]
 name = "folio-batch"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-archive",
  "folio-core",
@@ -1630,14 +1630,14 @@ dependencies = [
 
 [[package]]
 name = "folio-capabilities"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "folio-cli"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "clap",
  "folio-core",
@@ -1650,7 +1650,7 @@ dependencies = [
 
 [[package]]
 name = "folio-comic"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "blake3",
  "folio-epub",
@@ -1666,7 +1666,7 @@ dependencies = [
 
 [[package]]
 name = "folio-compat"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-capabilities",
  "folio-model",
@@ -1676,7 +1676,7 @@ dependencies = [
 
 [[package]]
 name = "folio-core"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "base64",
  "blake3",
@@ -1710,7 +1710,7 @@ dependencies = [
 
 [[package]]
 name = "folio-docx"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-format",
  "folio-input",
@@ -1722,7 +1722,7 @@ dependencies = [
 
 [[package]]
 name = "folio-edit"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-model",
  "serde",
@@ -1731,7 +1731,7 @@ dependencies = [
 
 [[package]]
 name = "folio-epub"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-format",
  "folio-input",
@@ -1745,7 +1745,7 @@ dependencies = [
 
 [[package]]
 name = "folio-fb2"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "base64",
  "folio-format",
@@ -1757,7 +1757,7 @@ dependencies = [
 
 [[package]]
 name = "folio-ffi"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "base64",
  "folio-batch",
@@ -1774,7 +1774,7 @@ dependencies = [
 
 [[package]]
 name = "folio-format"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-input",
  "folio-model",
@@ -1785,7 +1785,7 @@ dependencies = [
 
 [[package]]
 name = "folio-html"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-format",
  "folio-input",
@@ -1802,7 +1802,7 @@ dependencies = [
 
 [[package]]
 name = "folio-input"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-mobi",
  "folio-text",
@@ -1812,7 +1812,7 @@ dependencies = [
 
 [[package]]
 name = "folio-kf7"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-format",
  "folio-input",
@@ -1826,7 +1826,7 @@ dependencies = [
 
 [[package]]
 name = "folio-kf8"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-format",
  "folio-input",
@@ -1842,7 +1842,7 @@ dependencies = [
 
 [[package]]
 name = "folio-kfx"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-format",
  "folio-input",
@@ -1859,14 +1859,14 @@ dependencies = [
 
 [[package]]
 name = "folio-kindle-common"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "thiserror 2.0.20",
 ]
 
 [[package]]
 name = "folio-library"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "blake3",
  "folio-core",
@@ -1881,7 +1881,7 @@ dependencies = [
 
 [[package]]
 name = "folio-markdown"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-format",
  "folio-input",
@@ -1893,7 +1893,7 @@ dependencies = [
 
 [[package]]
 name = "folio-mobi"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-kindle-common",
  "folio-model",
@@ -1903,7 +1903,7 @@ dependencies = [
 
 [[package]]
 name = "folio-model"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -1912,7 +1912,7 @@ dependencies = [
 
 [[package]]
 name = "folio-normalize"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-model",
  "folio-style",
@@ -1922,7 +1922,7 @@ dependencies = [
 
 [[package]]
 name = "folio-online"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-edit",
  "folio-model",
@@ -1934,7 +1934,7 @@ dependencies = [
 
 [[package]]
 name = "folio-reader"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-model",
  "image",
@@ -1944,7 +1944,7 @@ dependencies = [
 
 [[package]]
 name = "folio-service"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-batch",
  "folio-core",
@@ -1959,14 +1959,14 @@ dependencies = [
 
 [[package]]
 name = "folio-style"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-model",
 ]
 
 [[package]]
 name = "folio-text"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "encoding_rs",
  "folio-model",
@@ -1977,7 +1977,7 @@ dependencies = [
 
 [[package]]
 name = "folio-validator"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "folio-kf8",
  "folio-kfx",
@@ -1989,7 +1989,7 @@ dependencies = [
 
 [[package]]
 name = "folioforge-slint"
-version = "0.1.0"
+version = "0.3.1"
 dependencies = [
  "base64",
  "folio-batch",

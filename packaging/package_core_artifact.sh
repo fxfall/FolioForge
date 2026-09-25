@@ -61,9 +61,18 @@ case "$ARTIFACT_LABEL" in
         ;;
 esac
 
+CORE_VERSION=$(awk '
+    /^\[workspace\.package\]/ { in_workspace_package = 1; next }
+    /^\[/ { in_workspace_package = 0 }
+    in_workspace_package && $1 == "version" { gsub(/"/, "", $3); print $3; exit }
+' "$ROOT_DIR/Cargo.toml")
+if [ -z "$CORE_VERSION" ]; then
+    printf '%s\n' 'Could not read the Cargo workspace product version' >&2
+    exit 2
+fi
 VERSION_OUTPUT=$("$BINARY" --version)
 printf '%s\n' "$VERSION_OUTPUT"
-printf '%s\n' "$VERSION_OUTPUT" | grep -q '0\.1\.0'
+printf '%s\n' "$VERSION_OUTPUT" | grep -Fq " $CORE_VERSION"
 "$BINARY" --help >/dev/null
 
 if find "$BUILD_ROOT" -type f \( -name 'library.sqlite' -o -name '*.sqlite' -o -name '*.sqlite3' \) -print -quit | grep -q .; then
@@ -71,7 +80,7 @@ if find "$BUILD_ROOT" -type f \( -name 'library.sqlite' -o -name '*.sqlite' -o -
     exit 1
 fi
 
-PACKAGE_NAME="FolioForge-Core-0.1.0-$ARTIFACT_LABEL"
+PACKAGE_NAME="FolioForge-Core-$CORE_VERSION-$ARTIFACT_LABEL"
 PACKAGE_ROOT="$BUILD_ROOT/package/$PACKAGE_NAME"
 ARCHIVE="$ARTIFACT_ROOT/$PACKAGE_NAME.tar.gz"
 mkdir -p "$PACKAGE_ROOT/bin"

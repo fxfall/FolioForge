@@ -1,42 +1,28 @@
-# FolioForge macOS client
+# FolioForge desktop application
 
 ![FolioForge logo](../../assets/folioforge-logo.png)
 
-The SwiftUI client is the macOS 27 ARM64 reference desktop app for FolioForge
-0.3.0. It calls the Rust Core through `folio-ffi`; parsing, Semantic IR,
-compatibility decisions and export remain outside the views. The app-product
-version is 0.3.0 while the frozen Core/FFI workspace package version remains
-0.1.0.
+Product version `0.3.1` is shared with the Rust workspace, Core, and FFI. The
+application provides local book conversion, compatibility checks, batch
+progress and cancellation, diagnostics, metadata/style editing, Reader preview,
+and a supported comic workspace for image folders and ZIP/CBZ sources.
 
-## Client contract
+Conversion and format decisions come from Core. Local conversion does not
+require network access; optional metadata lookup sends search terms only and
+requires a user confirmation before applying changes.
 
-- The empty queue opens as a full-window drop zone.
-- The batch sidebar contains the current selection, not a permanent Library.
-- Selecting a book exposes non-destructive metadata, cover, typography, font,
-  style, structure and navigation edits.
-- Compatibility preview shows target/device/orientation/font-size projections;
-  it is not Kindle Previewer or a device renderer.
-- Diagnostics show parser/input loss, compatibility fallbacks, output status
-  and recovered KFX evidence without turning absence into a fidelity claim.
-- Local conversion is offline. The explicit metadata lookup action sends only
-  search terms and requires a merge choice plus confirmation.
-
-The app owns presentation state only. It reads the registered format and target
-capabilities from FFI, so the UI cannot drift into a second capability matrix.
-
-The unreleased 0.2 development line adds a separate Comics tab. Its current GUI
-scope is image folders and ZIP/CBZ sources, with page order, stable page IDs,
-dimensions, thumbnails, preview rendering and CBZ output supplied by Core.
-Only CBZ is currently advertised as an output target; device profiles, comic
-editing and other comic outputs remain unimplemented. This does not expand the
-frozen 0.1 Books workflow or its format claims.
+Comic support is intentionally limited to the input and output subset listed
+in [the feature matrix](../../docs/0.2/COMIC_FEATURE_MATRIX.md). The current
+desktop comic workflow provides ordered page browsing, thumbnails, preview and
+CBZ output; it does not claim general PDF, RAR, fixed-layout KFX, or comic
+editing support.
 
 ## Build
 
 From the repository root, build the Rust FFI archive and pass it to SwiftPM:
 
 ```bash
-export FOLIOFORGE_VALIDATION_ROOT="$VALIDATION_VOLUME/folioforge-0.1"
+export FOLIOFORGE_VALIDATION_ROOT="$VALIDATION_VOLUME/folioforge-0.3.1"
 export CARGO_TARGET_DIR="$FOLIOFORGE_VALIDATION_ROOT/cargo-target"
 cargo build --locked --release -p folio-ffi
 FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/release/libfolio_ffi.a" \
@@ -47,18 +33,12 @@ FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/release/libfolio_ffi.a" \
   --scratch-path "$FOLIOFORGE_VALIDATION_ROOT/swift-release" -c release
 ```
 
-`packaging/build_macos_app.sh` is the complete arm64 package validation
-entry point. It requires `FOLIOFORGE_VALIDATION_ROOT`, keeps compiler/runtime
-scratch data there, builds against the macOS 27 floor, embeds the project logo,
-and produces a timestamped app/ZIP under ignored `dist/` only after validation
-succeeds. Local output defaults to the base app-bundle version; release builds
-set `FOLIOFORGE_APP_VERSION` explicitly.
+`packaging/build_macos_app.sh` is the complete Apple Silicon package
+validation entry point. It requires `FOLIOFORGE_VALIDATION_ROOT`, keeps build
+scratch outside the repository, builds against the macOS 27 floor, embeds the
+project logo, and rejects an app/Core version mismatch. Local output defaults
+to the version in the app bundle metadata.
 
-The package is a SwiftPM executable rather than an Xcode project, so it has no
-separate `MARKETING_VERSION` setting. Rust/FFI crates stay on the frozen
-`0.1.0` package version; the packaging script sets the app bundle marketing
-version from `FOLIOFORGE_APP_VERSION` (default `0.1.0`).
-
-The result is deliberately unsigned: the build does not invoke `codesign`, use
-certificates or embed entitlements. No Developer ID, notarization or Gatekeeper
-acceptance is claimed.
+The local package is signed only when a valid local keychain identity is
+available. GitHub packages are intentionally unsigned and not notarized; no
+local signing identity or certificate is used by GitHub Actions.

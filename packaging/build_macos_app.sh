@@ -30,15 +30,28 @@ case "$HOST_ARCH" in
 esac
 
 PHASE=version-validation
+CORE_VERSION=$(awk '
+    /^\[workspace\.package\]/ { in_workspace_package = 1; next }
+    /^\[/ { in_workspace_package = 0 }
+    in_workspace_package && $1 == "version" { gsub(/"/, "", $3); print $3; exit }
+' Cargo.toml)
 BASE_MARKETING_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' packaging/FolioForge-Info.plist)
 MARKETING_VERSION=${FOLIOFORGE_APP_VERSION:-$BASE_MARKETING_VERSION}
 BUNDLE_BUILD_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' packaging/FolioForge-Info.plist)
-if [ "$BASE_MARKETING_VERSION" != "0.1.0" ]; then
-    printf '%s\n' "Expected the frozen base bundle version 0.1.0, found $BASE_MARKETING_VERSION" >&2
+if [ -z "$CORE_VERSION" ]; then
+    printf '%s\n' 'Could not read the Cargo workspace product version' >&2
+    exit 2
+fi
+if [ "$BASE_MARKETING_VERSION" != "$CORE_VERSION" ]; then
+    printf '%s\n' "App bundle version $BASE_MARKETING_VERSION does not match Core version $CORE_VERSION" >&2
     exit 2
 fi
 if ! printf '%s\n' "$MARKETING_VERSION" | grep -Eq '^[0-9]+(\.[0-9]+){2}$'; then
     printf '%s\n' "FOLIOFORGE_APP_VERSION must be a numeric three-part version, found $MARKETING_VERSION" >&2
+    exit 2
+fi
+if [ "$MARKETING_VERSION" != "$CORE_VERSION" ]; then
+    printf '%s\n' "App version $MARKETING_VERSION must match Core version $CORE_VERSION" >&2
     exit 2
 fi
 case "$BUNDLE_BUILD_VERSION" in

@@ -1,42 +1,42 @@
-# FolioForge 0.3.0 GUI Release
+# FolioForge 0.3.1 Release
 
-FolioForge 0.3.0 publishes the macOS SwiftUI client and native Slint desktop
-clients. This is a GUI/product release: Rust workspace/Core crates remain on
-the frozen 0.1.0 package version, and this release does not claim a Core
-conversion-engine version bump.
+Product version: `0.3.1`.
+
+FolioForge 0.3.1 includes the current Rust Core and desktop functionality in
+one versioned release. Cargo packages, Core/FFI/CLI/Service version responses,
+desktop bundle metadata, and downloaded package `VERSION` files must all match
+the release tag.
+
+## Features and fixes
+
+- Book conversion, compatibility analysis, structured diagnostics, batch
+  processing, progress, and cancellation are available through the shared Core
+  contracts.
+- The desktop application includes English and Simplified Chinese, a Reader
+  preview, and the supported comic workflow for image folders and ZIP/CBZ
+  sources, with CBZ output.
+- Windows desktop packages now launch without opening a console window. The
+  command-line application continues to use the console normally.
+- Release packaging rejects any mismatch between the tag, Rust package
+  versions, app bundle version, and archive version metadata.
 
 ## Downloads
 
-The tagged GitHub Release contains these six platform packages and a
-`SHA256SUMS` file:
+The tagged release contains six native packages and `SHA256SUMS`:
 
-| Package | Frontend | Architecture |
-| --- | --- | --- |
-| `FolioForge-0.3.0-macos-arm64-swiftui.zip` | SwiftUI | macOS ARM64, macOS 27+ |
-| `FolioForge-0.3.0-macos-arm64-slint.zip` | Slint | macOS ARM64, macOS 27+ |
-| `FolioForge-0.3.0-linux-x86_64-slint.tar.gz` | Slint | Linux x86_64 |
-| `FolioForge-0.3.0-linux-aarch64-slint.tar.gz` | Slint | Linux ARM64 |
-| `FolioForge-0.3.0-windows-x86_64-slint.zip` | Slint | Windows x86_64 |
-| `FolioForge-0.3.0-windows-arm64-slint.zip` | Slint | Windows ARM64 |
+| Package | Platform |
+| --- | --- |
+| `FolioForge-0.3.1-macos-arm64-swiftui.zip` | macOS ARM64, macOS 27+ |
+| `FolioForge-0.3.1-macos-arm64-slint.zip` | macOS ARM64, macOS 27+ |
+| `FolioForge-0.3.1-linux-x86_64-slint.tar.gz` | Linux x86_64 |
+| `FolioForge-0.3.1-linux-aarch64-slint.tar.gz` | Linux ARM64 |
+| `FolioForge-0.3.1-windows-x86_64-slint.zip` | Windows x86_64 |
+| `FolioForge-0.3.1-windows-arm64-slint.zip` | Windows ARM64 |
 
-The macOS SwiftUI app remains the reference macOS client. The Slint macOS
-package is a separately built companion frontend. All macOS packages are
-unsigned and not notarized; no maintainer signing identity or certificate is
-used by GitHub Actions.
+Linux packages are native GNU/Linux executables and require the documented
+X11/XCB, xkbcommon, Fontconfig and FreeType runtime libraries. Wayland sessions
+require XWayland for the current windowing backend.
 
-Linux packages contain a native GNU/Linux executable and are dynamically
-linked to the runner's system libraries. A graphical session plus X11/XCB,
-xkbcommon, Fontconfig and FreeType runtime libraries are required. Wayland
-desktop sessions need XWayland support for the current native Winit backend.
-
-Every archive includes the project `LICENSE`, this release's Slint runtime
-notes, and a `VERSION` file. Verify archives with `sha256sum -c SHA256SUMS`
-after downloading all six packages and the checksum file into one directory.
-
-## Release gates
-
-The `v0.3.0` tag workflow rebuilds each target natively from the tagged commit,
-checks the macOS 27 ARM64 app bundles remain unsigned, validates package
-contents and Linux dynamic-library resolution, and creates checksums before
-publishing. It does not download the ordinary branch build artifacts or
-include private tests, fixtures, or development logs.
+All macOS packages published by GitHub Actions are unsigned and not
+notarized. No local signing identity or certificate is used. Verify all
+downloaded packages with `sha256sum -c SHA256SUMS`.

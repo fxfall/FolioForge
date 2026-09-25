@@ -51,3 +51,9 @@ compatibility authorities. Private project status and process notes live in
 ignored `.codex/`; maintainer-only tests and fixtures live in ignored root
 `tests/`; private tools, benchmarks and chronological process logs live in
 ignored `.folioforge-dev/`.
+
+For each current product release, the Rust workspace, Core/FFI/CLI/Service,
+desktop bundle metadata, package `VERSION` files, and release tag must all use
+the same product version. The 0.1 version number is historical, not a version
+ceiling. ABI, inspection, and Library schema versions remain independently
+versioned.

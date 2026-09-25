@@ -134,7 +134,7 @@ jobs:
             exit 1
           fi
           if codesign -dv "$app/Contents/MacOS/FolioForge" >/dev/null 2>&1; then
-            echo 'GUI artifact must remain unsigned in the public 0.1 pipeline' >&2
+            echo 'GUI artifact must remain unsigned in the public GitHub build' >&2
             exit 1
           fi
           ! find "$app" -type f \( -name 'library.sqlite' -o -name '*.sqlite' -o -name '*.sqlite3' \) -print -quit | grep -q .
@@ -142,10 +142,12 @@ jobs:
       - name: Normalize GUI release artifact name
         run: |
           zip=$(find "$FOLIOFORGE_OUTPUT_ROOT" -maxdepth 1 -type f -name '*.zip' -print -quit)
-          cp "$zip" "$RUNNER_TEMP/FolioForge-GUI-0.1.0-macos27-aarch64.zip"
+          app=$(find "$FOLIOFORGE_OUTPUT_ROOT" -type d -name 'FolioForge.app' -print -quit)
+          product_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")
+          cp "$zip" "$RUNNER_TEMP/FolioForge-GUI-$product_version-macos27-aarch64.zip"
       - name: Upload macOS GUI artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: gui-macos-aarch64
-          path: ${{ runner.temp }}/FolioForge-GUI-0.1.0-macos27-aarch64.zip
+          path: ${{ runner.temp }}/FolioForge-GUI-*-macos27-aarch64.zip
           if-no-files-found: error

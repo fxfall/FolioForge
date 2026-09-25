@@ -1,9 +1,12 @@
-ARG FOLIOFORGE_VERSION=0.1.0
+ARG FOLIOFORGE_VERSION=0.3.1
 
 FROM rust:1.88-bookworm AS builder
+ARG FOLIOFORGE_VERSION
 WORKDIR /src
 COPY . .
-RUN cargo build --locked --release -p folio-service
+RUN workspace_version=$(awk '/^\[workspace\.package\]/{section=1;next} /^\[/{section=0} section && $1=="version"{gsub(/"/,"",$3);print $3;exit}' Cargo.toml) \
+    && test "$workspace_version" = "$FOLIOFORGE_VERSION" \
+    && cargo build --locked --release -p folio-service
 
 FROM debian:bookworm-slim
 ARG FOLIOFORGE_VERSION

@@ -26,9 +26,10 @@ unambiguous dead code. It must not add a format, a second conversion pipeline,
 Reader behavior, Library product features, cloud synchronization or unrelated
 large-scale performance work.
 
-Product version is `0.1.0`. Core ABI, inspection and Library schema versions
-are independent protocol versions and must not be changed merely to match the
-product version.
+The historical `0.1.0` release used product version `0.1.0`; this contract
+does not constrain later product versions. Current product releases keep Core
+and desktop version numbers synchronized, while Core ABI, inspection, and
+Library schema versions remain independent protocol versions.
 
 ## 2. Architecture
 

@@ -1,6 +1,8 @@
-# FolioForge 0.1 Public API
+# FolioForge 0.1.0 Public API
 
-Product version: `0.1.0`.
+This document records the API shipped with the historical `0.1.0` release.
+Current product-version policy is documented in
+[`docs/0.3/RELEASE.md`](../0.3/RELEASE.md).
 
 ## CLI
 
@@ -37,8 +39,10 @@ types are:
 - `preflight`, `analyze`, `preview`, `inspect`, `validate`, `convert` and
   `convert_with_progress`.
 
-`CORE_VERSION` is the product package version (`0.1.0`). `ABI_VERSION` is an
-independent integer protocol version (`1`).
+For this release, `CORE_VERSION` was the Cargo product package version
+(`0.1.0`). Current Core builds derive `CORE_VERSION` from the synchronized
+workspace product version. `ABI_VERSION` remains an independent integer
+protocol version (`1`).
 
 ## Semantic model
 

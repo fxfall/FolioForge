@@ -4,9 +4,14 @@ set -eu
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$ROOT_DIR"
 
-VERSION=${FOLIOFORGE_RELEASE_VERSION:-0.3.0}
-if [ "$VERSION" != "0.3.0" ]; then
-    printf '%s\n' "This packager is currently scoped to FolioForge 0.3.0, found $VERSION" >&2
+CORE_VERSION=$(awk '
+    /^\[workspace\.package\]/ { in_workspace_package = 1; next }
+    /^\[/ { in_workspace_package = 0 }
+    in_workspace_package && $1 == "version" { gsub(/"/, "", $3); print $3; exit }
+' Cargo.toml)
+VERSION=${FOLIOFORGE_RELEASE_VERSION:-$CORE_VERSION}
+if [ -z "$CORE_VERSION" ] || [ "$VERSION" != "$CORE_VERSION" ]; then
+    printf '%s\n' "Release version $VERSION must match Core version $CORE_VERSION" >&2
     exit 2
 fi
 

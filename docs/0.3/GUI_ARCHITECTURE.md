@@ -1,100 +1,78 @@
-# FolioForge 0.3 Desktop GUI Architecture
+# FolioForge 0.3 Desktop Feature Contract
 
-Status: local implementation complete; tagged 0.3.0 release validation pending
-Target product version: `0.3.0`
+- Product version: `0.3.1`
+- Release contract: current
 
-This document turns the 0.3 Internationalized GUI and Cross-Platform Slint
-Frontend specification into the permanent feature-portability contract. It is
-additive: the macOS client remains SwiftUI, existing format/Core behavior stays
-authoritative, and no Reader or Comic algorithms move into either frontend.
+This document records the desktop workflows and their integration boundary.
+All user-visible decisions about formats, compatibility, reading order,
+diagnostics, and conversion remain owned by the Rust Core.
 
-## Ownership
+## Responsibilities
 
-```text
-SwiftUI (macOS) ── Swift adapter ── C FFI ──┐
-                                            ├── Rust Core / folio-reader / folio-comic
-Slint (Windows/Linux) ── Rust adapter ──────┘
-```
+- Core owns format detection and support, conversion defaults, the Semantic
+  IR, compatibility decisions, diagnostics, progress, cancellation, Reader
+  semantics, Comic page identity/order, and output behavior.
+- Desktop presentation owns transient view state, file/folder dialogs,
+  accessibility, keyboard/pointer gestures, layout, localization, and display
+  of Core-provided resources and render models.
+- Every conversion, Reader, and Comic action uses the corresponding public
+  Core or FFI contract. A view must not parse an ebook or maintain a second
+  capability registry.
+- Interface text may be localized; file extensions, format identifiers,
+  diagnostic identifiers, error codes, source metadata, and resource identity
+  remain unchanged.
 
-- Core owns input detection, supported formats and targets, conversion
-  defaults, capability decisions, Semantic IR, diagnostics, progress,
-  cancellation, Reader semantics, Comic identity/order/preview/editing and
-  output behavior.
-- Each GUI owns transient view state, dialogs, accessibility, keyboard or
-  pointer gestures, layout, resource-to-widget transport, and localized text.
-- The macOS frontend continues to call the public FFI. The Rust-native Slint
-  frontend calls public `folio-core` APIs directly; it must not call the C ABI
-  back into its own process.
-- Do not add a presentation-contract crate unless a concrete parity gap cannot
-  be solved by reusing the existing Core/FFI/Reader/Comic DTOs.
-- Core and format crates remain locale-independent. Machine-readable error
-  codes and diagnostic codes are never translated or rewritten.
+## Conversion workflow
 
-## Portability contract for each feature
+The application discovers inputs and selectable output targets through Core,
+requests preflight before conversion, and presents the resulting compatibility
+plan and diagnostics. Conversion uses the Core request, batch, progress,
+cancellation, report, and atomic-output contracts. The interface does not
+invent defaults or compatibility rules.
 
-Before implementation, document the following in the feature change:
+The request preserves Core settings for target, deterministic output,
+compression, degradation mode/options, text-import options, batch behavior,
+collision handling, and per-book edit plans. Invalid or unavailable choices
+must resolve to the Core-provided default or be rejected before conversion.
 
-| Contract field | Conversion | Reader | Comic |
-| --- | --- | --- | --- |
-| State | Sources, Core descriptors, options, output selection, progress and result | Core Reader session, location, current render model and diagnostics | Core Comic session, page DTOs, Reader projection, selected page and output result |
-| Actions | Open, inspect/preflight, select Core target/options, choose output, convert, cancel | Open, first/previous/next/last, select a Core navigation target, change viewport/direction/spread mode | Open/close, select Core page, navigate through Reader, preview, convert supported output, cancel |
-| Events/results | Structured Core report, diagnostics and progress stage | Reader location/model or typed Reader/Core error | Core page/preview/output DTO, diagnostics and progress |
-| Capabilities | Only `FormatRegistry` and Core preflight | Only `folio-reader`/Core | Only `folio-comic`/Core and existing Reader |
-| Localized presentation | GUI keys map stage/severity/code and parameters to locale resources | GUI keys map typed Reader error/diagnostics to locale resources | GUI keys map typed Comic/Reader errors and progress to locale resources |
+## Reader workflow
 
-No frontend may infer reading order, compatibility, format support, device
-profiles, crop geometry, or conversion defaults. Platform-specific dialogs
-must return ordinary source/output paths to the same Core action.
+Reader displays Core-owned sessions, locations, page/spread render models,
+resource identity, geometry, diagnostics, and errors. Navigation, direction,
+spread mode, viewport, fit mode, zoom, and pan are submitted through Reader
+operations. The desktop layer only transports encoded image resources to its
+display widgets; it does not infer page order, crop, geometry, or spread
+membership.
 
-## Localization
+## Comic workflow
 
-- SwiftUI uses the Apple String Catalog in the Swift package resource bundle.
-  Keys are semantic and stable; source English is the development language and
-  Simplified Chinese is the initial translation. Plural/parameter formatting
-  belongs to localization resources, not string concatenation.
-- Slint strings are marked with `@tr` and stable semantic translation
-  contexts. Bundled gettext catalogs keep EN and `zh-Hans` resources available
-  on all four target architectures without a runtime gettext installation.
-- Only GUI-facing text is translated. File extensions, format IDs, Core error
-  codes, diagnostic IDs, raw metadata and technical detail remain unchanged.
-- Every key must have the source value, translation, context/comment where
-  needed, and a passing missing-key/placeholder check.
-- UI must tolerate long translations through flexible layout, wrapping,
-  truncation only for secondary metadata, and localization stress fixtures.
+The supported desktop comic workflow opens image folders and ZIP/CBZ sources,
+shows Core-ordered pages and thumbnails, previews pages through Reader, and
+exports supported CBZ output. Inputs outside the accepted Comic Core subset
+must show a typed unsupported result; the interface must not infer missing
+source semantics or advertise unfinished transformations.
 
-## Slint target and feature parity
+## Localization and accessibility
 
-The official 0.3 Slint targets are Windows x86_64, Windows ARM64, Linux
-x86_64, and Linux ARM64. macOS remains the reference SwiftUI application; the
-0.3.0 release also ships a separately built ARM64 Slint companion app.
-Slint files define components, layout, bindings and callbacks. Rust adapter
-code owns Core calls, asynchronous work, cancellation, state projection and
-event-loop delivery. Use platform-appropriate Slint widget styling and native
-file/folder dialogs; do not imitate macOS titlebar behavior on Windows/Linux.
+English and Simplified Chinese are supported. Required messages need translated
+values and matching placeholders. Long translations must remain readable;
+only secondary metadata may be truncated. Controls retain accessible labels,
+keyboard/pointer operation, and typed error handling.
 
-Port in this order and compare each feature with its SwiftUI reference:
+## Supported desktop packages
 
-1. Shell, navigation, sidebar/main/inspector/status hierarchy.
-2. Standard conversion, Core-provided formats/options, progress and cancel.
-3. Structured diagnostics and localization.
-4. Existing Reader API and render models.
-5. Existing Comic Core page browser, Reader-backed preview and controls.
-6. Settings and platform adaptations.
+The current release packages target macOS 27+ ARM64, Linux x86_64 and ARM64,
+and Windows x86_64 and ARM64. Every package, app bundle, Core component, and
+version response must use the release tag's same product version.
 
-Behavioral A/B compares Core request values, actions, event/result meaning,
-capability data, diagnostics codes and cancellation semantics. It does not
-require pixel or widget identity.
+## User-visible guarantees
 
-## Required checks
-
-- Validate both localization catalogs for missing/duplicate keys, untranslated
-  required values, malformed placeholders, and placeholder mismatch.
-- Compare normalized SwiftUI and Slint conversion requests for the same
-  settings against the public Core request types.
-- Exercise error, progress, cancellation, Reader navigation/resource identity,
-  and Comic page identity/order via Core contracts.
-- Build macOS ARM64 SwiftUI, the macOS ARM64 Slint companion, and all four
-  Windows/Linux Slint target architectures in CI/release workflows.
-- Keep maintainer-only regression fixtures and process records in ignored
-  local directories; public docs may contain only sanitized contracts and
-  aggregate results.
+- Format, target, and compatibility choices reflect the current Core support
+  contract.
+- Diagnostics retain their stable codes and explain rejected or approximated
+  input/output behavior.
+- Long operations expose progress and cancellation where Core supports them.
+- Reader navigation and Comic page order come from Core; unsupported inputs
+  and transformations are not guessed or silently advertised.
+- Windows desktop launch does not open a console window; command-line tools
+  retain normal console behavior.

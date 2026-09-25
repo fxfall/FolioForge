@@ -1,30 +1,36 @@
-# FolioForge 0.3
+# FolioForge 0.3.1
 
 ![FolioForge logo](assets/folioforge-logo.png)
 
-FolioForge 0.3 is the localized desktop-client release built over FolioForge's
-Rust conversion Core. The macOS reference client uses SwiftUI; Slint clients
-are provided for Linux and Windows, with an additional Apple Silicon macOS
-Slint build. Core conversion behavior remains governed by the frozen 0.1
-contract and shared Rust APIs.
+FolioForge is an offline-first Rust book conversion and comic/manga preparation
+application. The Core, command-line tools, native interfaces, and desktop app
+use the same product version and share the same conversion and capability
+contracts.
 
-See the [0.3 GitHub Release](https://github.com/fxfall/FolioForge/releases/tag/v0.3.0)
-and [release contract](docs/0.3/RELEASE.md) for platform downloads, archive
-names, runtime requirements and unsigned macOS installation notes.
+Download the [latest GitHub release](https://github.com/fxfall/FolioForge/releases/latest).
+Release notes and supported desktop packages are listed in
+[docs/0.3/RELEASE.md](docs/0.3/RELEASE.md).
 
-## 0.1 capabilities
+## Features
 
-- Import EPUB, KF7/MOBI, KF8/AZW3, KFX, TXT, Markdown, HTML/HTMLZ, FB2 and
-  DOCX/OOXML.
+- Convert EPUB, MOBI/KF7, AZW3/KF8, DRM-free reflowable KFX, TXT, Markdown,
+  HTML/HTMLZ, FB2 and DOCX through one Semantic IR pipeline.
 - Export EPUB3, KF7, KF8, KF7+KF8 compatibility containers and FolioForge's
-  explicit KFX compatibility writer output.
-- Preserve or report structure, navigation, links, notes, images, SVG,
-  styles, fonts, ruby, MathML and layout intent through the Semantic IR where
-  the input and target can prove the relationship.
-- Use deterministic IDs and ordering by default, with target diagnostics and
-  round-trip validation in every conversion report.
-- Run offline by default. Online metadata lookup is an explicit service/client
-  action and never receives a book file.
+  explicit KFX compatibility container.
+- Preserve or diagnose navigation, links, notes, images, styles, fonts, ruby,
+  MathML and layout semantics according to source evidence and target support.
+- Import supported image folders and ZIP/CBZ comic sources, browse ordered
+  pages, preview them in Reader, and export CBZ.
+- Inspect compatibility and diagnostics before conversion; choose Strict,
+  Compatible or Readable degradation behavior; process batches with progress
+  and cancellation.
+- Use English or Simplified Chinese in the desktop interface.
+- Convert locally without network access. Optional metadata lookup is a
+  separate action and never uploads a book.
+
+Comic import is limited to supported image folders and ZIP/CBZ page sources;
+CBZ is the current comic output. DRM decryption, fixed-layout KFX, and
+unsupported comic transformations are not claimed.
 
 ## Quick start
 
@@ -35,60 +41,22 @@ target/release/folio convert input.epub --to epub --output output.epub
 target/release/folio validate output.epub
 ```
 
-The CLI also provides `analyze` and `inspect`. `--mode strict` rejects
-unrepresentable target features; `compatible` records target-safe fallbacks;
-`readable` permits the most user-visible approximation. The complete command
-and JSON contract is in [docs/0.1/API.md](docs/0.1/API.md).
+The CLI also provides `analyze` and `inspect`. The C FFI and local HTTP service
+use the same Core APIs and product version.
 
-## Clients
+## Desktop downloads
 
-- macOS: `macos/FolioForge` is the reference Swift Package executable. It owns file
-  selection, queue state, editing controls and preview presentation; it does
-  not parse formats or invent compatibility decisions.
-- Slint: `apps/folioforge-slint` is the native desktop client for Linux and
-  Windows; a macOS ARM64 companion build is also included in 0.3.0.
-- Service: `folio-service` is a local HTTP adapter with bounded uploads,
-  isolated work directories, progress events and downloadable reports.
-- FFI: `folio-ffi` exposes versioned JSON requests/reports and cancellation to
-  the macOS client and other native hosts.
-- Library: `folio-library` is optional metadata/index storage. It is not part
-  of standalone conversion and does not store Semantic IR or resource BLOBs.
+The current release provides Apple Silicon macOS, Linux x86_64/ARM64, and
+Windows x86_64/ARM64 packages. GitHub macOS packages are unsigned and
+unnotarized. See the release notes for installation and runtime requirements.
 
 ## Build
 
-Use the prerequisites and release commands in
-[docs/0.1/BUILD_RELEASE.md](docs/0.1/BUILD_RELEASE.md). Build and benchmark
-scratch data must be placed in a directory selected by
-`FOLIOFORGE_VALIDATION_ROOT`, not in the repository.
+Use Rust stable for Core and CLI builds. macOS desktop packaging requires
+macOS 27+, Swift 6.4+, and Xcode 27. Build and scratch data must be kept
+outside the repository under a directory selected by
+`FOLIOFORGE_VALIDATION_ROOT`.
 
-The checked-in macOS packaging script creates an intentionally unsigned
-development app. It does not invoke `codesign`, use certificates, claim
-Developer ID signing or notarization, or claim Kindle device equivalence.
-
-## Support boundaries
-
-KFX input support is for DRM-free, reflowable books and is diagnostic-first:
-unproven relationships remain unresolved and protected content is rejected.
-Fixed-layout/comic KFX, DRM decryption, proprietary online services and
-device-specific rendering are outside this release. See
-[docs/0.1/FORMAT_SUPPORT.md](docs/0.1/FORMAT_SUPPORT.md) and
-[docs/0.1/KNOWN_LIMITS.md](docs/0.1/KNOWN_LIMITS.md).
-
-## Documentation
-
-The current 0.1 documentation is the only authoritative development contract:
-
-1. [0.1 Core development/API contracts](docs/0.1/DEVELOPMENT.md) and
-   [API](docs/0.1/API.md)
-2. the relevant [format](docs/formats/) or [Library](docs/library/DATA_MODEL.md)
-   contract
-3. [0.2 Comic Core](docs/0.2/COMIC_CORE_DEVELOPMENT.md),
-   [0.2.1 Reader](docs/0.2/READER_RUNTIME.md), and
-   [0.3 GUI architecture](docs/0.3/GUI_ARCHITECTURE.md)
-4. [known Core limits](docs/0.1/KNOWN_LIMITS.md)
-5. local Rust regression tests in ignored repository-root `tests/`; these are
-   intentionally not published to GitHub
-
-Historical stage notes, Python/oracle tools, synthetic validation fixtures and
-development logs are retained in the ignored local `.folioforge-dev/` bundle;
-they are not authoritative runtime code and are not published to GitHub.
+Current product version information and user-visible changes are documented in
+[CHANGELOG.md](CHANGELOG.md). Historical format and data contracts remain under
+`docs/`.
