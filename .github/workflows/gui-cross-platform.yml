@@ -24,15 +24,40 @@ jobs:
             runner: windows-11-vs2026-arm
     name: Slint · ${{ matrix.platform }}
     runs-on: ${{ matrix.runner }}
-    env:
-      FOLIOFORGE_VALIDATION_ROOT: ${{ runner.temp }}/folioforge-validation
-      CARGO_TARGET_DIR: ${{ runner.temp }}/folioforge-validation/cargo-target
-      FOLIOFORGE_TEMP_ROOT: ${{ runner.temp }}/folioforge-validation/runtime
-      TMPDIR: ${{ runner.temp }}/folioforge-validation/tmp
-      TMP: ${{ runner.temp }}/folioforge-validation/tmp
-      TEMP: ${{ runner.temp }}/folioforge-validation/tmp
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Configure external validation directories (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          validation_root="$RUNNER_TEMP/folioforge-validation"
+          temp_root="$validation_root/tmp"
+          {
+            echo "FOLIOFORGE_VALIDATION_ROOT=$validation_root"
+            echo "CARGO_TARGET_DIR=$validation_root/cargo-target"
+            echo "FOLIOFORGE_TEMP_ROOT=$validation_root/runtime"
+            echo "TMPDIR=$temp_root"
+            echo "TMP=$temp_root"
+            echo "TEMP=$temp_root"
+          } >> "$GITHUB_ENV"
+          mkdir -p "$validation_root/cargo-target" "$validation_root/runtime" "$temp_root"
+      - name: Configure external validation directories (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $validationRoot = Join-Path $env:RUNNER_TEMP 'folioforge-validation'
+          $tempRoot = Join-Path $validationRoot 'tmp'
+          $runtimeRoot = Join-Path $validationRoot 'runtime'
+          $targetRoot = Join-Path $validationRoot 'cargo-target'
+          @(
+            "FOLIOFORGE_VALIDATION_ROOT=$validationRoot"
+            "CARGO_TARGET_DIR=$targetRoot"
+            "FOLIOFORGE_TEMP_ROOT=$runtimeRoot"
+            "TMPDIR=$tempRoot"
+            "TMP=$tempRoot"
+            "TEMP=$tempRoot"
+          ) | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          New-Item -ItemType Directory -Force -Path $targetRoot, $runtimeRoot, $tempRoot | Out-Null
       - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
         with:
           toolchain: stable
@@ -47,9 +72,6 @@ jobs:
             libxcb-shape0-dev libxcb-xfixes0-dev libxcb-xinput-dev \
             libxkbcommon-dev libxkbcommon-x11-dev libxcursor-dev \
             libfontconfig1-dev libfreetype-dev
-      - name: Prepare external validation directories
-        shell: bash
-        run: mkdir -p "$CARGO_TARGET_DIR" "$FOLIOFORGE_TEMP_ROOT" "$TMPDIR"
       - name: Confirm native runner architecture
         shell: bash
         run: |

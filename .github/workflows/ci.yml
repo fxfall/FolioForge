@@ -39,6 +39,15 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: Prepare external validation root
         run: mkdir -p "$FOLIOFORGE_VALIDATION_ROOT" "$TMPDIR" "$FOLIOFORGE_TEMP_ROOT"
+      - name: Install Linux Slint build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential pkg-config cmake \
+            libx11-dev libx11-xcb-dev libxcb1-dev libxcb-randr0-dev \
+            libxcb-shape0-dev libxcb-xfixes0-dev libxcb-xinput-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libxcursor-dev \
+            libfontconfig1-dev libfreetype-dev
       - name: Format check
         run: cargo fmt --all -- --check
       - name: Clippy
