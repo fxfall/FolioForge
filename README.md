@@ -1,12 +1,16 @@
-# FolioForge 0.1
+# FolioForge 0.3
 
 ![FolioForge logo](assets/folioforge-logo.png)
 
-FolioForge is a local, Rust-based book importer and converter. It imports
-multiple ebook and rich-document formats into one Semantic IR, applies an
-explicit compatibility plan, and writes a validated output artifact. The
-SwiftUI macOS client, C FFI and local HTTP service all call this same Core
-pipeline.
+FolioForge 0.3 is the localized desktop-client release built over FolioForge's
+Rust conversion Core. The macOS reference client uses SwiftUI; Slint clients
+are provided for Linux and Windows, with an additional Apple Silicon macOS
+Slint build. Core conversion behavior remains governed by the frozen 0.1
+contract and shared Rust APIs.
+
+See the [0.3 GitHub Release](https://github.com/fxfall/FolioForge/releases/tag/v0.3.0)
+and [release contract](docs/0.3/RELEASE.md) for platform downloads, archive
+names, runtime requirements and unsigned macOS installation notes.
 
 ## 0.1 capabilities
 
@@ -38,9 +42,11 @@ and JSON contract is in [docs/0.1/API.md](docs/0.1/API.md).
 
 ## Clients
 
-- macOS: `macos/FolioForge` is a Swift Package executable. It owns file
+- macOS: `macos/FolioForge` is the reference Swift Package executable. It owns file
   selection, queue state, editing controls and preview presentation; it does
   not parse formats or invent compatibility decisions.
+- Slint: `apps/folioforge-slint` is the native desktop client for Linux and
+  Windows; a macOS ARM64 companion build is also included in 0.3.0.
 - Service: `folio-service` is a local HTTP adapter with bounded uploads,
   isolated work directories, progress events and downloadable reports.
 - FFI: `folio-ffi` exposes versioned JSON requests/reports and cancellation to
@@ -72,13 +78,16 @@ device-specific rendering are outside this release. See
 
 The current 0.1 documentation is the only authoritative development contract:
 
-1. [DEVELOPMENT.md](docs/0.1/DEVELOPMENT.md)
-2. [API.md](docs/0.1/API.md)
-3. the relevant [format](docs/formats/) or [Library](docs/library/DATA_MODEL.md)
+1. [0.1 Core development/API contracts](docs/0.1/DEVELOPMENT.md) and
+   [API](docs/0.1/API.md)
+2. the relevant [format](docs/formats/) or [Library](docs/library/DATA_MODEL.md)
    contract
-4. [KNOWN_LIMITS.md](docs/0.1/KNOWN_LIMITS.md)
-5. local Rust regression tests in the ignored repository-root `tests/`
-   directory; these are intentionally not published to GitHub
+3. [0.2 Comic Core](docs/0.2/COMIC_CORE_DEVELOPMENT.md),
+   [0.2.1 Reader](docs/0.2/READER_RUNTIME.md), and
+   [0.3 GUI architecture](docs/0.3/GUI_ARCHITECTURE.md)
+4. [known Core limits](docs/0.1/KNOWN_LIMITS.md)
+5. local Rust regression tests in ignored repository-root `tests/`; these are
+   intentionally not published to GitHub
 
 Historical stage notes, Python/oracle tools, synthetic validation fixtures and
 development logs are retained in the ignored local `.folioforge-dev/` bundle;

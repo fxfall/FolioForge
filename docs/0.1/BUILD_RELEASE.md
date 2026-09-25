@@ -93,14 +93,20 @@ part of the 0.1 release contract.
 ## GitHub Actions Phase 7.7
 
 The multi-platform release definition is recorded in
-[PHASE_7_7_CI.md](PHASE_7_7_CI.md). The public workflow set is deliberately
-limited to `ci.yml`, `build.yml` and `release.yml`:
+[PHASE_7_7_CI.md](PHASE_7_7_CI.md). The frozen 0.1 release line is limited to
+these three workflows:
 
 - `ci.yml` is the Rust source-quality gate and produces no release archive.
 - `build.yml` builds native Linux x86_64/ARM64 and macOS 27 ARM64 Core/GUI
   artifacts on `main` or manual dispatch.
-- `release.yml` rebuilds the same four artifacts from a `v*` tag, creates
+- `release.yml` rebuilds the same four artifacts from a `v0.1.0` or
+  `v0.1.0-rc.*` tag, creates
   `SHA256SUMS`, and publishes only those artifacts.
+
+The 0.1 tagged workflow never downloads artifacts from `build.yml`; it rebuilds
+from the tagged source checkout. It does not constrain the additive 0.3 GUI
+release workflow. The separate 0.3 GUI release contract is in
+[`docs/0.3/RELEASE.md`](../0.3/RELEASE.md).
 
 The GitHub release build does not sign macOS output. The GUI job uses
 `xcode-27`, sets the minimum target to `27.0`, checks the self-contained bundle

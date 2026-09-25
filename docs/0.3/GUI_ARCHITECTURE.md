@@ -1,6 +1,6 @@
 # FolioForge 0.3 Desktop GUI Architecture
 
-Status: local implementation complete; hosted and interactive visual validation pending
+Status: local implementation complete; tagged 0.3.0 release validation pending
 Target product version: `0.3.0`
 
 This document turns the 0.3 Internationalized GUI and Cross-Platform Slint
@@ -65,7 +65,8 @@ must return ordinary source/output paths to the same Core action.
 ## Slint target and feature parity
 
 The official 0.3 Slint targets are Windows x86_64, Windows ARM64, Linux
-x86_64, and Linux ARM64. macOS remains the official SwiftUI application.
+x86_64, and Linux ARM64. macOS remains the reference SwiftUI application; the
+0.3.0 release also ships a separately built ARM64 Slint companion app.
 Slint files define components, layout, bindings and callbacks. Rust adapter
 code owns Core calls, asynchronous work, cancellation, state projection and
 event-loop delivery. Use platform-appropriate Slint widget styling and native
@@ -92,7 +93,8 @@ require pixel or widget identity.
   settings against the public Core request types.
 - Exercise error, progress, cancellation, Reader navigation/resource identity,
   and Comic page identity/order via Core contracts.
-- Build macOS ARM64 SwiftUI and all four Slint target architectures in CI.
+- Build macOS ARM64 SwiftUI, the macOS ARM64 Slint companion, and all four
+  Windows/Linux Slint target architectures in CI/release workflows.
 - Keep maintainer-only regression fixtures and process records in ignored
   local directories; public docs may contain only sanitized contracts and
   aggregate results.

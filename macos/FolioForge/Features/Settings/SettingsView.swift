@@ -4,6 +4,11 @@ struct SettingsView: View {
     @EnvironmentObject private var queue: ConversionQueueViewModel
     @AppStorage("folioforge.ui.language") private var interfaceLanguage = "system"
 
+    private var productVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+            ?? queue.coreVersion
+    }
+
     var body: some View {
         Form {
             Section(FolioL10n.string("ui.language", default: "Language")) {
@@ -49,7 +54,11 @@ struct SettingsView: View {
             }
 
             Section(FolioL10n.string("ui.about", default: "About")) {
-                Text(FolioL10n.string("ui.folioforge_0_1", default: "FolioForge 0.1"))
+                Text(FolioL10n.format(
+                    "ui.folioforge_version",
+                    default: "FolioForge %@",
+                    productVersion
+                ))
                 Text(FolioL10n.string("ui.folioforge_uses_a_local_rust_core_through_a_small", default: "FolioForge uses a local Rust Core through a small C ABI."))
                 Text(FolioL10n.string("ui.no_network_access_is_required_for_conversion", default: "No network access is required for conversion."))
                     .foregroundStyle(.secondary)

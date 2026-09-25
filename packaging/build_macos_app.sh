@@ -30,10 +30,15 @@ case "$HOST_ARCH" in
 esac
 
 PHASE=version-validation
-MARKETING_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' packaging/FolioForge-Info.plist)
+BASE_MARKETING_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' packaging/FolioForge-Info.plist)
+MARKETING_VERSION=${FOLIOFORGE_APP_VERSION:-$BASE_MARKETING_VERSION}
 BUNDLE_BUILD_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' packaging/FolioForge-Info.plist)
-if [ "$MARKETING_VERSION" != "0.1.0" ]; then
-    printf '%s\n' "Expected FolioForge marketing version 0.1.0, found $MARKETING_VERSION" >&2
+if [ "$BASE_MARKETING_VERSION" != "0.1.0" ]; then
+    printf '%s\n' "Expected the frozen base bundle version 0.1.0, found $BASE_MARKETING_VERSION" >&2
+    exit 2
+fi
+if ! printf '%s\n' "$MARKETING_VERSION" | grep -Eq '^[0-9]+(\.[0-9]+){2}$'; then
+    printf '%s\n' "FOLIOFORGE_APP_VERSION must be a numeric three-part version, found $MARKETING_VERSION" >&2
     exit 2
 fi
 case "$BUNDLE_BUILD_VERSION" in
@@ -151,7 +156,7 @@ PRODUCT_DIR=$(FOLIOFORGE_FFI_ARCHIVE="$FOLIOFORGE_FFI_ARCHIVE" \
         --triple "$SWIFT_TARGET_TRIPLE" -c release --show-bin-path)
 DIST_DIR=${FOLIOFORGE_OUTPUT_ROOT:-"$ROOT_DIR/dist"}
 PHASE=app-staging
-BUILD_BASENAME="FolioForge-macOS-arm64-0.1.0-$BUILD_STAMP"
+BUILD_BASENAME="FolioForge-macOS-arm64-$MARKETING_VERSION-$BUILD_STAMP"
 FINAL_DIR="$DIST_DIR/$BUILD_BASENAME"
 FINAL_APP="$FINAL_DIR/FolioForge.app"
 FINAL_ZIP="$DIST_DIR/$BUILD_BASENAME.zip"
@@ -200,6 +205,8 @@ else
     fi
 fi
 cp packaging/FolioForge-Info.plist "$CONTENTS/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $MARKETING_VERSION" \
+    "$CONTENTS/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :LSMinimumSystemVersion $MACOS_TARGET_VERSION" \
     "$CONTENTS/Info.plist"
 
@@ -260,15 +267,16 @@ fi
 
 cp macos/FolioForge/README.md "$STAGING/README.md"
 PHASE=zip-validation
-ditto -c -k --sequesterRsrc --keepParent "$STAGING/FolioForge.app" "$STAGING/FolioForge-macOS-arm64-0.1.0.zip"
-unzip -t "$STAGING/FolioForge-macOS-arm64-0.1.0.zip"
+ditto -c -k --sequesterRsrc --keepParent "$STAGING/FolioForge.app" \
+    "$STAGING/FolioForge-macOS-arm64-$MARKETING_VERSION.zip"
+unzip -t "$STAGING/FolioForge-macOS-arm64-$MARKETING_VERSION.zip"
 
 # Publish to this unique build path only after validation passed.
 PHASE=publish-artifact
 mkdir -p "$FINAL_DIR"
 cp -R "$STAGING/FolioForge.app" "$FINAL_DIR/FolioForge.app"
 cp "$STAGING/README.md" "$FINAL_DIR/README.md"
-cp "$STAGING/FolioForge-macOS-arm64-0.1.0.zip" "$FINAL_ZIP"
+cp "$STAGING/FolioForge-macOS-arm64-$MARKETING_VERSION.zip" "$FINAL_ZIP"
 
 printf '%s\n' "Built and validated: $FINAL_APP" "$FINAL_ZIP"
 printf '%s\n' "Code-signing mode: $SIGNING_MODE"

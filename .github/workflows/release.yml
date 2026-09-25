@@ -3,7 +3,8 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      - "v0.1.0"
+      - "v0.1.0-rc.*"
 
 permissions:
   contents: read

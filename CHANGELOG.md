@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0 GUI release
+
+- Publish the native desktop clients: macOS ARM64 SwiftUI and Slint, Linux
+  x86_64/ARM64 Slint, and Windows x86_64/ARM64 Slint.
+- Package each target from the tagged source on a matching native GitHub
+  runner; verify archive contents and publish `SHA256SUMS` with the release.
+- Keep macOS artifacts unsigned and unnotarized. This GUI/product version does
+  not change the frozen Rust Core workspace package version or conversion
+  behavior.
+
 ## 0.2.1 development — Reader Runtime
 
 - Completed the Preview A audit and captured synthetic EPUB, Markdown and HTML

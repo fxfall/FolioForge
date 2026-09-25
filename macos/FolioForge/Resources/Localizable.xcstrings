@@ -4321,20 +4321,20 @@
         }
       }
     },
-    "ui.folioforge_0_1": {
-      "comment": "Stable semantic UI key. Keep the key when editing source wording.",
+    "ui.folioforge_version": {
+      "comment": "The product version from the app bundle; an unbundled development run falls back to the Core version.",
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "FolioForge 0.1"
+            "value": "FolioForge %@"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "FolioForge 0.1"
+            "value": "FolioForge %@"
           }
         }
       }

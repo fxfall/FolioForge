@@ -1,0 +1,321 @@
+name: FolioForge 0.3 Release
+
+on:
+  push:
+    tags:
+      - "v0.3.0"
+
+permissions:
+  contents: read
+
+jobs:
+  release-policy:
+    name: 0.3 release policy
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
+        with:
+          toolchain: stable
+      - name: Validate GUI release and frozen Core versions
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -eu
+          test "$RELEASE_TAG" = v0.3.0
+          versions=$(cargo metadata --no-deps --format-version 1 \
+            | jq -r '.packages[].version' | sort -u)
+          test "$versions" = 0.1.0
+          grep -q 'Target product version: `0.3.0`' docs/0.3/GUI_ARCHITECTURE.md
+      - name: Repository clean gate
+        run: |
+          set -eu
+          test ! -e tests
+          test ! -e tools
+          test ! -e bench
+          if git ls-files | grep -Eq '(^|/)(tests|tools|bench)/'; then
+            echo 'development validation trees must stay out of the public tree' >&2
+            exit 1
+          fi
+          if git ls-files | grep -Ei '(^|/)(\.folioforge-dev|\.codex|tests)(/|$)|(^|/)[^/]*(test|tests)[^/]*\.rs$|(^|/)[^/]+\.(py|pyc|pyo|ps1|psm1|psd1)$'; then
+            echo 'private development scripts and records must stay out of the public tree' >&2
+            exit 1
+          fi
+
+  slint-native:
+    name: Slint · ${{ matrix.platform }}
+    needs: release-policy
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: Linux x86_64
+            runner: ubuntu-26.04
+            asset: FolioForge-0.3.0-linux-x86_64-slint.tar.gz
+          - platform: Linux ARM64
+            runner: ubuntu-26.04-arm
+            asset: FolioForge-0.3.0-linux-aarch64-slint.tar.gz
+          - platform: Windows x86_64
+            runner: windows-2025
+            asset: FolioForge-0.3.0-windows-x86_64-slint.zip
+          - platform: Windows ARM64
+            runner: windows-11-vs2026-arm
+            asset: FolioForge-0.3.0-windows-arm64-slint.zip
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Configure external validation directories (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          validation_root="$RUNNER_TEMP/folioforge-validation"
+          temp_root="$validation_root/tmp"
+          {
+            echo "FOLIOFORGE_VALIDATION_ROOT=$validation_root"
+            echo "CARGO_TARGET_DIR=$validation_root/cargo-target"
+            echo "FOLIOFORGE_TEMP_ROOT=$validation_root/runtime"
+            echo "TMPDIR=$temp_root"
+            echo "TMP=$temp_root"
+            echo "TEMP=$temp_root"
+          } >> "$GITHUB_ENV"
+          mkdir -p "$validation_root/cargo-target" "$validation_root/runtime" "$temp_root"
+      - name: Configure external validation directories (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $validationRoot = Join-Path $env:RUNNER_TEMP 'folioforge-validation'
+          $tempRoot = Join-Path $validationRoot 'tmp'
+          $runtimeRoot = Join-Path $validationRoot 'runtime'
+          $targetRoot = Join-Path $validationRoot 'cargo-target'
+          @(
+            "FOLIOFORGE_VALIDATION_ROOT=$validationRoot"
+            "CARGO_TARGET_DIR=$targetRoot"
+            "FOLIOFORGE_TEMP_ROOT=$runtimeRoot"
+            "TMPDIR=$tempRoot"
+            "TMP=$tempRoot"
+            "TEMP=$tempRoot"
+          ) | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          New-Item -ItemType Directory -Force -Path $targetRoot, $runtimeRoot, $tempRoot | Out-Null
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
+        with:
+          toolchain: stable
+      - name: Install Linux windowing and font build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            build-essential pkg-config cmake \
+            libx11-dev libx11-xcb-dev libxcb1-dev libxcb-randr0-dev \
+            libxcb-shape0-dev libxcb-xfixes0-dev libxcb-xinput-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libxcursor-dev \
+            libfontconfig1-dev libfreetype-dev
+      - name: Confirm runner architecture
+        env:
+          RELEASE_ASSET: ${{ matrix.asset }}
+        shell: bash
+        run: |
+          rustc -Vv
+          actual_host=$(rustc -Vv | sed -n 's/^host: //p')
+          case "$RELEASE_ASSET" in
+            *linux-x86_64*) expected_host=x86_64-unknown-linux-gnu ;;
+            *linux-aarch64*) expected_host=aarch64-unknown-linux-gnu ;;
+            *windows-x86_64*) expected_host=x86_64-pc-windows-msvc ;;
+            *windows-arm64*) expected_host=aarch64-pc-windows-msvc ;;
+            *) echo "unknown release architecture: $RELEASE_ASSET" >&2; exit 1 ;;
+          esac
+          test "$actual_host" = "$expected_host"
+      - name: Build Slint application
+        run: cargo build --locked --release -p folioforge-slint
+      - name: Package Linux Slint application
+        if: runner.os == 'Linux'
+        env:
+          RELEASE_ASSET: ${{ matrix.asset }}
+        shell: bash
+        run: |
+          set -eu
+          binary="$CARGO_TARGET_DIR/release/folioforge-slint"
+          test -x "$binary"
+          case "$(uname -m):$RELEASE_ASSET" in
+            x86_64:FolioForge-0.3.0-linux-x86_64-slint.tar.gz|aarch64:FolioForge-0.3.0-linux-aarch64-slint.tar.gz) ;;
+            *) echo "binary architecture does not match $RELEASE_ASSET" >&2; exit 1 ;;
+          esac
+          if ldd "$binary" | grep -F 'not found'; then
+            echo 'Linux application has an unresolved shared-library dependency' >&2
+            exit 1
+          fi
+          package_root="$RUNNER_TEMP/FolioForge-0.3.0-${RELEASE_ASSET#FolioForge-0.3.0-}"
+          package_root=${package_root%.tar.gz}
+          mkdir -p "$package_root"
+          cp "$binary" "$package_root/folioforge-slint"
+          cp LICENSE "$package_root/LICENSE"
+          cp packaging/RELEASE_PACKAGE_README.md "$package_root/README.md"
+          printf '%s\n' 0.3.0 > "$package_root/VERSION"
+          chmod 755 "$package_root/folioforge-slint"
+          tar -C "$RUNNER_TEMP" -czf "$RUNNER_TEMP/$RELEASE_ASSET" "$(basename "$package_root")"
+          tar -tzf "$RUNNER_TEMP/$RELEASE_ASSET" >/dev/null
+      - name: Package Windows Slint application
+        if: runner.os == 'Windows'
+        env:
+          RELEASE_ASSET: ${{ matrix.asset }}
+        shell: pwsh
+        run: |
+          $binary = Join-Path $env:CARGO_TARGET_DIR 'release/folioforge-slint.exe'
+          if (!(Test-Path $binary)) { throw "Missing Slint executable: $binary" }
+          $packageName = [IO.Path]::GetFileNameWithoutExtension($env:RELEASE_ASSET)
+          $packageRoot = Join-Path $env:RUNNER_TEMP $packageName
+          New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
+          Copy-Item $binary (Join-Path $packageRoot 'folioforge-slint.exe')
+          Copy-Item 'LICENSE' (Join-Path $packageRoot 'LICENSE')
+          Copy-Item 'packaging/RELEASE_PACKAGE_README.md' (Join-Path $packageRoot 'README.md')
+          Set-Content -Path (Join-Path $packageRoot 'VERSION') -Value '0.3.0' -NoNewline -Encoding ascii
+          $archive = Join-Path $env:RUNNER_TEMP $env:RELEASE_ASSET
+          Compress-Archive -Path (Join-Path $packageRoot '*') -DestinationPath $archive -CompressionLevel Optimal
+          if (!(Test-Path $archive)) { throw "Missing release archive: $archive" }
+      - name: Upload native Slint release archive
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-slint-${{ matrix.platform }}
+          path: ${{ runner.temp }}/${{ matrix.asset }}
+          if-no-files-found: error
+
+  macos-slint:
+    name: Slint · macOS 27 ARM64
+    needs: release-policy
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
+        with:
+          toolchain: stable
+      - name: Configure external release directories
+        run: |
+          validation_root="$RUNNER_TEMP/folioforge-validation"
+          {
+            echo "FOLIOFORGE_VALIDATION_ROOT=$validation_root"
+            echo "FOLIOFORGE_ARTIFACT_ROOT=$RUNNER_TEMP/folioforge-release-assets"
+          } >> "$GITHUB_ENV"
+          mkdir -p "$validation_root" "$RUNNER_TEMP/folioforge-release-assets"
+      - name: Verify Apple Silicon macOS 27 runner
+        run: |
+          sw_vers
+          test "$(uname -m)" = arm64
+          xcodebuild -version
+          rustc -Vv
+      - name: Build and package unsigned Slint app
+        env:
+          FOLIOFORGE_RELEASE_VERSION: 0.3.0
+        run: sh packaging/package_slint_macos_app.sh
+      - name: Upload macOS Slint app
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-slint-macos-arm64
+          path: ${{ runner.temp }}/folioforge-release-assets/FolioForge-0.3.0-macos-arm64-slint.zip
+          if-no-files-found: error
+
+  macos-swiftui:
+    name: SwiftUI · macOS 27 ARM64
+    needs: release-policy
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
+        with:
+          toolchain: stable
+      - name: Configure external release directories
+        run: |
+          validation_root="$RUNNER_TEMP/folioforge-validation"
+          {
+            echo "FOLIOFORGE_VALIDATION_ROOT=$validation_root"
+            echo "FOLIOFORGE_OUTPUT_ROOT=$RUNNER_TEMP/folioforge-swiftui-output"
+            echo 'FOLIOFORGE_MACOS_TARGET_VERSION=27.0'
+            echo 'FOLIOFORGE_CODESIGN_IDENTITY=none'
+            echo 'FOLIOFORGE_APP_VERSION=0.3.0'
+          } >> "$GITHUB_ENV"
+          mkdir -p "$validation_root" "$RUNNER_TEMP/folioforge-swiftui-output"
+      - name: Verify Apple Silicon macOS 27 runner
+        run: |
+          sw_vers
+          test "$(uname -m)" = arm64
+          xcodebuild -version
+          rustc -Vv
+      - name: Build and validate unsigned SwiftUI app
+        run: packaging/build_macos_app.sh
+      - name: Package release SwiftUI app with notices
+        run: |
+          set -eu
+          source_zip=$(find "$FOLIOFORGE_OUTPUT_ROOT" -maxdepth 1 -type f \
+            -name 'FolioForge-macOS-arm64-0.3.0-*.zip' -print -quit)
+          test -n "$source_zip"
+          package_root="$RUNNER_TEMP/FolioForge-0.3.0-macos-arm64-swiftui"
+          mkdir -p "$package_root"
+          ditto -x -k "$source_zip" "$package_root"
+          app="$package_root/FolioForge.app"
+          test -x "$app/Contents/MacOS/FolioForge"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = 0.3.0
+          if codesign -dv "$app/Contents/MacOS/FolioForge" >/dev/null 2>&1; then
+            echo 'SwiftUI release app must remain unsigned' >&2
+            exit 1
+          fi
+          cp LICENSE "$package_root/LICENSE"
+          cp packaging/RELEASE_PACKAGE_README.md "$package_root/README.md"
+          printf '%s\n' 0.3.0 > "$package_root/VERSION"
+          archive="$RUNNER_TEMP/FolioForge-0.3.0-macos-arm64-swiftui.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$package_root" "$archive"
+          unzip -t "$archive"
+      - name: Upload SwiftUI macOS app
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-swiftui-macos-arm64
+          path: ${{ runner.temp }}/FolioForge-0.3.0-macos-arm64-swiftui.zip
+          if-no-files-found: error
+
+  publish:
+    name: Publish FolioForge 0.3.0 GitHub Release
+    needs: [release-policy, slint-native, macos-slint, macos-swiftui]
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Download assets built by this tagged run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: release-*
+          path: ${{ runner.temp }}/folioforge-0.3-assets
+          merge-multiple: true
+      - name: Verify six platform archives and prepare checksums
+        run: |
+          set -eu
+          source_dir="$RUNNER_TEMP/folioforge-0.3-assets"
+          publish_dir="$RUNNER_TEMP/folioforge-0.3-release"
+          mkdir -p "$publish_dir"
+          expected='FolioForge-0.3.0-macos-arm64-slint.zip
+          FolioForge-0.3.0-macos-arm64-swiftui.zip
+          FolioForge-0.3.0-linux-x86_64-slint.tar.gz
+          FolioForge-0.3.0-linux-aarch64-slint.tar.gz
+          FolioForge-0.3.0-windows-x86_64-slint.zip
+          FolioForge-0.3.0-windows-arm64-slint.zip'
+          while IFS= read -r name; do
+            [ -n "$name" ] || continue
+            test -f "$source_dir/$name"
+            cp "$source_dir/$name" "$publish_dir/$name"
+          done <<EOF
+          $expected
+          EOF
+          [ "$(find "$publish_dir" -maxdepth 1 -type f | wc -l | tr -d ' ')" = 6 ]
+          (cd "$publish_dir" && sha256sum $(printf '%s\n' "$expected") | sort -k2 > SHA256SUMS)
+          (cd "$publish_dir" && sha256sum -c SHA256SUMS)
+          test "$(wc -l < "$publish_dir/SHA256SUMS" | tr -d ' ')" = 6
+      - name: Create the public GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -eu
+          publish_dir="$RUNNER_TEMP/folioforge-0.3-release"
+          notes="$RUNNER_TEMP/folioforge-0.3-release-notes.md"
+          cp docs/0.3/RELEASE.md "$notes"
+          printf '\nChecksums are included in `SHA256SUMS`. All macOS application bundles in this release are unsigned and not notarized.\n' >> "$notes"
+          gh release create "$RELEASE_TAG" "$publish_dir"/* \
+            --title 'FolioForge 0.3.0' \
+            --notes-file "$notes"

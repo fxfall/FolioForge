@@ -2,9 +2,11 @@
 
 ![FolioForge logo](../../assets/folioforge-logo.png)
 
-The SwiftUI client is a local batch-preparation surface for FolioForge 0.1.0.
-It calls the Rust Core through `folio-ffi`; parsing, Semantic IR, compatibility
-decisions and export remain outside the views.
+The SwiftUI client is the macOS 27 ARM64 reference desktop app for FolioForge
+0.3.0. It calls the Rust Core through `folio-ffi`; parsing, Semantic IR,
+compatibility decisions and export remain outside the views. The app-product
+version is 0.3.0 while the frozen Core/FFI workspace package version remains
+0.1.0.
 
 ## Client contract
 
@@ -48,12 +50,14 @@ FOLIOFORGE_FFI_ARCHIVE="$CARGO_TARGET_DIR/release/libfolio_ffi.a" \
 `packaging/build_macos_app.sh` is the complete arm64 package validation
 entry point. It requires `FOLIOFORGE_VALIDATION_ROOT`, keeps compiler/runtime
 scratch data there, builds against the macOS 27 floor, embeds the project logo,
-leaves the app unsigned and produces a timestamped `0.1.0` app/ZIP under
-ignored `dist/` only after validation succeeds.
+and produces a timestamped app/ZIP under ignored `dist/` only after validation
+succeeds. Local output defaults to the base app-bundle version; release builds
+set `FOLIOFORGE_APP_VERSION` explicitly.
 
 The package is a SwiftPM executable rather than an Xcode project, so it has no
-separate `MARKETING_VERSION` setting; the checked-in bundle plist and Rust/FFI
-package version are both `0.1.0`.
+separate `MARKETING_VERSION` setting. Rust/FFI crates stay on the frozen
+`0.1.0` package version; the packaging script sets the app bundle marketing
+version from `FOLIOFORGE_APP_VERSION` (default `0.1.0`).
 
 The result is deliberately unsigned: the build does not invoke `codesign`, use
 certificates or embed entitlements. No Developer ID, notarization or Gatekeeper

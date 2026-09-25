@@ -23,13 +23,14 @@ create a second conversion pipeline.
 
 ## Workflow split
 
-The public repository has exactly three workflow files:
+The frozen 0.1 release line uses these three workflows. The additive 0.3 GUI
+release has its own tagged workflow, documented in `docs/0.3/RELEASE.md`.
 
 | Workflow | Trigger | Responsibility |
 | --- | --- | --- |
 | `ci.yml` | push and pull request | Rust format, production-target Clippy and release build; no tests or release artifacts |
 | `build.yml` | `main` push and manual dispatch | native Linux/macOS Core/GUI builds, packages and uploaded workflow artifacts |
-| `release.yml` | `v*` tags | clean tagged rebuild, validation, four release packages, SHA256SUMS and GitHub Release publication |
+| `release.yml` | `v0.1.0` and `v0.1.0-rc.*` tags | clean tagged rebuild, validation, four release packages, SHA256SUMS and GitHub Release publication |
 
 The tagged workflow never downloads artifacts from `build.yml`; it rebuilds
 from the tagged source checkout.
